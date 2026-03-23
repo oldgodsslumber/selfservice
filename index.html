@@ -602,6 +602,14 @@ function nav(dir) {
     finish();
     return;
   }
+  if (dir === 1 && S.step === 0 && S.mode === 'jitsi') {
+    const inp = document.getElementById('room-name-input');
+    const room = (inp ? inp.value : S.jitsiRoom || '').trim().replace(/\s+/g, '-').toLowerCase();
+    if (!room) { if (inp) { inp.focus(); inp.style.borderColor = 'var(--danger)'; } return; }
+    if (inp) inp.style.borderColor = '';
+    S.jitsiRoom = room;
+    if (inp) inp.value = room;
+  }
   if (dir === 1 && S.step === 5 && S.mode !== 'local' && S.mode !== 'jitsi') return;
   S.step = Math.max(0, Math.min(S.STEPS - 1, S.step + dir));
   render();
@@ -799,7 +807,8 @@ async function generatePlanLink() {
   const result = document.getElementById('plan-result');
   if (!input || !status) return;
 
-  const room = input.value.trim().replace(/\s+/g, '-').toLowerCase() || generateRoom();
+  const room = input.value.trim().replace(/\s+/g, '-').toLowerCase();
+  if (!room) { status.textContent = 'Please enter a room name.'; return; }
   input.value = room;
   S.jitsiRoom = room;
 
@@ -1550,7 +1559,6 @@ function renderStep4() {
 
 function setMode(m) {
   S.mode = m;
-  if (m === 'jitsi' && !S.jitsiRoom) S.jitsiRoom = generateRoom();
   document.querySelectorAll('.choice-card').forEach((c, i) => {
     c.classList.toggle('selected', (i===0 && m==='virtual') || (i===1 && m==='local') || (i===2 && m==='jitsi'));
   });
@@ -1576,11 +1584,10 @@ function modeMsgHtml(m) {
   if (m === 'jitsi') {
     return `<div class="info-box">
       <strong>Room name</strong>
-      <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
-        <input id="room-name-input" value="${S.jitsiRoom}"
-               oninput="S.jitsiRoom=this.value.trim()||S.jitsiRoom"
-               style="flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px"/>
-        <button class="btn btn-ghost" onclick="regenerateRoom()" style="font-size:12px;padding:5px 10px;flex-shrink:0">↺ New</button>
+      <div style="margin-top:8px">
+        <input id="room-name-input" value="${S.jitsiRoom || ''}" placeholder="e.g. marketing"
+               oninput="S.jitsiRoom=this.value.trim()"
+               style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px"/>
       </div>
       <div style="margin-top:10px;font-size:12px;color:var(--muted)">
         A secure guest link (with access token) will be generated and displayed when the call launches.
