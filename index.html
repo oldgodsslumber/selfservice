@@ -1657,6 +1657,7 @@ body{background:#000;color:#fff;font-family:Georgia,serif;
 #bar button{padding:5px 14px;border:none;border-radius:6px;font-size:13px;
   font-weight:700;cursor:pointer;background:#2a2a2a;color:#fff;transition:background .15s}
 #bar button.go{background:#22c55e;color:#000}
+#bar button.sz{padding:4px 10px;font-size:15px;font-weight:900;line-height:1}
 #bar input[type=range]{width:72px;cursor:pointer;accent-color:#22c55e}
 #bar label{font-size:12px;color:#666}
 .hint{margin-left:auto;font-size:11px;color:#444}
@@ -1672,6 +1673,9 @@ body{background:#000;color:#fff;font-family:Georgia,serif;
   <input type="range" id="spd" min="1" max="20" value="5" oninput="chSpd(+this.value)">
   <label id="sv">5</label>
   <button onclick="rst()" style="background:#1a1a1a">↺ Reset</button>
+  <label style="margin-left:6px">Size</label>
+  <button class="sz" onclick="chSz(-2)">A−</button>
+  <button class="sz" onclick="chSz(2)">A+</button>
   <span class="hint">Space = play/pause &nbsp;·&nbsp; ↑↓ = scroll</span>
 </div>
 <div id="scroll">
@@ -1679,7 +1683,8 @@ body{background:#000;color:#fff;font-family:Georgia,serif;
 </div>
 <div id="fade"></div>
 <script>
-let going=false,spd=5,iv=null;
+let going=false,spd=5,iv=null,sz=33;
+function chSz(d){sz=Math.min(72,Math.max(16,sz+d));document.getElementById('txt').style.fontSize=sz+'px';}
 function tog(){
   going=!going;
   const b=document.getElementById('pbtn');
@@ -1743,9 +1748,12 @@ function startRec() {
   }, 1000);
 
   document.getElementById('rec-status').innerHTML =
-    `<div style="display:flex;align-items:center;gap:8px;color:var(--danger);font-weight:600;font-size:14px">
-      <div class="rec-dot" style="background:var(--danger)"></div>
-      Recording — <span id="rec-timer">00:00</span>
+    `<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px;color:var(--danger);font-weight:600;font-size:14px">
+        <div class="rec-dot" style="background:var(--danger)"></div>
+        Recording — <span id="rec-timer">00:00</span>
+      </div>
+      <button class="btn btn-ghost" style="font-size:12px;padding:4px 10px" onclick="openPrompter()">📺 Teleprompter</button>
     </div>`;
 }
 
