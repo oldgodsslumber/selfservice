@@ -1,0 +1,3031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recording Room Setup</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0f1117;
+      --surf:     #1c1f26;
+      --surf2:    #252930;
+      --accent:   #4f8ef7;
+      --accent2:  #6ba3ff;
+      --success:  #22c55e;
+      --warn:     #f59e0b;
+      --danger:   #ef4444;
+      --text:     #f1f5f9;
+      --muted:    #94a3b8;
+      --border:   #2d3748;
+      --radius:   12px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--surf);
+      border-bottom: 1px solid var(--border);
+      padding: 13px 24px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-shrink: 0;
+    }
+    header h1 {
+      font-size: 16px;
+      font-weight: 700;
+      white-space: nowrap;
+      letter-spacing: -0.01em;
+    }
+    .settings-gear {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: #555;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 4px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .settings-gear:hover { color: #aaa; background: rgba(255,255,255,.06); }
+
+    /* ── STEP BAR ── */
+    .step-bar { display: flex; align-items: center; flex: 1; overflow: hidden; }
+    .pip {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+      flex-shrink: 0;
+      background: var(--surf2);
+      border: 2px solid var(--border);
+      color: var(--muted);
+      transition: all 0.25s;
+    }
+    .pip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .pip.done   { background: var(--success); border-color: var(--success); color: #fff; }
+    .connector  { flex: 1; height: 2px; background: var(--border); transition: background 0.25s; }
+    .connector.done { background: var(--success); }
+
+    /* ── MAIN ── */
+    main { flex: 1; overflow-y: auto; display: flex; justify-content: center; padding: 24px 20px; }
+    .content { width: 100%; max-width: 680px; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      background: var(--surf);
+      padding: 13px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    /* ── TYPE ── */
+    .step-title { font-size: 23px; font-weight: 700; line-height: 1.2; margin-bottom: 5px; }
+    .step-sub   { color: var(--muted); font-size: 14px; line-height: 1.6; margin-bottom: 22px; }
+    .sec-label  {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--muted); margin: 18px 0 8px;
+    }
+
+    /* ── CHECK ROWS ── */
+    .checklist { display: flex; flex-direction: column; gap: 9px; }
+    .check-row {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 13px 15px;
+      background: var(--surf);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      user-select: none;
+    }
+    .check-row:hover { border-color: var(--accent); }
+    .check-row.on { border-color: var(--success); background: rgba(34,197,94,0.07); }
+    .cbox {
+      width: 21px; height: 21px;
+      border-radius: 5px;
+      border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+      font-size: 12px; font-weight: 700;
+      transition: all 0.15s;
+    }
+    .check-row.on .cbox { background: var(--success); border-color: var(--success); color: #fff; }
+    .crow-title { font-weight: 600; font-size: 15px; line-height: 1.3; }
+    .crow-desc  { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      padding: 10px 20px; border-radius: 8px;
+      border: none; font-size: 14px; font-weight: 600;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+      transition: all 0.15s; text-decoration: none; white-space: nowrap;
+    }
+    .btn:disabled { opacity: 0.38; cursor: not-allowed; pointer-events: none; }
+    .btn-primary { background: var(--accent);   color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent2); transform: translateY(-1px); }
+    .btn-success { background: var(--success);  color: #fff; }
+    .btn-success:hover:not(:disabled) { background: #16a34a; transform: translateY(-1px); }
+    .btn-danger  { background: var(--danger);   color: #fff; }
+    .btn-danger:hover:not(:disabled)  { background: #dc2626; }
+    .btn-ghost   { background: var(--surf2); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover:not(:disabled)   { border-color: var(--accent); }
+
+    /* ── CARDS ── */
+    .card { background: var(--surf); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+
+    /* ── VIDEO ── */
+    .vid-wrap {
+      position: relative; width: 100%; aspect-ratio: 16/9;
+      background: #000; border-radius: var(--radius); overflow: hidden; margin-bottom: 14px;
+    }
+    .vid-wrap video {
+      width: 100%; height: 100%; object-fit: cover;
+      transform: scaleX(-1); display: block;
+    }
+    .vid-overlay {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+    .cam-loading {
+      position: absolute; inset: 0;
+      background: #000;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 11px;
+      font-size: 14px; color: var(--muted);
+    }
+    .spinner {
+      width: 26px; height: 26px;
+      border: 3px solid var(--border); border-top-color: var(--accent);
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── AUDIO METER ── */
+    .meter-track {
+      height: 22px; background: var(--surf2);
+      border-radius: 11px; overflow: hidden; position: relative;
+    }
+    .meter-fill {
+      height: 100%; width: 2%; border-radius: 11px;
+      background: linear-gradient(90deg, #22c55e 0%, #86efac 55%, #f59e0b 80%, #ef4444 100%);
+      transition: width 0.04s linear;
+    }
+    .meter-lbl {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; padding: 0 12px;
+      font-size: 12px; font-weight: 600;
+      color: rgba(255,255,255,0.8);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+      pointer-events: none;
+    }
+
+    /* ── DEVICE STATUS ── */
+    .dev-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 14px; background: var(--surf2);
+      border-radius: 10px; margin-bottom: 8px;
+    }
+    .sdot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .sdot.green  { background: var(--success); box-shadow: 0 0 7px var(--success); }
+    .sdot.red    { background: var(--danger);  box-shadow: 0 0 7px var(--danger);  }
+    .sdot.yellow { background: var(--warn);    box-shadow: 0 0 7px var(--warn);    }
+    .dev-info { flex: 1; min-width: 0; }
+    .dev-name { font-size: 14px; font-weight: 600; }
+    .dev-sub  { font-size: 12px; color: var(--muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dev-sel {
+      background: var(--surf); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 5px 8px; font-size: 12px; max-width: 180px; flex-shrink: 0;
+    }
+
+    /* ── BRIGHTNESS ── */
+    .bright-result {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 13px; border-radius: 8px; font-size: 14px;
+    }
+    .bright-result.good      { background: rgba(34,197,94,0.1);   border: 1px solid var(--success); }
+    .bright-result.error     { background: rgba(239,68,68,0.1);   border: 1px solid var(--danger);  }
+    .bright-result.warn      { background: rgba(245,158,11,0.12); border: 1px solid var(--warn);    }
+    .bright-result.warn-mild { background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.4); }
+    .bright-result.info      { background: rgba(79,142,247,0.07); border: 1px solid rgba(79,142,247,0.3); }
+    /* keep old class names so any cached state still renders */
+    .bright-result.dark   { background: rgba(239,68,68,0.1);  border: 1px solid var(--danger);  }
+    .bright-result.bright { background: rgba(245,158,11,0.1); border: 1px solid var(--warn);    }
+
+    /* ── DOWNLOAD WARNING ── */
+    @keyframes pulse-warn {
+      0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,0); }
+      50%      { box-shadow: 0 0 0 6px rgba(245,158,11,0.35); }
+    }
+    #rec-download-row.warn-pending {
+      background: rgba(245,158,11,0.08) !important;
+      border-color: var(--warn) !important;
+      animation: pulse-warn 1.6s ease-in-out 3;
+    }
+    .dl-item { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:4px; }
+    .dl-badge {
+      font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px;
+      flex-shrink:0; transition: all .2s;
+    }
+    .dl-badge.pending  { background:rgba(245,158,11,0.15); color:var(--warn);    border:1px solid var(--warn); }
+    .dl-badge.done     { background:rgba(34,197,94,0.12);  color:var(--success); border:1px solid var(--success); }
+    .bright-icon { font-size: 20px; }
+    .bright-title { font-weight: 600; line-height: 1.2; }
+    .bright-sub   { font-size: 12px; color: var(--muted); }
+
+    /* ── CHOICE GRID (step 4) ── */
+    .choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .choice-card {
+      padding: 24px 14px; background: var(--surf);
+      border: 2px solid var(--border); border-radius: var(--radius);
+      cursor: pointer; text-align: center;
+      transition: all 0.15s;
+      display: flex; flex-direction: column; align-items: center; gap: 9px;
+    }
+    .choice-card:hover    { border-color: var(--accent); background: rgba(79,142,247,0.04); }
+    .choice-card.selected { border-color: var(--accent); background: rgba(79,142,247,0.09); }
+    .choice-icon  { font-size: 36px; }
+    .choice-title { font-size: 15px; font-weight: 700; }
+    .choice-desc  { font-size: 13px; color: var(--muted); line-height: 1.4; }
+
+    /* ── INFO BOX ── */
+    .info-box {
+      background: rgba(79,142,247,0.07);
+      border: 1px solid rgba(79,142,247,0.24);
+      border-radius: 10px; padding: 12px 15px;
+      font-size: 14px; color: var(--muted); line-height: 1.55; margin-top: 12px;
+    }
+    .info-box strong { color: var(--text); }
+
+    /* ── SCRIPT / TELEPROMPTER ── */
+    .script-ta {
+      width: 100%; min-height: 150px;
+      background: var(--surf2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 13px; color: var(--text);
+      font-size: 15px; resize: vertical; line-height: 1.6; font-family: inherit;
+    }
+    .script-ta:focus { outline: none; border-color: var(--accent); }
+
+    /* ── RECORDING ── */
+    .rec-badge {
+      position: absolute; top: 10px; left: 10px;
+      background: var(--danger); color: #fff;
+      padding: 3px 11px; border-radius: 20px;
+      font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .rec-dot { width: 7px; height: 7px; background: #fff; border-radius: 50%; animation: blink 1s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+    /* ── COMPLETION ── */
+    .completion { text-align: center; padding: 44px 20px; }
+    .completion .big-icon { font-size: 70px; margin-bottom: 14px; }
+    .completion h2  { font-size: 26px; font-weight: 700; margin-bottom: 10px; }
+    .completion p   { color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 360px; margin: 0 auto; }
+
+    /* ── HERO AREA (step 0) ── */
+    .hero-area { display: flex; justify-content: center; margin: 12px 0 26px; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 560px) {
+      .choice-grid { grid-template-columns: 1fr; }
+      .step-title  { font-size: 19px; }
+      .pip         { width: 22px; height: 22px; font-size: 10px; }
+    }
+
+    /* ── JITSI FULL-PAGE TAKEOVER ── */
+    body.jitsi-mode header,
+    body.jitsi-mode footer { display: none !important; }
+    body.jitsi-mode main   { padding: 0; }
+    body.jitsi-mode .content { max-width: none; width: 100%; height: 100%;
+                               display: flex; flex-direction: column; }
+    .jitsi-bar {
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+      padding: 7px 12px;
+      background: rgba(15,17,23,0.97);
+      border-bottom: 1px solid var(--border);
+    }
+    .jitsi-bar code {
+      flex: 1; font-size: 11px; color: var(--muted);
+      background: var(--surf2); padding: 5px 9px;
+      border-radius: 6px; border: 1px solid var(--border);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      min-width: 0;
+    }
+
+    /* ── CALL LAYOUT ── */
+    #call-area {
+      flex: 1; position: relative; background: #000; overflow: hidden;
+    }
+    /* Main view — fills the call area */
+    #main-video {
+      width: 100%; height: 100%; object-fit: contain; display: block; background: #000;
+    }
+    #main-label {
+      position: absolute; bottom: 12px; left: 12px;
+      background: rgba(0,0,0,0.6); color: #fff;
+      font-size: 13px; font-weight: 600;
+      padding: 4px 12px; border-radius: 20px; pointer-events: none;
+    }
+    #main-placeholder {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      color: #444; font-size: 15px;
+    }
+    /* PiP self-view — bottom-right corner */
+    #pip {
+      position: absolute; bottom: 12px; right: 12px;
+      width: 200px; aspect-ratio: 16/9;
+      background: #111; border-radius: 8px; overflow: hidden;
+      border: 2px solid rgba(255,255,255,0.15);
+      cursor: move; z-index: 10;
+    }
+    #pip video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+    #pip-label {
+      position: absolute; bottom: 5px; left: 8px;
+      background: rgba(0,0,0,0.55); color: #fff;
+      font-size: 11px; font-weight: 600;
+      padding: 2px 7px; border-radius: 20px; pointer-events: none;
+    }
+    /* Toolbar */
+    .call-toolbar {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; flex-shrink: 0; padding: 10px 14px;
+      background: rgba(15,17,23,0.97); border-top: 1px solid var(--border);
+    }
+    .call-toolbar .spacer { flex: 1; }
+    .tb-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      background: rgba(255,255,255,0.08); border: none; border-radius: 10px;
+      color: #fff; cursor: pointer; padding: 8px 14px; min-width: 64px;
+      font-size: 11px; font-weight: 500; transition: background .15s;
+    }
+    .tb-btn:hover { background: rgba(255,255,255,0.16); }
+    .tb-btn .tb-icon { font-size: 20px; line-height: 1; }
+    .tb-btn.active  { background: var(--danger); }
+    .tb-btn.rec-on  { background: var(--danger); animation: blink 1.4s infinite; }
+    .tb-btn.end     { background: #c0392b; }
+    .tb-btn.end:hover { background: #e74c3c; }
+
+    /* ── BACKGROUND SELECTOR ── */
+    .bg-selector {
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start;
+    }
+    .bg-opt {
+      width: 88px; height: 54px;
+      border-radius: 8px; border: 2px solid var(--border);
+      background: var(--surf2); background-size: cover; background-position: center;
+      cursor: pointer; position: relative; overflow: hidden;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 3px; transition: border-color .15s, box-shadow .15s;
+      color: var(--text); padding: 0; flex-shrink: 0;
+    }
+    .bg-opt:hover     { border-color: var(--accent); }
+    .bg-opt.bg-active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(79,142,247,0.4); }
+    .bg-opt-lbl {
+      font-size: 10px; font-weight: 600;
+      background: rgba(0,0,0,0.65); padding: 2px 5px; border-radius: 3px;
+      white-space: nowrap; position: absolute; bottom: 4px;
+    }
+    /* Background panel in call mode */
+    #bg-panel {
+      flex-shrink: 0; padding: 8px 12px;
+      background: var(--surf); border-top: 1px solid var(--border);
+      display: none;
+    }
+    #bg-panel.open { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    #bg-panel > .bp-label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📹 Recording Room Setup</h1>
+  <div class="step-bar" id="step-bar"></div>
+  <button class="settings-gear" onclick="openSettingsModal()" title="Proxy settings">⚙</button>
+</header>
+
+<!-- Settings modal -->
+<div id="settings-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:none;align-items:center;justify-content:center">
+  <div style="background:#1a1a2e;border:1px solid #333;border-radius:12px;padding:28px 32px;width:min(460px,90vw);color:#e0e0e0">
+    <h2 style="margin:0 0 6px;font-size:18px">Proxy Settings</h2>
+    <p style="margin:0 0 20px;font-size:13px;color:#888">Optional — keeps the JaaS credentials off this page. Leave blank to use the embedded key.</p>
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:13px;margin-bottom:4px">Proxy URL</label>
+      <input id="sett-proxy-url" type="text" placeholder="/api/jaas-token"
+        style="width:100%;box-sizing:border-box;padding:8px 10px;background:#111;border:1px solid #444;border-radius:6px;color:#e0e0e0;font-size:14px">
+      <div style="font-size:12px;color:#666;margin-top:4px">Leave as <code>/api/jaas-token</code> when hosted on Vercel.</div>
+    </div>
+    <div style="margin-bottom:24px">
+      <label style="display:block;font-size:13px;margin-bottom:4px">Proxy Token</label>
+      <input id="sett-proxy-token" type="password" placeholder="Shared secret from your admin" autocomplete="off"
+        style="width:100%;box-sizing:border-box;padding:8px 10px;background:#111;border:1px solid #444;border-radius:6px;color:#e0e0e0;font-size:14px">
+      <div style="font-size:12px;color:#666;margin-top:4px">Stored only in this browser (localStorage).</div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button onclick="saveSettingsModal()" style="flex:1;padding:10px;background:#4f8ef7;border:none;border-radius:6px;color:#fff;font-size:14px;cursor:pointer">Save</button>
+      <button onclick="closeSettingsModal()" style="flex:1;padding:10px;background:#333;border:none;border-radius:6px;color:#e0e0e0;font-size:14px;cursor:pointer">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="content" id="content"></div>
+</main>
+
+<footer>
+  <button class="btn btn-ghost" id="btn-back" onclick="nav(-1)">← Back</button>
+  <button class="btn btn-primary" id="btn-next" onclick="nav(1)">Next →</button>
+</footer>
+
+<script>
+/* =============================================================
+   STATE
+   ============================================================= */
+const S = {
+  step: 0,
+  STEPS: 7,
+
+  location: null,          /* null | 'studio' | 'home' */
+
+  /* checklist booleans indexed by step — studio */
+  checks: { 1:[false], 2:[false,false,false], 4:[false,false] },
+
+  /* checklist booleans indexed by step — home */
+  homechecks: { 1:[false], 2:[false,false,false] },
+  chromeClosed: false,
+
+  /* camera / audio */
+  stream:   null,
+  audioCtx: null,
+  analyser: null,
+  rafId:    null,
+
+  /* devices */
+  dev: {
+    rode: null, nexigo: null,
+    allAudio: [], allVideo: [],
+    curAudioId: null, curVideoId: null,
+  },
+
+  devOk:         false,
+  brightness:    null,   /* null | 'good' | 'dark' | 'bright' */
+  brightnessVal: 0,
+
+  mode: null,            /* null | 'virtual' | 'local' | 'jitsi' */
+
+  jitsiRoom: null,       /* room name for Jitsi call */
+  bgType: 'none',        /* 'none' | 'blur' | 'pega1' | 'pega2' */
+  blurRadius: 16,        /* px — controlled by blur slider */
+
+  /* lib-jitsi-meet call state */
+  call: {
+    conn: null, conf: null,
+    localTracks:   [],   /* JitsiTrack[] */
+    remoteTracks:  {},   /* participantId → { video, audio } */
+    names:         {},   /* participantId → displayName */
+    recActive: false, recSecs: 0, recTimer: null,
+    recorders: {},       /* 'local' | participantId → { recorder, chunks, mime } */
+    recBlobs:    {},     /* 'local' | participantId → { url, ext, name } */
+    downloaded:  {},     /* 'local' | participantId → true once downloaded */
+    endWarnShown: false, /* true after first End Call click warned about undownloaded files */
+    bgEffect:  null,     /* active VirtualBgEffect instance in call */
+    origVideoTrack: null, /* original MediaStreamTrack before effect was applied */
+  },
+
+  recorder: null,
+  chunks:   [],
+  blob:     null,
+  recActive: false,
+  recSecs:   0,
+  recTimer:  null,
+
+  prompter: null,
+};
+
+/* =============================================================
+   PROXY SETTINGS  (stored in localStorage; override the embedded key)
+   ============================================================= */
+const PROXY = { url: '', token: '' };
+(function loadProxy() {
+  PROXY.url   = localStorage.getItem('ss_proxy_url')   || '';
+  PROXY.token = localStorage.getItem('ss_proxy_token') || '';
+})();
+function saveProxy(url, token) {
+  PROXY.url   = (url   || '').trim();
+  PROXY.token = (token || '').trim();
+  localStorage.setItem('ss_proxy_url',   PROXY.url);
+  localStorage.setItem('ss_proxy_token', PROXY.token);
+}
+function openSettingsModal() {
+  const m = document.getElementById('settings-modal');
+  document.getElementById('sett-proxy-url').value   = PROXY.url   || '/api/jaas-token';
+  document.getElementById('sett-proxy-token').value = PROXY.token || '';
+  m.style.display = 'flex';
+}
+function closeSettingsModal() {
+  document.getElementById('settings-modal').style.display = 'none';
+}
+function saveSettingsModal() {
+  const url   = document.getElementById('sett-proxy-url').value;
+  const token = document.getElementById('sett-proxy-token').value;
+  saveProxy(url, token);
+  closeSettingsModal();
+}
+
+/* =============================================================
+   JAAS CONFIGURATION  (appId/kid only — private key lives in Vercel)
+   ============================================================= */
+const JAAS = {
+  appId: 'vpaas-magic-cookie-005ad6f5ab934d24a6836927b161c62d',
+  kid:   'vpaas-magic-cookie-005ad6f5ab934d24a6836927b161c62d/a1d586',
+  privateKey: '',
+};
+
+/* =============================================================
+   STEP BAR
+   ============================================================= */
+function renderBar() {
+  const bar = document.getElementById('step-bar');
+  bar.innerHTML = '';
+  for (let i = 0; i < S.STEPS; i++) {
+    if (i > 0) {
+      const c = document.createElement('div');
+      c.className = 'connector' + (i <= S.step ? ' done' : '');
+      bar.appendChild(c);
+    }
+    const p = document.createElement('div');
+    p.className = 'pip' + (i === S.step ? ' active' : i < S.step ? ' done' : '');
+    p.textContent = i < S.step ? '✓' : String(i);
+    bar.appendChild(p);
+  }
+}
+
+/* =============================================================
+   NAVIGATION
+   ============================================================= */
+function nav(dir) {
+  if (dir === 1 && S.step === 6) {
+    /* Check for undownloaded recordings before ending */
+    const hasPending = Object.keys(S.call.recBlobs).some(k => !S.call.downloaded[k]);
+    if (hasPending && !S.call.endWarnShown) {
+      /* First click — warn and highlight */
+      S.call.endWarnShown = true;
+      const row = document.getElementById('rec-download-row');
+      if (row) {
+        row.style.display = '';
+        row.classList.add('warn-pending');
+        row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      updateEndCallBtn();
+      return;
+    }
+    finish();
+    return;
+  }
+  if (dir === 1 && S.step === 5 && S.mode !== 'local' && S.mode !== 'jitsi') return;
+  S.step = Math.max(0, Math.min(S.STEPS - 1, S.step + dir));
+  render();
+}
+
+function updateNav() {
+  const back = document.getElementById('btn-back');
+  const next = document.getElementById('btn-next');
+
+  back.style.visibility = S.step === 0 ? 'hidden' : 'visible';
+
+  if (S.step === 5) {
+    next.style.visibility = (S.mode === 'local' || S.mode === 'jitsi') ? 'visible' : 'hidden';
+    next.textContent = S.mode === 'jitsi' ? 'Launch Call →' : 'Continue →';
+    next.className = 'btn btn-primary';
+    next.disabled = false;
+    return;
+  }
+
+  next.style.visibility = 'visible';
+  next.className = S.step === 6 ? 'btn btn-success' : 'btn btn-primary';
+  next.textContent = S.step === 6 ? (S.mode === 'jitsi' ? 'End Call ✓' : 'Finish ✓') : 'Next →';
+
+  if (S.step === 0) {
+    next.style.visibility = (S.location === 'studio' || S.location === 'home') ? 'visible' : 'hidden';
+    next.disabled = false;
+    return;
+  }
+
+  if (S.location === 'home') {
+    switch (S.step) {
+      case 0: next.disabled = !S.location; break;
+      case 1: next.disabled = !S.homechecks[1]?.[0]; break;        /* mouse checkbox */
+      case 2: next.disabled = !S.homechecks[2]?.every(Boolean); break;
+      case 3: next.disabled = false; break;                         /* equipment — no hard block */
+      case 4: next.disabled = false; break;                         /* lighting — no hard block */
+      default: next.disabled = false;
+    }
+  } else {
+    switch (S.step) {
+      case 0: next.disabled = !S.location; break;                   /* location must be chosen */
+      case 1: next.disabled = !S.checks[1][0]; break;
+      case 2: next.disabled = !S.checks[2].every(Boolean); break;
+      case 3: next.disabled = false; break;                         /* equipment check — no hard block */
+      case 4: next.disabled = !S.checks[4].every(Boolean); break;  /* framing — must confirm lights */
+      default: next.disabled = false;
+    }
+  }
+}
+
+/* =============================================================
+   RENDER DISPATCH
+   ============================================================= */
+function render() {
+  document.body.classList.toggle('jitsi-mode', S.step === 6 && S.mode === 'jitsi');
+
+  /* Tear down any live call when navigating away from step 6 */
+  if (S.call.conf && S.step !== 6) {
+    leaveConference();
+    if (S.stream) { S.stream.getTracks().forEach(t => t.stop()); S.stream = null; }
+    if (S.audioCtx) { S.audioCtx.close(); S.audioCtx = null; S.analyser = null; }
+  }
+  renderBar();
+  updateNav();
+  const el = document.getElementById('content');
+
+  if      (S.step === 0) { el.innerHTML = renderLocation(); }
+  else if (S.step === 1 && S.location === 'studio') { el.innerHTML = renderStep0(); bindChecks(el); }
+  else if (S.step === 2 && S.location === 'studio') { el.innerHTML = renderStep1(); bindChecks(el); }
+  else if (S.step === 3 && S.location === 'studio') { renderStep3(el); }  /* equipment check */
+  else if (S.step === 4 && S.location === 'studio') { renderStep2(el); }  /* camera framing */
+  else if (S.step === 5 && S.location === 'studio') { el.innerHTML = renderStep4(); }
+  else if (S.step === 6 && S.mode === 'jitsi')      { renderJitsiStep(el); }
+  else if (S.step === 6 && S.location === 'studio') { el.innerHTML = renderStep5(); setTimeout(() => attachStream('rec-video'), 60); }
+  else if (S.step === 1 && S.location === 'home') { el.innerHTML = renderHomeStep1(); bindHomeChecks(el); }
+  else if (S.step === 2 && S.location === 'home') { el.innerHTML = renderHomeStep2(); bindHomeChecks(el); }
+  else if (S.step === 3 && S.location === 'home') { renderHomeStep3(el); }
+  else if (S.step === 4 && S.location === 'home') { renderHomeStep4(el); }
+  else if (S.step === 5 && S.location === 'home') { el.innerHTML = renderStep4(); }
+  else if (S.step === 6 && S.location === 'home')   { el.innerHTML = renderStep5(); setTimeout(() => attachStream('rec-video'), 60); }
+}
+
+/* =============================================================
+   CHECK ROW HELPERS
+   ============================================================= */
+function bindChecks(root) {
+  root.querySelectorAll('.check-row[data-s]').forEach(row => {
+    row.addEventListener('click', () => {
+      const s = row.dataset.s, i = +row.dataset.i;
+      S.checks[s][i] = !S.checks[s][i];
+      row.classList.toggle('on', S.checks[s][i]);
+      row.querySelector('.cbox').textContent = S.checks[s][i] ? '✓' : '';
+      updateNav();
+    });
+  });
+}
+
+function crow(s, i, title, desc) {
+  const on = S.checks[s]?.[i] ?? false;
+  return `<div class="check-row${on?' on':''}" data-s="${s}" data-i="${i}">
+    <div class="cbox">${on?'✓':''}</div>
+    <div>
+      <div class="crow-title">${title}</div>
+      ${desc ? `<div class="crow-desc">${desc}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+function bindHomeChecks(root) {
+  root.querySelectorAll('.check-row[data-hs]').forEach(row => {
+    row.addEventListener('click', () => {
+      const s = row.dataset.hs, i = +row.dataset.i;
+      S.homechecks[s][i] = !S.homechecks[s][i];
+      row.classList.toggle('on', S.homechecks[s][i]);
+      row.querySelector('.cbox').textContent = S.homechecks[s][i] ? '✓' : '';
+      updateNav();
+    });
+  });
+}
+
+function hcrow(s, i, title, desc) {
+  const on = S.homechecks[s]?.[i] ?? false;
+  return `<div class="check-row${on?' on':''}" data-hs="${s}" data-i="${i}">
+    <div class="cbox">${on?'✓':''}</div>
+    <div>
+      <div class="crow-title">${title}</div>
+      ${desc ? `<div class="crow-desc">${desc}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+/* =============================================================
+   STEP 0 — LOCATION CHOICE
+   ============================================================= */
+function renderLocation() {
+  return `
+  <div>
+    <div class="step-title">Where are you recording?</div>
+    <div class="step-sub">Choose your recording location to get the right setup guide.</div>
+
+    <div class="choice-grid" style="margin-top:28px">
+      <div class="choice-card${S.location==='studio'?' selected':''}" onclick="setLocation('studio')">
+        <div class="choice-icon">🏢</div>
+        <div class="choice-title">Self-Service Studio</div>
+        <div class="choice-desc">Recording in the dedicated studio room with the Nexigo camera and Rode microphone.</div>
+      </div>
+      <div class="choice-card${S.location==='home'?' selected':''}" onclick="setLocation('home')">
+        <div class="choice-icon">🏠</div>
+        <div class="choice-title">Recording at Home</div>
+        <div class="choice-desc">Using your own setup — webcam, headset, or home microphone.</div>
+      </div>
+      <div class="choice-card${S.location==='plan'?' selected':''}" onclick="toggleLinkPlanner()" id="planner-card">
+        <div class="choice-icon">📅</div>
+        <div class="choice-title">Plan a Remote Call</div>
+        <div class="choice-desc">Generate a guest link in advance without going through setup.</div>
+      </div>
+    </div>
+
+    <div id="link-planner" style="display:none;margin-top:20px;background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px">
+      <div style="font-weight:600;margin-bottom:12px;font-size:14px">Generate a guest link</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="plan-room-input" placeholder="Room name (e.g. livelaughlove)"
+               style="flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px"
+               oninput="document.getElementById('plan-result').style.display='none'"
+               value="${S.jitsiRoom || ''}"/>
+        <button class="btn btn-primary" onclick="generatePlanLink()" style="flex-shrink:0;font-size:13px;padding:7px 14px">Generate</button>
+      </div>
+      <div id="plan-result" style="display:none;margin-top:14px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Share this link with your guest:</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <code id="plan-link-display" style="flex:1;font-size:13px;word-break:break-all"></code>
+          <button class="btn btn-ghost" onclick="copyPlanLink(event)" style="font-size:12px;padding:5px 10px;flex-shrink:0">📋 Copy</button>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--muted)">Valid for 24 hours. Come back and start the call when you're ready.</div>
+      </div>
+      <div id="plan-status" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
+    </div>
+  </div>`;
+}
+
+function toggleLinkPlanner() {
+  const p    = document.getElementById('link-planner');
+  const card = document.getElementById('planner-card');
+  if (!p) return;
+  const opening = p.style.display === 'none';
+  p.style.display = opening ? '' : 'none';
+  if (card) card.classList.toggle('selected', opening);
+  /* Deselect location cards when planner opens */
+  if (opening) { S.location = 'plan'; updateNav(); }
+}
+
+async function generatePlanLink() {
+  const input  = document.getElementById('plan-room-input');
+  const status = document.getElementById('plan-status');
+  const result = document.getElementById('plan-result');
+  if (!input || !status) return;
+
+  const room = input.value.trim().replace(/\s+/g, '-').toLowerCase() || generateRoom();
+  input.value = room;
+  S.jitsiRoom = room;
+
+  status.textContent = 'Generating token…';
+  result.style.display = 'none';
+
+  let guestToken;
+  try {
+    guestToken = await generateJaaSToken(false);
+  } catch(e) {
+    status.textContent = 'Token error: ' + e.message;
+    return;
+  }
+
+  const fullUrl = buildGuestUrl(room, guestToken);
+  status.textContent = 'Shortening link…';
+
+  let finalLink = fullUrl;
+  let shortened = false;
+  try {
+    finalLink = await shortenUrl(fullUrl, room);
+    shortened = true;
+  } catch(e) {
+    /* all named aliases taken — show full URL */
+  }
+
+  S._guestLink = finalLink;
+  const display = document.getElementById('plan-link-display');
+  if (display) display.textContent = finalLink;
+  status.textContent = shortened ? '' : '⚠️ Short link aliases taken — full link shown. Copy still works.';
+  result.style.display = '';
+  status.textContent = '';
+}
+
+function copyPlanLink(e) {
+  const link = document.getElementById('plan-link-display')?.textContent;
+  if (!link) return;
+  navigator.clipboard.writeText(link).then(() => {
+    const btn = e.target;
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 1800);
+  });
+}
+
+function setLocation(loc) {
+  S.location = loc;
+  /* Close planner if a real location is chosen */
+  const p = document.getElementById('link-planner');
+  if (p) p.style.display = 'none';
+  document.querySelectorAll('.choice-card').forEach((c, i) => {
+    c.classList.toggle('selected', (i === 0 && loc === 'studio') || (i === 1 && loc === 'home'));
+  });
+  updateNav();
+}
+
+function renderHomePlaceholder() {
+  return `
+  <div style="text-align:center;padding:40px 20px">
+    <div style="font-size:54px;margin-bottom:14px">🏠</div>
+    <div style="font-size:20px;font-weight:700;margin-bottom:10px">Home Recording</div>
+    <div style="color:var(--muted);line-height:1.7;font-size:14px;max-width:380px;margin:0 auto">
+      The home recording workflow is coming soon. Check back later for step-by-step guidance for recording from home.
+    </div>
+    <button class="btn btn-ghost" onclick="S.location=null; S.step=0; render();"
+            style="margin-top:24px">← Choose a different location</button>
+  </div>`;
+}
+
+/* =============================================================
+   STEP 1 — CONNECT
+   ============================================================= */
+function renderStep0() {
+  return `
+  <div>
+    <div class="step-title">Step 1 — Connect to the Dock</div>
+    <div class="step-sub">Before anything else, plug into the room's equipment.</div>
+
+    <div class="hero-area">
+      <svg width="180" height="90" viewBox="0 0 180 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Laptop body -->
+        <rect x="4" y="18" width="58" height="40" rx="4" fill="#252930" stroke="#4f8ef7" stroke-width="1.5"/>
+        <rect x="8" y="22" width="50" height="30" rx="2" fill="#1c1f26"/>
+        <rect x="1"  y="58" width="64" height="7" rx="3.5" fill="#2d3748"/>
+        <!-- USB-C plug on laptop -->
+        <rect x="59" y="35" width="10" height="6" rx="3" fill="#4f8ef7"/>
+        <!-- Cable -->
+        <path d="M69,38 Q90,38 90,38" stroke="#4f8ef7" stroke-width="3.5" stroke-linecap="round"/>
+        <!-- USB-C plug on dock -->
+        <rect x="88" y="35" width="10" height="6" rx="3" fill="#4f8ef7"/>
+        <!-- Dock -->
+        <rect x="96" y="22" width="80" height="42" rx="6" fill="#252930" stroke="#4f8ef7" stroke-width="1.5"/>
+        <!-- Dock ports -->
+        <rect x="104" y="34" width="16" height="8" rx="4" fill="#2d3748" stroke="#4f8ef7" stroke-width="1"/>
+        <rect x="126" y="34" width="12" height="8" rx="4" fill="#2d3748" stroke="#3a4a60" stroke-width="1"/>
+        <rect x="144" y="34" width="12" height="8" rx="4" fill="#2d3748" stroke="#3a4a60" stroke-width="1"/>
+        <!-- LED -->
+        <circle cx="164" cy="38" r="4" fill="#22c55e" opacity="0.9"/>
+        <!-- Arrow -->
+        <path d="M80 28 L90 38 L80 48" stroke="#22c55e" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div class="checklist">
+      ${crow(1, 0, 'Plug in the USB-C cable', 'Connect your laptop to the self-service dock — this activates the Nexigo camera and Rode microphone')}
+    </div>
+
+    <div class="info-box">
+      <strong>Where to find it:</strong> The USB-C dock cable is on the desk. Once connected, your computer will detect the room's camera and microphone automatically.
+    </div>
+  </div>`;
+}
+
+/* =============================================================
+   STEP 2 — PREPARE
+   ============================================================= */
+function renderStep1() {
+  return `
+  <div>
+    <div class="step-title">Step 2 — Prepare Your Space</div>
+    <div class="step-sub">Eliminate interruptions before you start. Check off each item.</div>
+    <div class="checklist">
+      ${crow(2, 0, 'Close Outlook', 'Prevents notification sounds and pop-ups during recording')}
+      ${crow(2, 1, 'Close Webex', 'Avoids incoming call interruptions')}
+      ${crow(2, 2, 'Phone on Do Not Disturb', 'Silences calls, texts, and lock-screen notifications')}
+    </div>
+  </div>`;
+}
+
+/* =============================================================
+   STEP 4 — CAMERA & LIGHTS
+   ============================================================= */
+function renderStep2(el) {
+  el.innerHTML = `
+  <div>
+    <div class="step-title">Step 4 — Camera Position &amp; Lights</div>
+    <div class="step-sub">Fit yourself inside the silhouette. Your eyes should meet the blue guide line.</div>
+
+    <div class="vid-wrap">
+      <video id="step2-video" autoplay playsinline muted></video>
+      <div class="vid-overlay">
+        <img src="guideline.png" style="width:100%;height:100%;object-fit:cover;mix-blend-mode:screen;opacity:0.85;" alt="">
+      </div>
+      <div class="cam-loading" id="cam-loading">
+        <div class="spinner"></div>
+        <span>Starting camera…</span>
+      </div>
+    </div>
+
+    <div class="checklist">
+      ${crow(4, 0, 'Ring lights are ON', 'Turn on the room\'s ring lights')}
+      ${crow(4, 1, 'Overhead lights are OFF', 'Overhead lights cause harsh shadows and overexposure')}
+    </div>
+
+    <div class="info-box" style="margin-top:14px">
+      <strong>Positioning:</strong> Adjust your chair and camera so your head fits inside the dashed outline, with your eyes on the blue line. Your shoulders should be clearly visible.
+    </div>
+  </div>`;
+
+  bindChecks(el);
+  initStream();
+}
+
+/* ── Silhouette SVG overlay ── */
+function silhouetteSVG() {
+  const s  = 'rgba(255,255,255,0.65)';
+  const s2 = 'rgba(255,255,255,0.3)';
+  const bl = 'rgba(79,142,247,0.9)';
+  return `
+  <svg viewBox="0 0 200 340" xmlns="http://www.w3.org/2000/svg"
+       style="height:88%;filter:drop-shadow(0 0 12px rgba(0,0,0,0.55))">
+    <!-- head -->
+    <ellipse cx="100" cy="68" rx="37" ry="45"
+             fill="none" stroke="${s}" stroke-width="2.5" stroke-dasharray="7 4"/>
+    <!-- neck -->
+    <path d="M87,111 L87,130 L113,130 L113,111"
+          fill="none" stroke="${s}" stroke-width="2.5"/>
+    <!-- shoulders -->
+    <path d="M4,170 C30,134 66,124 87,130 L113,130 C134,124 170,134 196,170"
+          fill="none" stroke="${s}" stroke-width="2.5" stroke-dasharray="7 4"/>
+    <!-- body sides (faded) -->
+    <path d="M4,170 L16,336"   stroke="${s2}" stroke-width="1.5" stroke-dasharray="5 5"/>
+    <path d="M196,170 L184,336" stroke="${s2}" stroke-width="1.5" stroke-dasharray="5 5"/>
+    <!-- centre guide -->
+    <line x1="100" y1="10" x2="100" y2="336"
+          stroke="rgba(255,255,255,0.08)" stroke-width="1" stroke-dasharray="5 7"/>
+    <!-- eye-level markers -->
+    <line x1="50" y1="60" x2="80" y2="60" stroke="${bl}" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="120" y1="60" x2="150" y2="60" stroke="${bl}" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="100" y="15" text-anchor="middle" fill="${bl}"
+          font-size="9.5" font-family="-apple-system,sans-serif" font-weight="700"
+          letter-spacing="0.06em">EYE LEVEL</text>
+  </svg>`;
+}
+
+/* ── Camera / stream init ── */
+async function initStream() {
+  /* If stream already running, ensure devices are enumerated then reattach */
+  if (S.stream) {
+    if (!S.dev.allVideo.length) {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      S.dev.allAudio = devices.filter(d => d.kind === 'audioinput');
+      S.dev.allVideo = devices.filter(d => d.kind === 'videoinput');
+    }
+    setTimeout(() => {
+      attachStream('step3-video');
+      attachStream('step2-video');
+      const ld = document.getElementById('cam-loading');
+      if (ld) ld.style.display = 'none';
+    }, 60);
+    return;
+  }
+
+  try {
+    /* Step 1: acquire video and audio independently so a failing virtual
+       camera doesn't block the microphone (and vice versa). */
+    async function tryGetTrack(constraints, retries = 2) {
+      for (let i = 0; i <= retries; i++) {
+        if (i > 0) await new Promise(r => setTimeout(r, i * 800));
+        try { return await navigator.mediaDevices.getUserMedia(constraints); }
+        catch(e) {
+          if (e.name !== 'NotReadableError' && e.name !== 'TrackStartError') throw e;
+        }
+      }
+      return null;
+    }
+
+    const ld = document.getElementById('cam-loading');
+
+    /* Get video track — try 1080p first, fall back to 720p, then any */
+    if (ld) { const sp = ld.querySelector('span'); if (sp) sp.textContent = 'Starting camera…'; }
+    const videoStream =
+      await tryGetTrack({ video: { width:{ideal:1920}, height:{ideal:1080}, frameRate:{ideal:30} }, audio: false }) ||
+      await tryGetTrack({ video: { width:{ideal:1280}, height:{ideal:720},  frameRate:{ideal:30} }, audio: false }) ||
+      await tryGetTrack({ video: true, audio: false });
+
+    /* Get audio track */
+    if (ld) { const sp = ld.querySelector('span'); if (sp) sp.textContent = 'Starting microphone…'; }
+    const audioStream = await tryGetTrack({ video: false, audio: true });
+
+    /* Need at least one to proceed */
+    if (!videoStream && !audioStream) throw new Error('Could not access camera or microphone.');
+
+    /* Enumerate devices — labels are available now that permission was granted */
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    S.dev.allAudio = devices.filter(d => d.kind === 'audioinput');
+    S.dev.allVideo = devices.filter(d => d.kind === 'videoinput');
+    S.dev.rode   = devices.find(d => d.kind === 'audioinput' && d.label.toLowerCase().includes('rode'));
+    S.dev.nexigo = devices.find(d => d.kind === 'videoinput' &&
+      (d.label.toLowerCase().includes('nexigo') || d.label.toLowerCase().includes('n970')));
+
+    /* Combine into one stream */
+    const tracks = [
+      ...(videoStream ? videoStream.getVideoTracks() : []),
+      ...(audioStream ? audioStream.getAudioTracks() : []),
+    ];
+    const stream = new MediaStream(tracks);
+    S.stream = stream;
+
+    const vt = stream.getVideoTracks()[0];
+    const at = stream.getAudioTracks()[0];
+    S.dev.curVideoId = vt?.getSettings().deviceId;
+    S.dev.curAudioId = at?.getSettings().deviceId;
+
+    S.devOk = !!(S.dev.nexigo && S.dev.rode &&
+                 S.dev.curVideoId === S.dev.nexigo.deviceId &&
+                 S.dev.curAudioId === S.dev.rode.deviceId);
+
+    attachStream('step2-video');
+    startAudioMon();
+
+  } catch (err) {
+    console.error(err);
+    const ld = document.getElementById('cam-loading');
+    if (!ld) return;
+
+    /* Show the real error name so it's actionable */
+    let msg = 'Could not access camera or microphone.';
+    let hint = 'Check your browser\'s site permissions and try again.';
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      msg  = 'Permission denied.';
+      hint = 'Click the camera icon in your browser\'s address bar and choose <strong>Allow</strong>, then reload the page.';
+    } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+      msg  = 'No camera or microphone found.';
+      hint = 'Make sure the USB-C dock is plugged in, then reload.';
+    } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+      msg  = 'Camera could not be opened.';
+      hint = 'This usually means the page was opened directly from a file. ' +
+             '<strong>Double-click <code>start-server.bat</code></strong> (Windows) or ' +
+             '<strong><code>start-server.command</code></strong> (Mac) to launch the app correctly — ' +
+             'this also fixes the repeated permission prompt. ' +
+             'If you\'re already using the server, close Webex/Zoom and try again.';
+    }
+
+    ld.innerHTML = `
+      <div style="text-align:center;padding:14px 20px">
+        <div style="font-size:28px;margin-bottom:8px">⚠️</div>
+        <div style="color:var(--danger);font-weight:600;margin-bottom:6px">${msg}</div>
+        <div style="color:var(--muted);font-size:13px;line-height:1.5">${hint}</div>
+        <button class="btn btn-ghost" onclick="location.reload()"
+                style="margin-top:14px;font-size:13px">↺ Reload page</button>
+      </div>`;
+  }
+}
+
+function attachStream(id) {
+  const el = document.getElementById(id);
+  if (!el || !S.stream) return;
+  /* For the recording preview, use the canvas output if a bg effect is active
+     so what you see in the preview is exactly what gets recorded. */
+  const useCanvas = _previewEffect && _previewEffect._outStream && id === 'rec-video';
+  el.srcObject = useCanvas ? _previewEffect._outStream : S.stream;
+  el.onloadedmetadata = () => {
+    const ld = document.getElementById('cam-loading');
+    if (ld) ld.style.display = 'none';
+  };
+}
+
+/* Returns the best stream to record from locally:
+   canvas video (bg applied) + raw audio if a background effect is active,
+   otherwise the plain camera stream. */
+function getRecordingStream() {
+  if (_previewEffect && _previewEffect._outStream && S.stream) {
+    const videoTrack = _previewEffect._outStream.getVideoTracks()[0];
+    const audioTrack = S.stream.getAudioTracks()[0];
+    const tracks = [];
+    if (videoTrack) tracks.push(videoTrack);
+    if (audioTrack) tracks.push(audioTrack);
+    return tracks.length ? new MediaStream(tracks) : S.stream;
+  }
+  return S.stream;
+}
+
+function startAudioMon() {
+  if (!S.stream || S.audioCtx) return;
+  try {
+    S.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const src = S.audioCtx.createMediaStreamSource(S.stream);
+    S.analyser = S.audioCtx.createAnalyser();
+    S.analyser.fftSize = 512;
+    src.connect(S.analyser);
+    rafAudio();
+  } catch(e) { console.warn('Audio monitor:', e); }
+}
+
+function rafAudio() {
+  S.rafId = requestAnimationFrame(rafAudio);
+  if (!S.analyser) return;
+  const buf = new Uint8Array(S.analyser.frequencyBinCount);
+  S.analyser.getByteFrequencyData(buf);
+  const avg = buf.reduce((a, b) => a + b, 0) / buf.length;
+  const pct = Math.min(100, Math.max(2, (avg / 72) * 100));
+  const bar = document.getElementById('audio-fill');
+  if (bar) bar.style.width = pct + '%';
+}
+
+/* =============================================================
+   STEP 3 — CHECK EQUIPMENT (studio step 3)
+   ============================================================= */
+function renderStep3(el, devicesReady = false) {
+  /* Recalculate devOk */
+  S.devOk = !!(S.dev.nexigo && S.dev.rode &&
+               S.dev.curVideoId === S.dev.nexigo.deviceId &&
+               S.dev.curAudioId === S.dev.rode.deviceId);
+
+  /* Three states per device:
+     active  = found AND currently streaming from it  → green
+     found   = in device list but a different device is active → yellow + Switch button
+     missing = not in device list at all               → red + dropdown */
+  const nexigoActive = !!(S.dev.nexigo && S.dev.curVideoId === S.dev.nexigo.deviceId);
+  const rodeActive   = !!(S.dev.rode   && S.dev.curAudioId === S.dev.rode.deviceId);
+  const nexigoFound  = !!S.dev.nexigo;
+  const rodeFound    = !!S.dev.rode;
+
+  const curVidLabel = S.dev.allVideo.find(d => d.deviceId === S.dev.curVideoId)?.label || 'Unknown';
+  const curAudLabel = S.dev.allAudio.find(d => d.deviceId === S.dev.curAudioId)?.label || 'Unknown';
+
+  function devRow(title, active, found, activeLabel, foundLabel, selId, allDevices) {
+    if (active) return `
+      <div class="dev-row">
+        <div class="sdot green"></div>
+        <div class="dev-info">
+          <div class="dev-name">${title} &nbsp;<span style="color:var(--success)">✓ Active</span></div>
+          <div class="dev-sub">${foundLabel}</div>
+        </div>
+      </div>`;
+    if (found) return `
+      <div class="dev-row">
+        <div class="sdot yellow"></div>
+        <div class="dev-info">
+          <div class="dev-name">${title} &nbsp;<span style="color:var(--warn)">⚠ Not active</span></div>
+          <div class="dev-sub">Active: ${activeLabel} &nbsp;·&nbsp; ${foundLabel} available</div>
+        </div>
+        <button class="btn btn-ghost" onclick="switchToRecommended()"
+                style="font-size:12px;padding:5px 10px;flex-shrink:0">Switch ↺</button>
+      </div>`;
+    return `
+      <div class="dev-row">
+        <div class="sdot red"></div>
+        <div class="dev-info">
+          <div class="dev-name">${title} &nbsp;<span style="color:var(--danger)">⚠ Not detected</span></div>
+          <div class="dev-sub">Active: ${activeLabel}</div>
+        </div>
+        <select class="dev-sel" id="${selId}" onchange="manualDevice()">
+          <option value="">Pick device…</option>
+          ${allDevices.map(d=>`<option value="${d.deviceId}">${d.label||d.deviceId.slice(0,8)}</option>`).join('')}
+        </select>
+      </div>`;
+  }
+
+  const allOk = nexigoActive && rodeActive;
+
+  el.innerHTML = `
+  <div>
+    <div class="step-title">Step 3 — Check Equipment</div>
+    <div class="step-sub">Confirm your devices, check lighting, and close any extra browser tabs.</div>
+
+    <!-- DEVICES -->
+    <div class="sec-label">Devices</div>
+
+    ${devRow('Camera — Nexigo N970P', nexigoActive, nexigoFound, curVidLabel,
+             S.dev.nexigo?.label || '', 'sel-video', S.dev.allVideo)}
+    ${devRow('Microphone — Rode', rodeActive, rodeFound, curAudLabel,
+             S.dev.rode?.label   || '', 'sel-audio', S.dev.allAudio)}
+
+    ${!allOk ? `<div class="info-box" style="border-color:rgba(239,68,68,0.35);background:rgba(239,68,68,0.07);margin-bottom:4px">
+      ${(nexigoFound || rodeFound) && !(nexigoActive && rodeActive)
+        ? `<strong style="color:var(--warn)">Preferred devices found but not active.</strong>
+           Click <strong>Switch ↺</strong> to activate them, or
+           <a href="javascript:redetect()" style="color:var(--accent);text-decoration:underline">re-scan</a> if they just appeared.`
+        : `<strong style="color:var(--danger)">Devices not detected.</strong>
+           Make sure the USB-C dock is plugged in, then
+           <a href="javascript:redetect()" style="color:var(--accent);text-decoration:underline">re-scan devices</a>.`}
+    </div>` : ''}
+
+    <!-- AUDIO TEST -->
+    <div class="sec-label" style="margin-top:${allOk?'18':'10'}px">Microphone Test — Speak Now</div>
+    <div class="card">
+      <div class="meter-track">
+        <div class="meter-fill" id="audio-fill"></div>
+        <div class="meter-lbl">🎙 Say something to test your mic…</div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:7px">
+        The bar should react when you speak. Green = good level &nbsp;·&nbsp; Red = too loud.
+      </div>
+    </div>
+
+    <!-- LIGHTING -->
+    <div class="sec-label">Lighting Check</div>
+    <div class="card">
+      <div class="vid-wrap" style="margin-bottom:12px">
+        <video id="step3-video" autoplay playsinline muted></video>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="checkBrightness()" style="font-size:13px">☀️ Analyze Lighting</button>
+        <div id="bright-out" style="flex:1">
+          ${S.brightness ? brightHtml(S.brightness) : '<span style="font-size:13px;color:var(--muted)">Click to analyze your current lighting</span>'}
+        </div>
+      </div>
+    </div>
+
+    <!-- CHROME TABS -->
+    <div class="sec-label">Final Prep</div>
+    <div class="checklist">
+      <div class="check-row${S.chromeClosed?' on':''}" id="chrome-row" onclick="toggleChrome()">
+        <div class="cbox" id="chrome-cbox">${S.chromeClosed?'✓':''}</div>
+        <div>
+          <div class="crow-title">Close all unnecessary browser tabs</div>
+          <div class="crow-desc">Reduces distractions and prevents notification sounds</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  if (devicesReady) {
+    /* Devices are known — just attach the stream */
+    attachStream('step3-video');
+  } else {
+    /* First render: start init, then re-render once devices are enumerated */
+    initStream().then(() => {
+      const container = document.getElementById('content');
+      if (container && S.step === 3 && S.location === 'studio') renderStep3(container, true);
+      if (container && S.step === 3 && S.location === 'home')   renderHomeStep3(container, true);
+    });
+  }
+  updateNav();
+}
+
+function toggleChrome() {
+  S.chromeClosed = !S.chromeClosed;
+  document.getElementById('chrome-row')?.classList.toggle('on', S.chromeClosed);
+  const b = document.getElementById('chrome-cbox');
+  if (b) b.textContent = S.chromeClosed ? '✓' : '';
+}
+
+async function redetect() {
+  if (S.stream) { S.stream.getTracks().forEach(t => t.stop()); S.stream = null; }
+  if (S.audioCtx) { S.audioCtx.close(); S.audioCtx = null; S.analyser = null; }
+  S.dev.rode = null; S.dev.nexigo = null;
+  await initStream();
+  renderStep3(document.getElementById('content'));
+}
+
+/* Switch to the preferred Nexigo/Rode devices — called by the "Switch ↺" button */
+async function switchToRecommended() {
+  const vid = S.dev.nexigo?.deviceId || S.dev.curVideoId;
+  const aud = S.dev.rode?.deviceId   || S.dev.curAudioId;
+  await applyDeviceSwitch(vid, aud);
+}
+
+/* Manual dropdown selection — called by onchange on the select elements */
+async function manualDevice() {
+  const vs = document.getElementById('sel-video');
+  const as = document.getElementById('sel-audio');
+  const vid = vs?.value || S.dev.nexigo?.deviceId;
+  const aud = as?.value || S.dev.rode?.deviceId;
+  if (!vid && !aud) return;
+  await applyDeviceSwitch(vid, aud);
+}
+
+async function applyDeviceSwitch(vid, aud) {
+  const oldStream = S.stream;
+  let newStream, usedExact = false;
+  try {
+    /* exact = forces the specific device (needed for virtual cameras like Nvidia Broadcast) */
+    try {
+      newStream = await navigator.mediaDevices.getUserMedia({
+        video: vid ? { deviceId: { exact: vid } } : true,
+        audio: aud ? { deviceId: { exact: aud } } : true,
+      });
+      usedExact = true;
+    } catch(exactErr) {
+      if (exactErr.name !== 'OverconstrainedError' && exactErr.name !== 'NotFoundError') throw exactErr;
+      /* Fall back to ideal for regular cameras that reject exact constraints */
+      newStream = await navigator.mediaDevices.getUserMedia({
+        video: vid ? { deviceId: { ideal: vid } } : true,
+        audio: aud ? { deviceId: { ideal: aud } } : true,
+      });
+    }
+
+    if (oldStream) oldStream.getTracks().forEach(t => t.stop());
+    S.stream = newStream;
+
+    const vt = S.stream.getVideoTracks()[0];
+    const at = S.stream.getAudioTracks()[0];
+    /* Virtual cameras (Nvidia Broadcast) report a different deviceId from getSettings(),
+       so trust the requested ID when exact succeeded. For ideal fallbacks use getSettings(). */
+    if (vt) { S.dev.curVideoId = usedExact ? vid : (vt.getSettings().deviceId || vid); if (!S.dev.nexigo) S.dev.nexigo = { deviceId: S.dev.curVideoId, label: vt.label }; }
+    if (at) { S.dev.curAudioId = usedExact ? aud : (at.getSettings().deviceId || aud); if (!S.dev.rode)   S.dev.rode   = { deviceId: S.dev.curAudioId, label: at.label }; }
+    S.devOk = !!(S.dev.nexigo && S.dev.curVideoId === S.dev.nexigo.deviceId &&
+                 S.dev.rode   && S.dev.curAudioId === S.dev.rode.deviceId);
+    if (S.audioCtx) { S.audioCtx.close(); S.audioCtx = null; S.analyser = null; }
+    startAudioMon();
+    if (S.location !== 'home') renderStep3(document.getElementById('content'), true);
+  } catch(e) {
+    console.error(e);
+    alert('Could not switch to that device.\n\n' + e.name + ': ' + e.message);
+  }
+}
+
+function checkBrightness() {
+  /* If a virtual background effect is running, read from its raw source video
+     so the analysis sees your actual face, not the composited background. */
+  const rawSrc = (_previewEffect && _previewEffect._video)
+    ? _previewEffect._video
+    : (document.getElementById('step3-video') || document.getElementById('step2-video'));
+  if (!rawSrc || !S.stream) return;
+
+  /* W must be divisible by 3 for clean column boundaries — sample at 720p */
+  const W = 1281, H = 720;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+  /* Mirror the draw to match the flipped preview (CSS scaleX(-1) doesn't
+     carry through to canvas, so we flip manually to keep left/right labels
+     correct from the user's point of view) */
+  ctx.translate(W, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(rawSrc, 0, 0, W, H);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+  /* Sample a 3×3 grid — 1281×720 is divisible by 3 in both axes (427×240 per cell) */
+  const px = ctx.getImageData(0, 0, W, H).data;
+  const cw = W / 3, rh = H / 3;
+  const sum = [[0,0,0],[0,0,0],[0,0,0]];
+  const cnt = [[0,0,0],[0,0,0],[0,0,0]];
+  for (let y = 0; y < H; y++) {
+    const row = Math.min(2, Math.floor(y / rh));
+    for (let x = 0; x < W; x++) {
+      const cc  = Math.min(2, Math.floor(x / cw));
+      const i   = (y * W + x) * 4;
+      sum[row][cc] += 0.2126 * px[i] + 0.7152 * px[i+1] + 0.0722 * px[i+2];
+      cnt[row][cc]++;
+    }
+  }
+  const avg = sum.map((row, r) => row.map((s, cc) => s / cnt[r][cc]));
+
+  /* Person sits in the middle cell */
+  const M = avg[1][1];
+
+  /* Human-readable labels for each of the 9 cells */
+  const LABELS = [
+    ['upper left corner', 'top of the frame',   'upper right corner'],
+    ['left side',         'center',              'right side'],
+    ['lower left corner', 'bottom of the frame', 'lower right corner'],
+  ];
+  const cells = [];
+  for (let r = 0; r < 3; r++)
+    for (let cc = 0; cc < 3; cc++)
+      cells.push({ r, cc, lum: avg[r][cc], label: LABELS[r][cc], isCenter: r===1 && cc===1 });
+
+  const bg       = cells.filter(cell => !cell.isCenter);
+  const maxBg    = bg.reduce((a, b) => a.lum > b.lum ? a : b);
+  const spread   = maxBg.lum - bg.reduce((a, b) => a.lum < b.lum ? a : b).lum;
+  const hotDelta = maxBg.lum - M;
+
+  function rate(lum) {
+    if (lum < 42)  return -2;
+    if (lum < 66)  return -1;
+    if (lum > 212) return  2;
+    if (lum > 188) return  1;
+    return 0;
+  }
+  const rM = rate(M);
+
+  function intensityWord(delta) {
+    if (delta > 80) return 'a lot brighter';
+    if (delta > 50) return 'noticeably brighter';
+    return 'a bit brighter';
+  }
+
+  /* Region-specific casual hint — tells the user what's likely causing it */
+  function hotHint(cell) {
+    const { r, cc } = cell;
+    if (r === 0 && cc === 0) return 'Looks like a window or overhead light up high on your left — closing the blind or scooting slightly right should even it out.';
+    if (r === 0 && cc === 1) return 'Probably an overhead light or a high window directly behind you — try closing the blind or tilting your camera angle down a touch.';
+    if (r === 0 && cc === 2) return 'Looks like a window or overhead light up high on your right — closing the blind or scooting slightly left should help.';
+    if (r === 1 && cc === 0) return 'There\'s likely a lamp or window on your left throwing extra light in. Try closing that blind or moving the lamp behind your camera instead.';
+    if (r === 1 && cc === 2) return 'There\'s likely a lamp or window on your right throwing extra light in. Try closing that blind or moving the lamp behind your camera instead.';
+    if (r === 2 && cc === 0) return 'Looks like stray light is hitting the lower left — could be a floor lamp or light bouncing off your desk on that side.';
+    if (r === 2 && cc === 1) return 'Light might be bouncing up from your desk or the floor. A darker surface under your setup or raising your light source should help.';
+    if (r === 2 && cc === 2) return 'Looks like stray light is hitting the lower right — could be a floor lamp or light bouncing off your desk on that side.';
+    return 'Try balancing your room lighting a bit.';
+  }
+
+  let cls, icon, title, sub;
+
+  if (Math.abs(rM) === 2) {
+    cls  = 'error';
+    icon = rM < 0 ? '🌑' : '🌟';
+    if (rM < 0) {
+      title = 'Your face is too dark';
+      sub   = 'It\'s pretty hard to see you clearly from here. A light pointing at your face from the front — even a desk lamp — would make a big difference.';
+    } else {
+      title = 'You\'re a bit washed out';
+      sub   = 'The light hitting you is too intense. Try moving it back, turning it down, or angling it slightly off to the side so it\'s not aimed straight at your face.';
+    }
+    if (spread > 55) sub += ' On top of that, the ' + maxBg.label + ' is ' + intensityWord(hotDelta) + ' than the rest — ' + hotHint(maxBg).charAt(0).toLowerCase() + hotHint(maxBg).slice(1);
+
+  } else if (Math.abs(rM) === 1) {
+    cls  = spread > 55 ? 'warn' : 'warn-mild';
+    icon = rM < 0 ? '🌒' : '🌤';
+    if (rM < 0) {
+      title = 'You\'re a little underlit';
+      sub   = 'You look slightly dim — bumping up your light or moving it a bit closer should do it. You don\'t need much more.';
+    } else {
+      title = 'You\'re slightly overexposed';
+      sub   = 'You look a touch bright. Pulling the light back just a little or reducing its intensity should fix it.';
+    }
+    if (spread > 55) sub += ' Also, the ' + maxBg.label + ' is ' + intensityWord(hotDelta) + ' than the rest. ' + hotHint(maxBg);
+
+  } else if (spread > 65) {
+    cls  = 'warn-mild';
+    icon = '🌓';
+    title = 'Your face looks good — but the background\'s a little uneven';
+    sub   = 'The ' + maxBg.label + ' is ' + intensityWord(hotDelta) + ' than the center of the frame. ' + hotHint(maxBg);
+
+  } else if (spread > 35 && hotDelta > 25) {
+    cls  = 'info';
+    icon = '💡';
+    title = 'Looking good';
+    const hint = hotHint(maxBg);
+    sub   = 'The ' + maxBg.label + ' is ' + intensityWord(hotDelta) + ' than the rest, but it\'s subtle and won\'t hurt your recording. '
+          + 'If you want it more even: ' + hint.charAt(0).toLowerCase() + hint.slice(1);
+
+  } else {
+    cls  = 'good';
+    icon = '✅';
+    title = 'Lighting looks great!';
+    sub   = 'Even and well-lit all the way across (left ' + Math.round(avg[1][0])
+          + ' · center ' + Math.round(M) + ' · right ' + Math.round(avg[1][2]) + ').';
+  }
+
+  S.brightnessVal = M;
+  S.brightness    = cls === 'error' ? (rM < 0 ? 'dark' : 'bright') : 'good';
+
+  const out = document.getElementById('bright-out');
+  if (out) out.innerHTML = brightHtml(cls, icon, title, sub);
+  updateNav();
+}
+
+function brightHtml(cls, icon, title, sub) {
+  /* Legacy single-arg calls (e.g. re-render from saved S.brightness) */
+  if (arguments.length === 1) {
+    const MAP = {
+      good:   ['good',  '✅', 'Lighting looks great!',    'Well-lit and not overexposed.'],
+      dark:   ['error', '🌑', 'Your face is too dark',    'Bring a light source closer and point it at your face.'],
+      bright: ['error', '🌟', 'Your face is overexposed', 'Reduce light intensity or move the source further back.'],
+    };
+    [cls, icon, title, sub] = MAP[cls] || MAP.good;
+  }
+  return '<div class="bright-result ' + cls + '">'
+       + '<span class="bright-icon">' + icon + '</span>'
+       + '<div><div class="bright-title">' + title + '</div>'
+       + '<div class="bright-sub">' + sub + '</div></div></div>';
+}
+
+/* =============================================================
+   STEP 5 — RECORDING MODE
+   ============================================================= */
+function renderStep4() {
+  return `
+  <div>
+    <div class="step-title">Step 5 — How Are You Recording?</div>
+    <div class="step-sub">Using a virtual call or external app? Or record right here?</div>
+
+    <div class="choice-grid">
+      <div class="choice-card${S.mode==='virtual'?' selected':''}" onclick="setMode('virtual')">
+        <div class="choice-icon">🎥</div>
+        <div class="choice-title">Virtual Call or Other App</div>
+        <div class="choice-desc">Zoom, Webex, Camtasia, etc.<br>I'll record somewhere else.</div>
+      </div>
+      <div class="choice-card${S.mode==='local'?' selected':''}" onclick="setMode('local')">
+        <div class="choice-icon">⏺</div>
+        <div class="choice-title">Record Here</div>
+        <div class="choice-desc">Use this app with a built-in teleprompter.</div>
+      </div>
+      <div class="choice-card${S.mode==='jitsi'?' selected':''}" onclick="setMode('jitsi')">
+        <div class="choice-icon">🤝</div>
+        <div class="choice-title">Video Call with Remote Guest</div>
+        <div class="choice-desc">Host a live call right in this app via Jitsi Meet.</div>
+      </div>
+    </div>
+
+    <div id="mode-msg" style="margin-top:18px">${S.mode ? modeMsgHtml(S.mode) : ''}</div>
+  </div>`;
+}
+
+function setMode(m) {
+  S.mode = m;
+  if (m === 'jitsi' && !S.jitsiRoom) S.jitsiRoom = generateRoom();
+  document.querySelectorAll('.choice-card').forEach((c, i) => {
+    c.classList.toggle('selected', (i===0 && m==='virtual') || (i===1 && m==='local') || (i===2 && m==='jitsi'));
+  });
+  const msg = document.getElementById('mode-msg');
+  if (msg) msg.innerHTML = modeMsgHtml(m);
+  updateNav();
+}
+
+function modeMsgHtml(m) {
+  if (m === 'virtual') {
+    const vidLabel = S.dev.allVideo.find(d => d.deviceId === S.dev.curVideoId)?.label || 'your camera';
+    const audLabel = S.dev.allAudio.find(d => d.deviceId === S.dev.curAudioId)?.label || 'your microphone';
+    return `<div style="text-align:center;padding:26px 16px;background:var(--surf);border:1px solid var(--success);border-radius:var(--radius)">
+      <div style="font-size:54px;margin-bottom:10px">🎉</div>
+      <div style="font-size:21px;font-weight:700;margin-bottom:8px">You're all set!</div>
+      <div style="color:var(--muted);line-height:1.7;font-size:14px">
+        Your camera is <strong style="color:var(--text)">${vidLabel}</strong> and
+        your microphone is <strong style="color:var(--text)">${audLabel}</strong>.<br>
+        Close this app and open your recording software. Good luck!
+      </div>
+    </div>`;
+  }
+  if (m === 'jitsi') {
+    return `<div class="info-box">
+      <strong>Room name</strong>
+      <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+        <input id="room-name-input" value="${S.jitsiRoom}"
+               oninput="S.jitsiRoom=this.value.trim()||S.jitsiRoom"
+               style="flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px"/>
+        <button class="btn btn-ghost" onclick="regenerateRoom()" style="font-size:12px;padding:5px 10px;flex-shrink:0">↺ New</button>
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:var(--muted)">
+        A secure guest link (with access token) will be generated and displayed when the call launches.
+      </div>
+    </div>`;
+  }
+  return `<div class="info-box">
+    <strong>Next up:</strong> Paste your script into the teleprompter, drag the window close to the camera, then hit Record.
+  </div>`;
+}
+
+/* =============================================================
+   STEP 6 — RECORD + TELEPROMPTER
+   ============================================================= */
+function renderStep5() {
+  return `
+  <div>
+    <div class="step-title">Step 6 — Record Your Video</div>
+    <div class="step-sub">Load your script, open the teleprompter near the camera, then press record.</div>
+
+    <div class="vid-wrap">
+      <video id="rec-video" autoplay playsinline muted></video>
+      <div class="rec-badge" id="rec-badge" style="display:none">
+        <div class="rec-dot"></div> REC
+      </div>
+    </div>
+
+    <div class="sec-label">Your Script</div>
+    <textarea class="script-ta" id="script-ta"
+      placeholder="Paste or type your script here…&#10;The teleprompter window will scroll it for you at adjustable speed."></textarea>
+
+    <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center">
+      <button class="btn btn-ghost" onclick="openPrompter()">📺 Open Teleprompter</button>
+      <button class="btn btn-primary" id="btn-rec" onclick="toggleRec()">⏺ Start Recording</button>
+    </div>
+
+    <div id="rec-status" style="margin-top:13px"></div>
+
+    <div class="info-box" style="margin-top:6px">
+      <strong>Tip:</strong> After opening the teleprompter, drag that window so it sits just below or beside your camera lens — this keeps your eyes close to the lens while you read your script.
+    </div>
+  </div>`;
+}
+
+/* ── Teleprompter popup ── */
+function openPrompter() {
+  const script = document.getElementById('script-ta')?.value || '';
+  if (S.prompter && !S.prompter.closed) { S.prompter.focus(); return; }
+
+  const w = window.open('', 'Teleprompter',
+    'width=720,height=300,resizable=yes,toolbar=no,menubar=no,scrollbars=no,status=no');
+  if (!w) { alert('Popup blocked — please allow popups for this page and try again.'); return; }
+  S.prompter = w;
+
+  const safe = script
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\n/g,'<br>');
+
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Teleprompter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;color:#fff;font-family:Georgia,serif;
+  height:100vh;display:flex;flex-direction:column;overflow:hidden;user-select:none}
+#bar{padding:7px 14px;background:#111;display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid #222;flex-shrink:0}
+#bar button{padding:5px 14px;border:none;border-radius:6px;font-size:13px;
+  font-weight:700;cursor:pointer;background:#2a2a2a;color:#fff;transition:background .15s}
+#bar button.go{background:#22c55e;color:#000}
+#bar input[type=range]{width:72px;cursor:pointer;accent-color:#22c55e}
+#bar label{font-size:12px;color:#666}
+.hint{margin-left:auto;font-size:11px;color:#444}
+#scroll{flex:1;overflow-y:scroll;padding:18px 44px 220px;scrollbar-width:none}
+#scroll::-webkit-scrollbar{display:none}
+#txt{font-size:33px;line-height:1.8;text-align:center;color:#fff}
+#fade{position:fixed;bottom:0;left:0;right:0;height:72px;
+  background:linear-gradient(transparent,#000);pointer-events:none}
+</style></head><body>
+<div id="bar">
+  <button id="pbtn" onclick="tog()">▶ Start</button>
+  <label>Speed</label>
+  <input type="range" id="spd" min="1" max="20" value="5" oninput="chSpd(+this.value)">
+  <label id="sv">5</label>
+  <button onclick="rst()" style="background:#1a1a1a">↺ Reset</button>
+  <span class="hint">Space = play/pause &nbsp;·&nbsp; ↑↓ = scroll</span>
+</div>
+<div id="scroll">
+  <div id="txt">${safe||'<em style="color:#444">No script yet. Type in the main window, then reopen this.</em>'}</div>
+</div>
+<div id="fade"></div>
+<script>
+let going=false,spd=5,iv=null;
+function tog(){
+  going=!going;
+  const b=document.getElementById('pbtn');
+  b.textContent=going?'⏸ Pause':'▶ Start';
+  b.className=going?'go':'';
+  clearInterval(iv);
+  if(going)iv=setInterval(()=>document.getElementById('scroll').scrollBy(0,spd*.4),30);
+}
+function chSpd(v){
+  spd=v;document.getElementById('sv').textContent=v;
+  if(going){clearInterval(iv);iv=setInterval(()=>document.getElementById('scroll').scrollBy(0,spd*.4),30);}
+}
+function rst(){document.getElementById('scroll').scrollTop=0;}
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault();tog();}
+  if(e.code==='ArrowUp')  document.getElementById('scroll').scrollBy(0,-60);
+  if(e.code==='ArrowDown')document.getElementById('scroll').scrollBy(0,60);
+});
+<\/script></body></html>`);
+  w.document.close();
+}
+
+/* ── Recording ── */
+function toggleRec() { S.recActive ? stopRec() : startRec(); }
+
+function startRec() {
+  if (!S.stream) { alert('No camera stream. Go back to step 2 and allow camera access.'); return; }
+  S.chunks = [];
+
+  /* Prefer MP4 (H.264+AAC) — supported in Chrome 130+, Safari, and Edge.
+     Falls back to WebM if the browser doesn't support MP4 recording. */
+  const mime = [
+    'video/mp4;codecs=avc1,mp4a.40.2',
+    'video/mp4;codecs=avc1,opus',
+    'video/mp4',
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/webm',
+  ].find(m => { try { return MediaRecorder.isTypeSupported(m); } catch(e) { return false; } }) || '';
+
+  const recStream = getRecordingStream();
+  try {
+    S.recorder = new MediaRecorder(recStream, mime ? { mimeType: mime } : {});
+  } catch(e) {
+    S.recorder = new MediaRecorder(recStream);
+  }
+
+  S.recorder.ondataavailable = e => { if (e.data?.size > 0) S.chunks.push(e.data); };
+  S.recorder.onstop = onRecStop;
+  S.recorder.start(100);
+  S.recActive = true; S.recSecs = 0;
+
+  document.getElementById('rec-badge').style.display = 'flex';
+  const btn = document.getElementById('btn-rec');
+  if (btn) { btn.textContent = '⏹ Stop Recording'; btn.className = 'btn btn-danger'; }
+
+  S.recTimer = setInterval(() => {
+    S.recSecs++;
+    const t = document.getElementById('rec-timer');
+    if (t) t.textContent = fmtTime(S.recSecs);
+  }, 1000);
+
+  document.getElementById('rec-status').innerHTML =
+    `<div style="display:flex;align-items:center;gap:8px;color:var(--danger);font-weight:600;font-size:14px">
+      <div class="rec-dot" style="background:var(--danger)"></div>
+      Recording — <span id="rec-timer">00:00</span>
+    </div>`;
+}
+
+function stopRec() {
+  if (S.recorder?.state !== 'inactive') S.recorder.stop();
+  S.recActive = false;
+  clearInterval(S.recTimer);
+  document.getElementById('rec-badge').style.display = 'none';
+  const btn = document.getElementById('btn-rec');
+  if (btn) { btn.textContent = '⏺ Start Recording'; btn.className = 'btn btn-primary'; }
+}
+
+function onRecStop() {
+  const mime = S.chunks[0]?.type || 'video/webm';
+  S.blob = new Blob(S.chunks, { type: mime });
+  const url = URL.createObjectURL(S.blob);
+  const mb  = (S.blob.size / 1048576).toFixed(1);
+  const ts  = new Date().toISOString().slice(0,19).replace(/:/g,'-');
+  const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+
+  document.getElementById('rec-status').innerHTML = `
+    <div style="background:var(--surf);border:1px solid var(--success);
+                border-radius:10px;padding:14px 16px;
+                display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="flex:1">
+        <div style="font-weight:700;color:var(--success)">✅ Recording complete — ${mb} MB</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Duration: ${fmtTime(S.recSecs)}</div>
+      </div>
+      <a href="${url}" download="recording-${ts}.${ext}" class="btn btn-success">⬇ Download</a>
+      <button class="btn btn-ghost" onclick="resetRec()" style="font-size:13px">⏺ Record Again</button>
+    </div>`;
+}
+
+function resetRec() {
+  S.blob = null; S.chunks = [];
+  document.getElementById('rec-status').innerHTML = '';
+}
+
+function fmtTime(s) {
+  return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+}
+
+/* =============================================================
+   HOME STEPS
+   ============================================================= */
+function renderHomeStep1() {
+  return `
+  <div>
+    <div class="step-title">Step 1 — Set Up Your Space</div>
+    <div class="step-sub">A few quick things before you get started.</div>
+
+    <div class="hero-area">
+      <svg width="160" height="90" viewBox="0 0 160 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Laptop body -->
+        <rect x="4" y="12" width="90" height="58" rx="5" fill="#252930" stroke="#4f8ef7" stroke-width="1.5"/>
+        <rect x="10" y="18" width="78" height="44" rx="2" fill="#1c1f26"/>
+        <rect x="1" y="70" width="96" height="8" rx="4" fill="#2d3748"/>
+        <!-- Mouse body -->
+        <rect x="112" y="30" width="36" height="52" rx="18" fill="#252930" stroke="#4f8ef7" stroke-width="1.5"/>
+        <!-- Mouse split line -->
+        <line x1="130" y1="30" x2="130" y2="58" stroke="#4f8ef7" stroke-width="1" opacity="0.6"/>
+        <!-- Mouse scroll wheel -->
+        <rect x="126" y="40" width="8" height="14" rx="4" fill="#4f8ef7" opacity="0.7"/>
+        <!-- Cable -->
+        <path d="M130 30 Q130 18 115 14 Q100 10 96 38" stroke="#4f8ef7" stroke-width="2" fill="none" stroke-dasharray="4 3" opacity="0.7"/>
+        <!-- Arrow pointing to mouse -->
+        <path d="M96 55 L108 45" stroke="#22c55e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M106 42 L108 45 L105 47" stroke="#22c55e" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div class="checklist">
+      ${hcrow(1, 0, 'Attach a physical mouse', 'Prevents your laptop from shifting when you click — keeps your camera angle steady throughout the recording')}
+    </div>
+
+    <div class="info-box">
+      <strong>Why it matters:</strong> Touching the trackpad can nudge your laptop just enough to throw off your framing. A USB or Bluetooth mouse lets you click and control playback without moving your computer.
+    </div>
+  </div>`;
+}
+
+function renderHomeStep2() {
+  return `
+  <div>
+    <div class="step-title">Step 2 — Prepare Your Space</div>
+    <div class="step-sub">Eliminate interruptions before you start. Check off each item.</div>
+    <div class="checklist">
+      ${hcrow(2, 0, 'Close Outlook', 'Prevents notification sounds and pop-ups during recording')}
+      ${hcrow(2, 1, 'Close Webex', 'Avoids incoming call interruptions')}
+      ${hcrow(2, 2, 'Phone on Do Not Disturb', 'Silences calls, texts, and lock-screen notifications')}
+    </div>
+  </div>`;
+}
+
+function renderHomeStep3(el, devicesReady = false) {
+  const curVidLabel = S.dev.allVideo.find(d => d.deviceId === S.dev.curVideoId)?.label || 'Default camera';
+  const curAudLabel = S.dev.allAudio.find(d => d.deviceId === S.dev.curAudioId)?.label || 'Default microphone';
+
+  el.innerHTML = `
+  <div>
+    <div class="step-title">Step 3 — Check Your Equipment</div>
+    <div class="step-sub">Select your camera and microphone, then confirm they're working.</div>
+
+    <!-- DEVICE PICKERS -->
+    <div class="sec-label">Camera</div>
+    <div class="card" style="padding:12px 14px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:13px;color:var(--muted);flex-shrink:0">Active:</span>
+        <span style="font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${curVidLabel}</span>
+        ${S.dev.allVideo.length > 0 ? `
+        <select class="dev-sel" id="home-sel-video" onchange="homeDeviceSwitch()" style="max-width:200px">
+          ${S.dev.allVideo.map(d => `<option value="${d.deviceId}"${d.deviceId===S.dev.curVideoId?' selected':''}>${d.label||d.deviceId.slice(0,12)}</option>`).join('')}
+        </select>` : ''}
+      </div>
+    </div>
+
+    <div class="sec-label" style="margin-top:14px">Microphone</div>
+    <div class="card" style="padding:12px 14px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:13px;color:var(--muted);flex-shrink:0">Active:</span>
+        <span style="font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${curAudLabel}</span>
+        ${S.dev.allAudio.length > 0 ? `
+        <select class="dev-sel" id="home-sel-audio" onchange="homeDeviceSwitch()" style="max-width:200px">
+          ${S.dev.allAudio.map(d => `<option value="${d.deviceId}"${d.deviceId===S.dev.curAudioId?' selected':''}>${d.label||d.deviceId.slice(0,12)}</option>`).join('')}
+        </select>` : ''}
+      </div>
+    </div>
+
+    <!-- AUDIO TEST -->
+    <div class="sec-label" style="margin-top:18px">Microphone Test — Speak Now</div>
+    <div class="card">
+      <div class="meter-track">
+        <div class="meter-fill" id="audio-fill"></div>
+        <div class="meter-lbl">🎙 Say something to test your mic…</div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:7px">
+        The bar should react when you speak.
+      </div>
+    </div>
+
+    <!-- CAMERA PREVIEW -->
+    <div class="sec-label" style="margin-top:18px">Camera Preview</div>
+    <div class="card">
+      <div class="vid-wrap" style="margin-bottom:8px">
+        <video id="step3-video" autoplay playsinline muted></video>
+        <div class="cam-loading" id="cam-loading">
+          <div class="spinner"></div>
+          <span>Starting camera…</span>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  if (devicesReady) {
+    attachStream('step3-video');
+  } else {
+    initStream().then(() => {
+      const container = document.getElementById('content');
+      if (container && S.step === 3 && S.location === 'home') renderHomeStep3(container, true);
+    });
+  }
+  updateNav();
+}
+
+async function homeDeviceSwitch() {
+  const vs = document.getElementById('home-sel-video');
+  const as = document.getElementById('home-sel-audio');
+  const vid = vs?.value || S.dev.curVideoId;
+  const aud = as?.value || S.dev.curAudioId;
+  await applyDeviceSwitch(vid, aud);
+  /* re-render home step 3 instead of studio step 3 */
+  renderHomeStep3(document.getElementById('content'), true);
+}
+
+function renderHomeStep4(el) {
+  el.innerHTML = `
+  <div>
+    <div class="step-title">Step 4 — Camera Position &amp; Lighting</div>
+    <div class="step-sub">Fit yourself inside the silhouette, then check your lighting.</div>
+
+    <div class="vid-wrap">
+      <video id="step2-video" autoplay playsinline muted></video>
+      <div class="vid-overlay">
+        <img src="guideline.png" style="width:100%;height:100%;object-fit:cover;mix-blend-mode:screen;opacity:0.85;" alt="">
+      </div>
+      <div class="cam-loading" id="cam-loading">
+        <div class="spinner"></div>
+        <span>Starting camera…</span>
+      </div>
+    </div>
+
+    <!-- LIGHTING -->
+    <div class="sec-label" style="margin-top:16px">Lighting Check</div>
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+        <button class="btn btn-ghost" onclick="checkBrightness()" style="font-size:13px">☀️ Analyze Lighting</button>
+        <div id="bright-out" style="flex:1">
+          ${S.brightness ? brightHtml(S.brightness) : '<span style="font-size:13px;color:var(--muted)">Click to analyze your current lighting</span>'}
+        </div>
+      </div>
+    </div>
+
+    ${renderBgSelector(S.bgType)}
+
+    <div class="info-box" style="margin-top:14px">
+      <strong>Tips for better home lighting:</strong><br>
+      • <strong>Face a light source</strong> — sit facing a window or lamp, not with it behind you<br>
+      • <strong>Too dark?</strong> Bring in a desk lamp or ring light and point it at your face<br>
+      • <strong>Too bright?</strong> Draw a sheer curtain or move the lamp further back
+    </div>
+  </div>`;
+
+  initStream();
+  /* Pre-warm the segmentation model in the background so it's ready when needed */
+  VirtualBgEffect._getSegmenter().catch(() => {});
+}
+
+/* =============================================================
+   JITSI MEET (lib-jitsi-meet / JaaS)
+   ============================================================= */
+
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    if (document.querySelector(`script[src="${src}"]`)) { res(); return; }
+    const s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+/* =============================================================
+   VIRTUAL BACKGROUND
+   ============================================================= */
+
+const BG_OPTIONS = [
+  { id: 'none',  label: 'Off',           src: null,              icon: '✕'  },
+  { id: 'blur',  label: 'Blur',          src: null,              icon: '🌫' },
+  { id: 'pega1', label: 'Pega Classic',  src: 'bg-pega-1.png',  icon: null },
+  { id: 'pega2', label: 'Pega Abstract', src: 'bg-pega-2.png',  icon: null },
+];
+
+class VirtualBgEffect {
+  constructor(type, imageSrc, blurRadius) {
+    this.type       = type;       // 'blur' | 'image'
+    this.imageSrc   = imageSrc;   // URL string or null
+    this.blurRadius = blurRadius || 16; // px, only used when type === 'blur'
+    this._running   = false;
+    this._seg       = null;
+    this._video     = null;
+    this._canvas    = null;
+    this._ctx       = null;
+    this._bgImg     = null;
+    this._outStream = null;
+    this._rafId     = null;
+  }
+
+  async startEffect(stream) {
+    /* Shared singleton segmenter */
+    this._seg = await VirtualBgEffect._getSegmenter();
+
+    /* Load background image if needed */
+    if (this.type === 'image' && this.imageSrc) {
+      this._bgImg = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload  = () => resolve(img);
+        img.onerror = () => reject(new Error('Could not load: ' + this.imageSrc));
+        img.src = this.imageSrc;
+      });
+    }
+
+    /* Hidden video element fed by the raw camera stream */
+    const video = document.createElement('video');
+    video.srcObject   = stream;
+    video.muted       = true;
+    video.autoplay    = true;
+    video.playsInline = true;
+    await new Promise(resolve => { video.onloadedmetadata = resolve; setTimeout(resolve, 2000); });
+    await video.play().catch(() => {});
+
+    const W = video.videoWidth  || 1280;
+    const H = video.videoHeight || 720;
+
+    /* Output canvas */
+    const canvas  = document.createElement('canvas');
+    canvas.width  = W;
+    canvas.height = H;
+    this._video  = video;
+    this._canvas = canvas;
+    this._ctx    = canvas.getContext('2d');
+    this._running = true;
+
+    /* Wire up onResults and start the RAF loop */
+    this._seg.onResults(r => this._onResults(r));
+    this._scheduleFrame();
+
+    this._outStream = canvas.captureStream(30);
+    return this._outStream;
+  }
+
+  _scheduleFrame() {
+    if (!this._running || !this._seg || !this._video) return;
+    this._rafId = requestAnimationFrame(() => {
+      this._seg.send({ image: this._video })
+        .catch(() => {})
+        .finally(() => this._scheduleFrame());
+    });
+  }
+
+  _onResults(results) {
+    if (!this._running || !this._ctx) return;
+    const ctx = this._ctx;
+    const W   = this._canvas.width;
+    const H   = this._canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    /* 1. Draw background */
+    if (this.type === 'blur') {
+      /* Overdraw each side so blur edges don't bleed in */
+      const r = this.blurRadius;
+      ctx.filter = 'blur(' + r + 'px)';
+      ctx.drawImage(results.image, -r * 1.5, -r * 1.5, W + r * 3, H + r * 3);
+      ctx.filter = 'none';
+    } else if (this.type === 'image' && this._bgImg) {
+      /* Cover-fit */
+      const s  = Math.max(W / this._bgImg.naturalWidth, H / this._bgImg.naturalHeight);
+      const sw = this._bgImg.naturalWidth  * s;
+      const sh = this._bgImg.naturalHeight * s;
+      ctx.drawImage(this._bgImg, (W - sw) / 2, (H - sh) / 2, sw, sh);
+    } else {
+      ctx.drawImage(results.image, 0, 0, W, H);
+    }
+
+    /* 2. Composite person on top using the segmentation mask
+       Technique: paint mask → source-in clips original image → draw over bg */
+    const tmp  = document.createElement('canvas');
+    tmp.width  = W; tmp.height = H;
+    const tCtx = tmp.getContext('2d');
+    tCtx.drawImage(results.segmentationMask, 0, 0, W, H);
+    tCtx.globalCompositeOperation = 'source-in';
+    tCtx.drawImage(results.image, 0, 0, W, H);
+    ctx.drawImage(tmp, 0, 0);
+  }
+
+  stopEffect() {
+    this._running = false;
+    if (this._rafId)     { cancelAnimationFrame(this._rafId); this._rafId = null; }
+    if (this._outStream) { this._outStream.getTracks().forEach(t => t.stop()); this._outStream = null; }
+    if (this._seg)       { this._seg.onResults(() => {}); } /* detach handler */
+    this._video = null; this._canvas = null; this._ctx = null;
+  }
+
+  isEnabled() { return this._running; }
+
+  /* Singleton — model loads once, shared between lighting preview and live call */
+  static _promise = null;
+  static _getSegmenter() {
+    if (!VirtualBgEffect._promise) VirtualBgEffect._promise = VirtualBgEffect._load();
+    return VirtualBgEffect._promise;
+  }
+  static async _load() {
+    if (!window.SelfieSegmentation) {
+      await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js');
+    }
+    if (!window.SelfieSegmentation) throw new Error('SelfieSegmentation failed to load');
+    const seg = new window.SelfieSegmentation({
+      locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${f}`,
+    });
+    seg.setOptions({ modelSelection: 1 }); /* 1 = general/landscape model */
+    seg.onResults(() => {});
+    try { await seg.initialize(); } catch(e) { /* initialize() absent in some builds — init on first send */ }
+    return seg;
+  }
+}
+
+/* Active effect for the lighting-preview step (null = none) */
+let _previewEffect = null;
+
+function renderBgSelector(activeId, compact) {
+  const header = compact ? '' : '<div class="sec-label" style="margin-top:14px">Virtual Background</div>';
+  const opts = BG_OPTIONS.map(o => {
+    const active   = o.id === activeId ? ' bg-active' : '';
+    const bgStyle  = o.src ? ' style="background-image:url(\'' + o.src + '\')"' : '';
+    const iconHtml = !o.src ? '<span style="font-size:15px">' + o.icon + '</span>' : '';
+    return '<button class="bg-opt' + active + '" onclick="setBgEffect(\'' + o.id + '\')" title="' + o.label + '"' + bgStyle + '>'
+         + iconHtml + '<span class="bg-opt-lbl">' + o.label + '</span></button>';
+  }).join('');
+  const sliderDisplay = activeId === 'blur' ? 'flex' : 'none';
+  const slider = '<div id="blur-slider-row" style="display:' + sliderDisplay + ';align-items:center;gap:10px;margin-top:8px">'
+    + '<span style="font-size:12px;color:var(--muted);white-space:nowrap">Blur strength</span>'
+    + '<input id="blur-slider" type="range" min="4" max="40" value="' + S.blurRadius + '"'
+    + ' oninput="setBlurRadius(+this.value)"'
+    + ' style="flex:1;accent-color:var(--accent)">'
+    + '<span id="blur-val" style="font-size:12px;color:var(--muted);width:32px;text-align:right">' + S.blurRadius + 'px</span>'
+    + '</div>';
+  return header + '<div class="bg-selector">' + opts + '</div>' + slider;
+}
+
+/* ── Directly replaces the video track on all active WebRTC senders.
+   Works around setEffect() not being available / not working in JaaS builds. ── */
+async function replaceVideoSender(newTrack) {
+  const conf = S.call.conf;
+  if (!conf) return false;
+  let replaced = false;
+  /* lib-jitsi-meet stores sessions as jvbJingleSession and p2pJingleSession.
+     The actual RTCPeerConnection is nested: session.peerconnection.peerconnection */
+  const sessions = [conf.jvbJingleSession, conf.p2pJingleSession].filter(Boolean);
+  for (const session of sessions) {
+    const pc = session?.peerconnection?.peerconnection   /* TraceablePeerConnection wrapper */
+            || session?.peerconnection;                  /* direct RTCPeerConnection */
+    if (!pc || typeof pc.getSenders !== 'function') continue;
+    const sender = pc.getSenders().find(s => s.track?.kind === 'video');
+    if (!sender) continue;
+    try { await sender.replaceTrack(newTrack); replaced = true; } catch(e) {}
+  }
+  return replaced;
+}
+
+async function applyCallBgEffect(id) {
+  /* Stop any existing call bg effect first */
+  if (S.call.bgEffect) {
+    S.call.bgEffect.stopEffect();
+    S.call.bgEffect = null;
+  }
+
+  const vt = S.call.localTracks.find(t => t.getType() === 'video' && t.getVideoType?.() !== 'desktop');
+  if (!vt) return;
+
+  /* Restore the original track if we're switching effects */
+  if (S.call.origVideoTrack) {
+    await replaceVideoSender(S.call.origVideoTrack);
+  }
+
+  if (id === 'none') {
+    /* Restore PiP to show the original Jitsi track */
+    const pip = document.getElementById('pip-video');
+    if (pip && vt) { try { vt.detach(pip); } catch(e) {} vt.attach(pip); }
+    S.call.origVideoTrack = null;
+    return;
+  }
+
+  /* Get the raw MediaStream from the Jitsi track */
+  const rawStream = (typeof vt.getOriginalStream === 'function' ? vt.getOriginalStream() : null)
+                 || vt.stream
+                 || (vt.track ? new MediaStream([vt.track]) : null);
+  if (!rawStream) { console.warn('Could not get raw stream from Jitsi track'); return; }
+
+  const opt    = BG_OPTIONS.find(o => o.id === id);
+  const effect = new VirtualBgEffect(
+    id === 'blur' ? 'blur' : 'image',
+    opt?.src || null,
+    S.blurRadius
+  );
+
+  try {
+    const canvasStream    = await effect.startEffect(rawStream);
+    const canvasVideoTrack = canvasStream.getVideoTracks()[0];
+    if (!canvasVideoTrack) throw new Error('Effect returned no video track');
+
+    /* Save original track before first replacement so we can restore it */
+    if (!S.call.origVideoTrack) {
+      const senderTrack = await (async () => {
+        const sessions = [S.call.conf?.jvbJingleSession, S.call.conf?.p2pJingleSession].filter(Boolean);
+        for (const sess of sessions) {
+          const pc = sess?.peerconnection?.peerconnection || sess?.peerconnection;
+          if (!pc || typeof pc.getSenders !== 'function') continue;
+          const s = pc.getSenders().find(s => s.track?.kind === 'video');
+          if (s?.track) return s.track;
+        }
+        return vt.track || null;
+      })();
+      S.call.origVideoTrack = senderTrack;
+    }
+
+    /* Replace the track in WebRTC senders so the guest sees the processed video */
+    await replaceVideoSender(canvasVideoTrack);
+
+    /* Update the PiP self-view so the host also sees the processed video */
+    const pip = document.getElementById('pip-video');
+    if (pip) {
+      try { vt.detach(pip); } catch(e) {}
+      pip.srcObject = canvasStream;
+    }
+
+    S.call.bgEffect = effect;
+  } catch(e) {
+    console.error('Call bg effect failed:', e);
+    alert('Virtual background failed: ' + e.message);
+  }
+}
+
+function setBlurRadius(r) {
+  S.blurRadius = r;
+  const lbl = document.getElementById('blur-val');
+  if (lbl) lbl.textContent = r + 'px';
+  /* Update running effect in place — no need to restart */
+  if (_previewEffect && _previewEffect.type === 'blur') { _previewEffect.blurRadius = r; return; }
+  /* In-call: update the active call bg effect in place */
+  if (S.call.bgEffect && S.call.bgEffect.type === 'blur') { S.call.bgEffect.blurRadius = r; }
+}
+
+async function setBgEffect(id) {
+  S.bgType = id;
+  /* Refresh all visible selectors */
+  document.querySelectorAll('.bg-opt').forEach(b => {
+    b.classList.toggle('bg-active', b.title === BG_OPTIONS.find(o => o.id === id)?.label);
+  });
+
+  const opt = BG_OPTIONS.find(o => o.id === id);
+
+  if (id === 'none') {
+    /* Cancel preview effect and restore raw stream */
+    if (_previewEffect) { _previewEffect.stopEffect(); _previewEffect = null; }
+    const pv = document.getElementById('step2-video') || document.getElementById('step3-video');
+    if (pv && S.stream) pv.srcObject = S.stream;
+    /* Remove Jitsi track effect */
+    const vt = S.call.localTracks.find(t => t.getType() === 'video');
+    if (vt && typeof vt.setEffect === 'function') await vt.setEffect(null).catch(() => {});
+    return;
+  }
+
+  /* Show/hide blur slider */
+  const sliderRow = document.getElementById('blur-slider-row');
+  if (sliderRow) sliderRow.style.display = id === 'blur' ? 'flex' : 'none';
+
+  const effect = new VirtualBgEffect(
+    id === 'blur' ? 'blur' : 'image',
+    opt?.src || null,
+    S.blurRadius
+  );
+
+  /* ── Lighting preview context (not in a live call yet) ── */
+  const pv = document.getElementById('step2-video') || document.getElementById('step3-video');
+  if (pv && S.stream && !S.call.conf) {
+    if (_previewEffect) { _previewEffect.stopEffect(); _previewEffect = null; }
+    try {
+      const out = await effect.startEffect(S.stream);
+      const ld  = document.getElementById('cam-loading');
+      if (ld) ld.style.display = 'none';
+      pv.srcObject = out;
+      _previewEffect = effect;
+    } catch(e) {
+      console.warn('Preview bg effect failed:', e);
+      alert('Virtual background failed: ' + e.message);
+    }
+    return;
+  }
+
+  /* ── Live call context ── */
+  await applyCallBgEffect(id);
+}
+
+function generateRoom() {
+  return 'studio-' + Math.random().toString(36).slice(2, 8);
+}
+
+function regenerateRoom() {
+  S.jitsiRoom = generateRoom();
+  const input = document.getElementById('room-name-input');
+  if (input) input.value = S.jitsiRoom;
+}
+
+function copyRoomLink(e) {
+  const link = S._guestLink || ('https://8x8.vc/' + JAAS.appId + '/' + S.jitsiRoom);
+  navigator.clipboard.writeText(link).then(() => {
+    const btn = e.target;
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => btn.textContent = orig, 2000);
+  });
+}
+
+/* ── JWT helpers ── */
+function b64url(str) {
+  return btoa(str).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+}
+function bytesToB64url(buf) {
+  const arr = new Uint8Array(buf);
+  let s = '';
+  for (let i = 0; i < arr.length; i++) s += String.fromCharCode(arr[i]);
+  return btoa(s).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+async function generateJaaSToken(isModerator) {
+  /* ── Proxy mode: server signs the JWT; private key never leaves Vercel ── */
+  if (PROXY.url && PROXY.token) {
+    const res = await fetch(PROXY.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-proxy-token': PROXY.token },
+      body: JSON.stringify({ isModerator, userName: isModerator ? 'Studio Host' : 'Guest' }),
+    });
+    if (res.status === 401) throw new Error('Invalid proxy token — check ⚙ settings.');
+    if (!res.ok) throw new Error('Proxy error: HTTP ' + res.status);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    /* Proxy also returns appId; update JAAS.appId if provided so URLs stay consistent */
+    if (data.appId) JAAS.appId = data.appId;
+    return data.token;
+  }
+
+  /* ── No proxy configured and no embedded key — prompt user to set up proxy ── */
+  if (!JAAS.privateKey) {
+    throw new Error('No proxy configured. Click ⚙ in the header to enter your proxy URL and token.');
+  }
+
+  /* ── Local fallback: sign with embedded private key (standalone / dev use) ── */
+  const pem = JAAS.privateKey.replace(/-----.*-----|[\r\n\s]/g, '');
+  const der = Uint8Array.from(atob(pem), c => c.charCodeAt(0));
+  const key = await crypto.subtle.importKey(
+    'pkcs8', der,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false, ['sign']
+  );
+  const now = Math.floor(Date.now() / 1000);
+  const header  = { alg: 'RS256', kid: JAAS.kid, typ: 'JWT' };
+  const payload = {
+    aud: 'jitsi', iss: 'chat',
+    sub: JAAS.appId, room: '*',
+    exp: now + 86400, nbf: now - 10,  /* 24 h so pre-shared links last all day */
+    context: {
+      user: {
+        moderator: isModerator,
+        name: isModerator ? 'Studio Host' : 'Guest',
+        id: crypto.randomUUID(),
+      },
+    },
+  };
+  const h = b64url(JSON.stringify(header));
+  const p = b64url(JSON.stringify(payload));
+  const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key,
+                                       new TextEncoder().encode(`${h}.${p}`));
+  return `${h}.${p}.${bytesToB64url(sig)}`;
+}
+
+/* ── Tile rendering ── */
+/* ── CALL UI RENDER ────────────────────────────────────────────────────── */
+
+/*
+ * Main view shows the remote guest's screen-share (if active) or camera.
+ * PiP shows the host's own camera.
+ * If no remote participant has joined yet, show a "Waiting…" placeholder.
+ */
+function renderCallGrid() {
+  const area = document.getElementById('call-area');
+  if (!area) return;
+
+  /* Find first remote participant */
+  const pids      = Object.keys(S.call.names);
+  const pid       = pids[0] || null;
+  const rt        = pid ? (S.call.remoteTracks[pid] || {}) : {};
+  const guestName = pid ? (S.call.names[pid] || 'Guest') : null;
+
+  /* Pick what goes in the main view: desktop share beats camera */
+  const mainTrack  = rt.desktop || rt.camera || null;
+  const mainLabel  = rt.desktop ? `${guestName} — Screen` : (guestName || '');
+  const isDesktop  = !!rt.desktop;
+
+  area.innerHTML = `
+    <video id="main-video" autoplay playsinline style="${mainTrack ? '' : 'display:none'}"></video>
+    <div id="main-placeholder" style="${mainTrack ? 'display:none' : ''}">
+      ${pid ? 'Waiting for guest video…' : 'Waiting for guest to join…'}
+    </div>
+    ${mainTrack ? `<div id="main-label">${mainLabel}</div>` : ''}
+
+    <!-- PiP self-view -->
+    <div id="pip" onmousedown="pipDragStart(event)">
+      <video id="pip-video" autoplay playsinline muted></video>
+      <div id="pip-label">You</div>
+    </div>`;
+
+  /* Attach tracks */
+  if (mainTrack) mainTrack.attach(document.getElementById('main-video'));
+  for (const t of S.call.localTracks) {
+    if (t.getType() === 'video') t.attach(document.getElementById('pip-video'));
+  }
+
+  /* Audio elements for remote participants (off-screen) */
+  for (const [id, tracks] of Object.entries(S.call.remoteTracks)) {
+    if (tracks.audio) {
+      let aud = document.getElementById(`aud-${id}`);
+      if (!aud) { aud = document.createElement('audio'); aud.id=`aud-${id}`; aud.autoplay=true; document.body.appendChild(aud); }
+      tracks.audio.attach(aud);
+    }
+  }
+}
+
+/* Drag the PiP tile */
+function pipDragStart(e) {
+  const pip = document.getElementById('pip');
+  if (!pip) return;
+  let startX = e.clientX, startY = e.clientY;
+  const rect  = pip.getBoundingClientRect();
+  let   left  = rect.left, top = rect.top;
+  pip.style.right = 'auto'; pip.style.bottom = 'auto';
+  pip.style.left  = left + 'px'; pip.style.top   = top  + 'px';
+  const move = ev => {
+    left += ev.clientX - startX; top += ev.clientY - startY;
+    startX = ev.clientX; startY = ev.clientY;
+    pip.style.left = left + 'px'; pip.style.top = top + 'px';
+  };
+  const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
+  document.addEventListener('mousemove', move);
+  document.addEventListener('mouseup', up);
+}
+
+function renderJitsiStep(el) {
+  const room = S.jitsiRoom;
+
+  /* Stop preview background effect before releasing the stream it feeds on */
+  if (_previewEffect) { _previewEffect.stopEffect(); _previewEffect = null; }
+
+  /* Release preview stream — lib-jitsi-meet will manage camera/mic */
+  if (S.stream)   { S.stream.getTracks().forEach(t => t.stop()); S.stream = null; }
+  if (S.audioCtx) { S.audioCtx.close(); S.audioCtx = null; S.analyser = null; }
+
+  el.innerHTML = `
+  <div style="display:flex;flex-direction:column;height:100%">
+
+    <!-- Guest link bar -->
+    <div class="jitsi-bar" style="gap:6px">
+      <span style="font-size:11px;color:var(--muted);flex-shrink:0">Guest link:</span>
+      <code id="jitsi-link" style="flex:1;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Generating…</code>
+      <button class="btn btn-ghost" onclick="copyRoomLink(event)" style="font-size:11px;padding:4px 10px;flex-shrink:0">📋 Copy</button>
+      <span id="rec-status" style="font-size:12px;color:var(--danger);font-weight:600;flex-shrink:0"></span>
+    </div>
+
+    <!-- Download row (hidden until recording stops) -->
+    <div id="rec-download-row" style="display:none;flex-shrink:0;padding:8px 12px;background:var(--surf);border-bottom:1px solid var(--border)"></div>
+
+    <!-- Virtual background panel (toggled by toolbar button) -->
+    <div id="bg-panel">
+      <span class="bp-label">Virtual BG:</span>
+      ${renderBgSelector(S.bgType, true)}
+    </div>
+
+    <!-- Main call area (grows to fill) -->
+    <div id="call-area" style="flex:1;position:relative;background:#000;overflow:hidden">
+      <div id="main-placeholder" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#444;font-size:15px">Connecting…</div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="call-toolbar">
+      <button id="mic-btn"    class="tb-btn" onclick="toggleMic()"    title="Mute / Unmute"><span class="tb-icon">🎤</span>Mute</button>
+      <button id="cam-btn"    class="tb-btn" onclick="toggleCam()"    title="Camera on/off"><span class="tb-icon">📷</span>Camera</button>
+      <button id="share-btn"  class="tb-btn" onclick="toggleShare()"  title="Share your screen"><span class="tb-icon">💻</span>Share Screen</button>
+      <button id="bg-btn"     class="tb-btn" onclick="toggleBgPanel()" title="Virtual background"><span class="tb-icon">🖼</span>Background</button>
+      <div class="spacer"></div>
+      <button id="rec-btn"    class="tb-btn" onclick="toggleCallRec()" title="Record"><span class="tb-icon">⏺</span>Record</button>
+      <div class="spacer"></div>
+      <button class="tb-btn end" onclick="nav(1)" title="End call"><span class="tb-icon">📵</span>End Call</button>
+    </div>
+
+  </div>`;
+
+  launchCall(room);
+}
+
+function buildGuestUrl(room, token) {
+  const config = '#config.startBitrate=4096&config.disableSimulcast=false&config.resolution=1080';
+  return `https://8x8.vc/${JAAS.appId}/${room}?jwt=${token}${config}`;
+}
+
+async function shortenUrl(url, preferredAlias) {
+  /* Build candidates: roomname → roomname-MMDD → roomname-MMDD-HH
+     Never fall back to a random alias — if all fail, caller shows the full URL. */
+  const now  = new Date();
+  const mmdd = (now.getMonth()+1).toString().padStart(2,'0') + now.getDate().toString().padStart(2,'0');
+  const hh   = now.getHours().toString().padStart(2,'0');
+  const base = (preferredAlias || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 20);
+
+  const candidates = base
+    ? [base, `${base}-${mmdd}`, `${base}-${mmdd}${hh}`]
+    : [];
+
+  for (const alias of candidates) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    try {
+      const resp = await fetch(
+        `https://is.gd/create.php?format=json&url=${encodeURIComponent(url)}&shorturl=${encodeURIComponent(alias)}`,
+        { signal: controller.signal }
+      );
+      const data = await resp.json();
+      if (data.shorturl) return data.shorturl;
+      /* alias taken or invalid — try next */
+    } catch(e) {
+      /* timeout or network error — try next */
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  throw new Error('All aliases taken');
+}
+
+async function launchCall(room) {
+  /* Generate tokens */
+  let hostToken, guestToken;
+  try {
+    [hostToken, guestToken] = await Promise.all([
+      generateJaaSToken(true),
+      generateJaaSToken(false),
+    ]);
+  } catch(e) {
+    showCallError('Token generation failed', e.message);
+    return;
+  }
+
+  /* Build guest link and shorten it */
+  /* Append Jitsi config overrides so the guest's web client also sends at high quality */
+  const fullGuestLink = buildGuestUrl(room, guestToken);
+  S._guestLink = fullGuestLink;          /* fallback until shortener responds */
+
+  const linkEl = document.getElementById('jitsi-link');
+  if (linkEl) linkEl.textContent = 'Shortening link…';
+
+  /* Shorten in background — don't block conference join */
+  shortenUrl(fullGuestLink, room).then(short => {
+    S._guestLink = short;
+    if (linkEl) { linkEl.textContent = short; linkEl.title = fullGuestLink; }
+  }).catch(() => {
+    /* All named aliases taken — show full URL and note why */
+    S._guestLink = fullGuestLink;
+    if (linkEl) {
+      linkEl.textContent = fullGuestLink.slice(0, 60) + '…';
+      linkEl.title = 'Short link aliases for "' + room + '" are all taken today. Full link copied when you click 📋 Copy.';
+    }
+  });
+
+  /* Load lib-jitsi-meet */
+  try {
+    await loadScript('https://8x8.vc/libs/lib-jitsi-meet.min.js');
+  } catch(e) {
+    showCallError('Could not load JaaS SDK', 'Check your internet connection.');
+    return;
+  }
+
+  joinConference(room, hostToken);
+}
+
+function showCallError(title, detail) {
+  const grid = document.getElementById('call-grid');
+  if (grid) grid.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;height:100%">
+      <div style="text-align:center;color:var(--danger)">
+        <div style="font-size:28px;margin-bottom:8px">⚠️</div>
+        <div style="font-weight:600;margin-bottom:6px">${title}</div>
+        <div style="font-size:13px;color:var(--muted)">${detail}</div>
+      </div>
+    </div>`;
+}
+
+function joinConference(room, token) {
+  const JMJ = window.JitsiMeetJS;
+  if (!JMJ) { showCallError('SDK not loaded', ''); return; }
+
+  JMJ.init({
+    disableAudioLevels: true,
+    disableSimulcast:   true,    /* single high-quality stream instead of 3 degraded layers */
+    useIPv6:            false,
+    videoQuality: {
+      maxBitratesVideo: {
+        low:      500000,
+        standard: 2500000,
+        high:     6000000,
+      },
+      minHeightForQualityLvl: { 360: 'standard', 720: 'high', 1080: 'high' },
+    },
+  });
+  JMJ.setLogLevel(JMJ.logLevels.ERROR);
+
+  const options = {
+    hosts: {
+      domain: '8x8.vc',
+      muc:    `conference.${JAAS.appId}.8x8.vc`,
+    },
+    serviceUrl: `wss://8x8.vc/${JAAS.appId}/xmpp-websocket?room=${room}`,
+    clientNode: 'http://jitsi.org/jitsimeet',
+  };
+
+  const conn = new JMJ.JitsiConnection(null, token, options);
+  S.call.conn = conn;
+
+  conn.addEventListener(JMJ.events.connection.CONNECTION_ESTABLISHED, async () => {
+    const conf = conn.initJitsiConference(room, {
+      p2p: {
+        enabled:     true,   /* direct peer-to-peer for 2-person calls — bypasses SFU caps */
+        preferH264:  true,
+        useStunTurn: true,
+      },
+      startWithAudioMuted: false,
+      startWithVideoMuted: false,
+    });
+    S.call.conf = conf;
+
+    conf.on(JMJ.events.conference.TRACK_ADDED,        onCallTrackAdded);
+    conf.on(JMJ.events.conference.TRACK_REMOVED,      onCallTrackRemoved);
+    conf.on(JMJ.events.conference.CONFERENCE_JOINED,  onCallJoined);
+    conf.on(JMJ.events.conference.USER_JOINED,        onCallUserJoined);
+    conf.on(JMJ.events.conference.USER_LEFT,          onCallUserLeft);
+    conf.on(JMJ.events.conference.CONFERENCE_FAILED,  err => showCallError('Conference failed', String(err)));
+    conf.on(JMJ.events.conference.CONFERENCE_ERROR,   err => showCallError('Conference error',  String(err)));
+
+    conf.join();
+  });
+
+  conn.addEventListener(JMJ.events.connection.CONNECTION_FAILED, err => {
+    showCallError('Connection failed', String(err));
+  });
+
+  conn.connect();
+}
+
+async function onCallJoined() {
+  /* Create local tracks using devices selected during setup */
+  let tracks = [];
+  try {
+    tracks = await JitsiMeetJS.createLocalTracks({
+      devices: ['audio', 'video'],
+      constraints: {
+        video: {
+          width:     { ideal: 1920, max: 1920 },
+          height:    { ideal: 1080, max: 1080 },
+          frameRate: { ideal: 30,   max: 30   },
+        },
+      },
+      ...(S.dev.curVideoId ? { cameraDeviceId: S.dev.curVideoId } : {}),
+      ...(S.dev.curAudioId ? { micDeviceId:    S.dev.curAudioId } : {}),
+    });
+  } catch(e) {
+    console.warn('Could not create local tracks:', e);
+  }
+
+  S.call.localTracks = tracks;
+  for (const t of tracks) {
+    try { S.call.conf.addTrack(t); } catch(e) {}
+  }
+
+  /* Tell the SFU/P2P layer we want to send up to 1080p; it will back off to 720p if bandwidth is tight */
+  try { S.call.conf.setSenderVideoConstraint(1080); } catch(e) {}
+
+  renderCallGrid();
+  updateCallControls();
+
+  /* Re-apply the virtual background chosen during setup */
+  if (S.bgType !== 'none') {
+    applyCallBgEffect(S.bgType).catch(e => console.warn('Auto bg effect failed:', e));
+  }
+}
+
+function toggleMic() {
+  const track = S.call.localTracks.find(t => t.getType() === 'audio');
+  if (!track) return;
+  (track.isMuted() ? track.unmute() : track.mute()).then(updateCallControls).catch(() => {});
+}
+
+function toggleCam() {
+  const track = S.call.localTracks.find(t => t.getType() === 'video');
+  if (!track) return;
+  (track.isMuted() ? track.unmute() : track.mute()).then(updateCallControls).catch(() => {});
+}
+
+function updateCallControls() {
+  const audio = S.call.localTracks.find(t => t.getType() === 'audio');
+  const video = S.call.localTracks.find(t => t.getType() === 'video' && t.getVideoType?.() !== 'desktop');
+
+  const micBtn   = document.getElementById('mic-btn');
+  const camBtn   = document.getElementById('cam-btn');
+  const shareBtn = document.getElementById('share-btn');
+  const recBtn   = document.getElementById('rec-btn');
+
+  if (micBtn) {
+    const muted = audio?.isMuted() ?? false;
+    micBtn.classList.toggle('active', muted);
+    micBtn.innerHTML = `<span class="tb-icon">${muted ? '🔇' : '🎤'}</span>${muted ? 'Unmute' : 'Mute'}`;
+  }
+  if (camBtn) {
+    const muted = video?.isMuted() ?? false;
+    camBtn.classList.toggle('active', muted);
+    camBtn.innerHTML = `<span class="tb-icon">${muted ? '🚫' : '📷'}</span>${muted ? 'Cam Off' : 'Camera'}`;
+  }
+  if (shareBtn) {
+    const sharing = S.call.localTracks.some(t => t.getVideoType?.() === 'desktop');
+    shareBtn.classList.toggle('active', sharing);
+    shareBtn.innerHTML = `<span class="tb-icon">💻</span>${sharing ? 'Stop Share' : 'Share Screen'}`;
+  }
+  if (recBtn) {
+    recBtn.classList.toggle('rec-on', S.call.recActive);
+    recBtn.innerHTML = `<span class="tb-icon">⏺</span>${S.call.recActive ? 'Stop Rec' : 'Record'}`;
+  }
+}
+
+function toggleBgPanel() {
+  const panel = document.getElementById('bg-panel');
+  if (!panel) return;
+  panel.classList.toggle('open');
+  const btn = document.getElementById('bg-btn');
+  if (btn) btn.classList.toggle('active', panel.classList.contains('open'));
+}
+
+async function toggleShare() {
+  const existing = S.call.localTracks.find(t => t.getVideoType?.() === 'desktop');
+  if (existing) {
+    /* Stop sharing */
+    try { await S.call.conf.removeTrack(existing); } catch(e) {}
+    existing.dispose();
+    S.call.localTracks = S.call.localTracks.filter(t => t !== existing);
+    updateCallControls();
+    return;
+  }
+  /* Start sharing */
+  try {
+    const tracks = await JitsiMeetJS.createLocalTracks({ devices: ['desktop'] });
+    for (const t of tracks) {
+      S.call.localTracks.push(t);
+      try { await S.call.conf.addTrack(t); } catch(e) {}
+      /* Auto-stop when user clicks browser's "Stop sharing" button */
+      t.addEventListener(JitsiMeetJS.events.track.LOCAL_TRACK_STOPPED, () => {
+        S.call.localTracks = S.call.localTracks.filter(x => x !== t);
+        updateCallControls();
+      });
+    }
+    updateCallControls();
+  } catch(e) {
+    if (!String(e).includes('cancel')) console.warn('Screen share error:', e);
+  }
+}
+
+function onCallTrackAdded(track) {
+  if (track.isLocal()) return;
+  const pid = track.getParticipantId();
+  if (!S.call.remoteTracks[pid]) S.call.remoteTracks[pid] = {};
+
+  if (track.getType() === 'video') {
+    const isDesktop = (track.getVideoType?.() === 'desktop');
+    if (isDesktop) S.call.remoteTracks[pid].desktop = track;
+    else           S.call.remoteTracks[pid].camera  = track;
+    renderCallGrid(); /* main view will pick up desktop > camera priority */
+  } else {
+    S.call.remoteTracks[pid].audio = track;
+    let aud = document.getElementById(`aud-${pid}`);
+    if (!aud) {
+      aud = document.createElement('audio');
+      aud.id = `aud-${pid}`; aud.autoplay = true;
+      document.body.appendChild(aud);
+    }
+    track.attach(aud);
+  }
+}
+
+function onCallTrackRemoved(track) {
+  if (track.isLocal()) return;
+  const pid = track.getParticipantId();
+  if (S.call.remoteTracks[pid]) {
+    if (track.getType() === 'video') {
+      const isDesktop = (track.getVideoType?.() === 'desktop');
+      if (isDesktop) delete S.call.remoteTracks[pid].desktop;
+      else           delete S.call.remoteTracks[pid].camera;
+      renderCallGrid(); /* main view falls back to camera when share ends */
+    } else {
+      delete S.call.remoteTracks[pid].audio;
+    }
+  }
+  track.detach();
+  const aud = document.getElementById(`aud-${pid}`);
+  if (aud) aud.remove();
+}
+
+function onCallUserJoined(id, participant) {
+  S.call.names[id] = participant.getDisplayName() || 'Guest';
+
+  /* Now that we know the participant ID, tell the SFU/P2P layer to
+     treat this person as "on stage" — meaning send us their highest
+     quality layer. Without specifying the ID here the SFU ignores
+     the earlier defaultConstraints call. */
+  try {
+    S.call.conf.setReceiverVideoConstraints({
+      lastN:              -1,
+      onStageEndpoints:   [id],
+      selectedEndpoints:  [id],
+      defaultConstraints: { maxHeight: 1080 },
+      constraints:        { [id]: { maxHeight: 1080, minHeight: 720 } },
+    });
+  } catch(e) {}
+
+  renderCallGrid();
+}
+
+function onCallUserLeft(id) {
+  delete S.call.names[id];
+  delete S.call.remoteTracks[id];
+  const aud = document.getElementById(`aud-${id}`);
+  if (aud) aud.remove();
+  renderCallGrid();
+}
+
+async function leaveConference() {
+  stopCallRec();
+  if (S.call.bgEffect) { S.call.bgEffect.stopEffect(); S.call.bgEffect = null; }
+  S.call.origVideoTrack = null;
+  for (const t of S.call.localTracks) { try { t.dispose(); } catch(e) {} }
+  S.call.localTracks = [];
+  if (S.call.conf) { try { await S.call.conf.leave(); } catch(e) {} S.call.conf = null; }
+  if (S.call.conn) { try { S.call.conn.disconnect(); } catch(e) {} S.call.conn = null; }
+  S.call.remoteTracks = {};
+  S.call.names        = {};
+  document.querySelectorAll('audio[id^="aud-"]').forEach(a => a.remove());
+}
+
+/* =============================================================
+   CALL RECORDING (per-participant)
+   ============================================================= */
+function toggleCallRec() { S.call.recActive ? stopCallRec() : startCallRec(); }
+
+function startCallRec() {
+  S.call.recActive     = true;
+  S.call.recSecs       = 0;
+  S.call.recorders     = {};
+  S.call.recBlobs      = {};
+  S.call.downloaded    = {};
+  S.call.endWarnShown  = false;
+
+  updateCallControls();
+  const status = document.getElementById('rec-status');
+  if (status) status.innerHTML =
+    `<span style="display:flex;align-items:center;gap:5px">
+       <span style="width:7px;height:7px;background:var(--danger);border-radius:50%;animation:blink 1s infinite;flex-shrink:0"></span>
+       <span id="rec-timer">00:00</span>
+     </span>`;
+
+  S.call.recTimer = setInterval(() => {
+    S.call.recSecs++;
+    const t = document.getElementById('rec-timer');
+    if (t) t.textContent = fmtTime(S.call.recSecs);
+  }, 1000);
+
+  /* Local participant */
+  const lv = S.call.localTracks.find(t => t.getType() === 'video');
+  const la = S.call.localTracks.find(t => t.getType() === 'audio');
+  if (lv || la) {
+    const tracks = [];
+    if (lv) tracks.push(...lv.getOriginalStream().getVideoTracks());
+    if (la) tracks.push(...la.getOriginalStream().getAudioTracks());
+    if (tracks.length) startParticipantRec('local', new MediaStream(tracks));
+  }
+
+  /* Remote participants — camera feed */
+  for (const [pid, rt] of Object.entries(S.call.remoteTracks)) {
+    const tracks = [];
+    if (rt.camera)  tracks.push(...rt.camera.getOriginalStream().getVideoTracks());
+    if (rt.audio)   tracks.push(...rt.audio.getOriginalStream().getAudioTracks());
+    if (tracks.length) startParticipantRec(pid, new MediaStream(tracks));
+  }
+  /* Remote participants — screen share (recorded separately if active) */
+  for (const [pid, rt] of Object.entries(S.call.remoteTracks)) {
+    if (rt.desktop) {
+      const dTracks = rt.desktop.getOriginalStream().getVideoTracks();
+      if (dTracks.length) startParticipantRec(`${pid}-screen`, new MediaStream(dTracks));
+    }
+  }
+}
+
+function startParticipantRec(id, stream) {
+  const mime = [
+    'video/mp4;codecs=avc1,mp4a.40.2',
+    'video/mp4',
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/webm',
+  ].find(m => { try { return MediaRecorder.isTypeSupported(m); } catch(e) { return false; } }) || '';
+
+  const recorder = new MediaRecorder(stream, {
+    ...(mime ? { mimeType: mime } : {}),
+    videoBitsPerSecond: 12_000_000,
+    audioBitsPerSecond:    256_000,
+  });
+  const chunks = [];
+  recorder.ondataavailable = e => { if (e.data?.size > 0) chunks.push(e.data); };
+  recorder.onstop = () => onCallRecStop(id, chunks, mime);
+  recorder.start(100);
+  S.call.recorders[id] = { recorder, chunks, mime };
+}
+
+function stopCallRec() {
+  if (!S.call.recActive) return;
+  clearInterval(S.call.recTimer);
+  S.call.recActive = false;
+  S.call.recTimer  = null;
+  for (const { recorder } of Object.values(S.call.recorders)) {
+    try { if (recorder.state !== 'inactive') recorder.stop(); } catch(e) {}
+  }
+  updateCallControls();
+  const status = document.getElementById('rec-status');
+  if (status) status.innerHTML = '';
+}
+
+function onCallRecStop(id, chunks, mime) {
+  if (!chunks.length) return;
+  const actualMime = chunks[0]?.type || mime || 'video/webm';
+  const blob  = new Blob(chunks, { type: actualMime });
+  const url   = URL.createObjectURL(blob);
+  const mb    = (blob.size / 1048576).toFixed(1);
+  const ext   = actualMime.includes('mp4') ? 'mp4' : 'webm';
+  const ts    = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+  const label = id === 'local' ? 'host' : (S.call.names[id] || id).replace(/\s+/g, '-').toLowerCase();
+  const fname = 'call-' + label + '-' + ts + '.' + ext;
+
+  S.call.recBlobs[id] = { url, ext, name: fname };
+  S.call.downloaded[id] = false;
+  S.call.endWarnShown   = false; /* reset warn state when new file arrives */
+
+  const row = document.getElementById('rec-download-row');
+  if (!row) return;
+  row.style.display = '';
+
+  /* Render or update the item for this participant */
+  let item = row.querySelector('[data-rec-id="' + id + '"]');
+  if (!item) {
+    item = document.createElement('div');
+    item.className = 'dl-item';
+    item.dataset.recId = id;
+    row.appendChild(item);
+  }
+  item.innerHTML =
+    '<span class="dl-badge pending" id="dl-badge-' + id + '">⬇ Not downloaded</span>' +
+    '<span style="font-size:12px;flex:1"><strong>' + label + '</strong> · ' + mb + ' MB · ' + ext.toUpperCase() + '</span>' +
+    '<a href="' + url + '" download="' + fname + '" class="btn btn-success" ' +
+       'style="font-size:12px;padding:5px 10px" onclick="markDownloaded(\'' + id + '\')">' +
+      '⬇ Download' +
+    '</a>';
+
+  /* Also update End Call button appearance */
+  updateEndCallBtn();
+}
+
+function markDownloaded(id) {
+  S.call.downloaded[id] = true;
+  const badge = document.getElementById('dl-badge-' + id);
+  if (badge) { badge.className = 'dl-badge done'; badge.textContent = '✓ Downloaded'; }
+  /* If all files are now downloaded, reset the warning state */
+  const allDone = Object.keys(S.call.recBlobs).every(k => S.call.downloaded[k]);
+  if (allDone) {
+    S.call.endWarnShown = false;
+    updateEndCallBtn();
+    const row = document.getElementById('rec-download-row');
+    if (row) row.classList.remove('warn-pending');
+  }
+}
+
+function updateEndCallBtn() {
+  const btn = document.querySelector('.tb-btn.end');
+  if (!btn) return;
+  const hasPending = Object.keys(S.call.recBlobs).some(k => !S.call.downloaded[k]);
+  if (hasPending && S.call.endWarnShown) {
+    btn.innerHTML = '<span class="tb-icon">⚠️</span>End Anyway';
+  } else {
+    btn.innerHTML = '<span class="tb-icon">📵</span>End Call';
+  }
+}
+
+/* =============================================================
+   FINISH
+   ============================================================= */
+function finish() {
+  document.body.classList.remove('jitsi-mode');
+  leaveConference();
+  if (S.stream)   { S.stream.getTracks().forEach(t => t.stop()); S.stream = null; }
+  if (S.audioCtx) { S.audioCtx.close(); S.audioCtx = null; }
+  if (S.rafId)    { cancelAnimationFrame(S.rafId); S.rafId = null; }
+
+  const isJitsi = S.mode === 'jitsi';
+  document.getElementById('content').innerHTML = `
+    <div class="completion">
+      <div class="big-icon">${isJitsi ? '👋' : '🎬'}</div>
+      <h2>Great work!</h2>
+      <p>${isJitsi
+        ? 'Your call has ended. Thanks for using the studio!'
+        : 'Your recording is complete. Download your file if you haven\'t already — then you\'re done.'}</p>
+      <button class="btn btn-ghost" onclick="location.reload()" style="margin-top:24px">Start Over</button>
+    </div>`;
+
+  document.querySelector('footer').style.display = 'none';
+  renderBar();
+}
+
+/* =============================================================
+   BOOT
+   ============================================================= */
+render();
+</script>
+</body>
+</html>

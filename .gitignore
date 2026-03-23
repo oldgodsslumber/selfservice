@@ -1,0 +1,7 @@
+privatekey/
+publickey/
+*.pk
+*.pub
+.env
+.env.local
+node_modules/
