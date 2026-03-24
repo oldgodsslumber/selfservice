@@ -81,6 +81,16 @@ module.exports = async function handler(req, res) {
       .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
     return res.status(200).json({ token: unsigned + '.' + sig, appId });
   } catch (err) {
-    return res.status(500).json({ error: 'JWT signing failed: ' + err.message });
+    /* Temporary debug: show first/last 40 chars and line count so we can diagnose format issues */
+    const lines = privateKey.split('\n');
+    return res.status(500).json({
+      error: 'JWT signing failed: ' + err.message,
+      _debug: {
+        firstLine: lines[0],
+        lastLine:  lines[lines.length - 1],
+        lineCount: lines.length,
+        totalLen:  privateKey.length,
+      },
+    });
   }
 };
