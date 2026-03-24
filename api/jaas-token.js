@@ -40,9 +40,17 @@ module.exports = async function handler(req, res) {
   }
 
   /* ── Config check ── */
-  const appId      = process.env.JAAS_APP_ID      || '';
-  const kid        = process.env.JAAS_KID         || '';
-  const privateKey = (process.env.JAAS_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+  const appId = process.env.JAAS_APP_ID || '';
+  const kid   = process.env.JAAS_KID   || '';
+
+  /* Normalise the PEM: Vercel may store it as a single line with literal \n,
+     or with real newlines, or with \r\n — handle all three. */
+  const rawKey    = process.env.JAAS_PRIVATE_KEY || '';
+  const privateKey = rawKey
+    .replace(/\\n/g, '\n')   /* literal backslash-n  → newline */
+    .replace(/\r\n/g, '\n')  /* CRLF                 → newline */
+    .trim();
+
   if (!appId || !kid || !privateKey)
     return res.status(500).json({ error: 'Proxy not configured — set JAAS_APP_ID, JAAS_KID, JAAS_PRIVATE_KEY in Vercel.' });
 
