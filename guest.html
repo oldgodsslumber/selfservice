@@ -913,7 +913,9 @@ function renderStep3() {
 
     <div class="info-box">
       <strong>What happens next:</strong> Clicking Join Room will open the virtual meeting in this tab.
-      Your camera and microphone will be available — you can mute or turn off video once you're in.
+      Your camera and microphone will be available — you can mute or turn off video once you're in.<br><br>
+      <strong>Seeing a "Waiting for the host" screen?</strong> That's normal — the meeting room holds guests
+      until your host joins. Just stay on the page and you'll be let in automatically.
     </div>
   </div>`;
 }
@@ -972,8 +974,8 @@ async function joinRoom() {
     if (S.audioCtx)     { S.audioCtx.close(); S.audioCtx = null; }
     cancelAnimationFrame(S.rafId);
 
-    const config = '#config.startBitrate=4096&config.disableSimulcast=false&config.resolution=720';
-    const url    = `https://8x8.vc/${JAAS.appId}/${encodeURIComponent(room)}?jwt=${token}${config}`;
+    const config = '#config.startBitrate=4096&config.disableSimulcast=false&config.resolution=1080';
+    const url    = `https://8x8.vc/${JAAS.appId}/${room}?jwt=${token}${config}`;
     location.href = url;
 
   } catch(e) {
