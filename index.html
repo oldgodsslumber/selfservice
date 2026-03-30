@@ -529,6 +529,9 @@ const PROXY = { url: '', token: '' };
 (function loadProxy() {
   PROXY.url   = localStorage.getItem('ss_proxy_url')   || '';
   PROXY.token = localStorage.getItem('ss_proxy_token') || '';
+  /* Auto-detect: when served over HTTP/HTTPS (i.e. Vercel or local server),
+     default to the relative proxy endpoint so no manual setup is needed. */
+  if (!PROXY.url && location.protocol.startsWith('http')) PROXY.url = '/api/jaas-token';
 })();
 function saveProxy(url, token) {
   PROXY.url   = (url   || '').trim();
@@ -2338,10 +2341,12 @@ function bytesToB64url(buf) {
 
 async function generateJaaSToken(isModerator) {
   /* ── Proxy mode: server signs the JWT; private key never leaves Vercel ── */
-  if (PROXY.url && PROXY.token) {
+  if (PROXY.url) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (PROXY.token) headers['x-proxy-token'] = PROXY.token;
     const res = await fetch(PROXY.url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-proxy-token': PROXY.token },
+      headers,
       body: JSON.stringify({ isModerator, userName: isModerator ? 'Studio Host' : 'Guest' }),
     });
     if (res.status === 401) throw new Error('Invalid proxy token — check ⚙ settings.');

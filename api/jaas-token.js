@@ -28,16 +28,12 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
   /* ── Token check ──
-     Moderator requests always require a valid PROXY_TOKEN.
-     Guest (non-moderator) requests are allowed without a token — the worst
-     outcome is someone getting a non-moderator seat, which is low risk. */
-  const { isModerator: isMod } = req.body || {};
+     If PROXY_TOKEN is set in env, it must match the x-proxy-token header.
+     If PROXY_TOKEN is not set, all requests are allowed (open proxy). */
   const expected = process.env.PROXY_TOKEN || '';
   const received = req.headers['x-proxy-token'] || '';
-  if (isMod) {
-    if (!expected)             return res.status(500).json({ error: 'Proxy not configured — set PROXY_TOKEN in Vercel.' });
-    if (received !== expected) return res.status(401).json({ error: 'Invalid proxy token.' });
-  }
+  if (expected && received !== expected)
+    return res.status(401).json({ error: 'Invalid proxy token.' });
 
   /* ── Config check ── */
   const appId = process.env.JAAS_APP_ID || '';

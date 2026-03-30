@@ -227,6 +227,7 @@ const PROXY = { url: '', token: '' };
 (function loadProxy() {
   PROXY.url   = localStorage.getItem('ss_proxy_url')   || '';
   PROXY.token = localStorage.getItem('ss_proxy_token') || '';
+  if (!PROXY.url && location.protocol.startsWith('http')) PROXY.url = '/api/jaas-token';
 })();
 
 /* =============================================================
