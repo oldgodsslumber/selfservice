@@ -2637,13 +2637,20 @@ function joinConference(room, token) {
     clientNode: 'http://jitsi.org/jitsimeet',
   };
 
+  function setConnStatus(msg) {
+    const el = document.getElementById('main-placeholder');
+    if (el) el.textContent = msg;
+  }
+
   const conn = new JMJ.JitsiConnection(null, token, options);
   S.call.conn = conn;
+  setConnStatus('Connecting to server…');
 
   conn.addEventListener(JMJ.events.connection.CONNECTION_ESTABLISHED, async () => {
+    setConnStatus('Connected — joining conference…');
     const conf = conn.initJitsiConference(room, {
       p2p: {
-        enabled:     true,   /* direct peer-to-peer for 2-person calls — bypasses SFU caps */
+        enabled:     true,
         preferH264:  true,
         useStunTurn: true,
       },
@@ -2660,6 +2667,7 @@ function joinConference(room, token) {
     conf.on(JMJ.events.conference.CONFERENCE_FAILED,  err => showCallError('Conference failed', String(err)));
     conf.on(JMJ.events.conference.CONFERENCE_ERROR,   err => showCallError('Conference error',  String(err)));
 
+    setConnStatus('Joining room…');
     conf.join();
   });
 
