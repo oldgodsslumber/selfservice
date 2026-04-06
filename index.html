@@ -2080,11 +2080,16 @@ class VirtualBgEffect {
       ctx.drawImage(results.image, -r * 1.5, -r * 1.5, W + r * 3, H + r * 3);
       ctx.filter = 'none';
     } else if (this.type === 'image' && this._bgImg) {
-      /* Cover-fit */
+      /* Cover-fit, horizontally flipped so text reads correctly in the
+         mirrored preview (CSS scaleX(-1) flips the whole canvas output) */
       const s  = Math.max(W / this._bgImg.naturalWidth, H / this._bgImg.naturalHeight);
       const sw = this._bgImg.naturalWidth  * s;
       const sh = this._bgImg.naturalHeight * s;
+      ctx.save();
+      ctx.translate(W, 0);
+      ctx.scale(-1, 1);
       ctx.drawImage(this._bgImg, (W - sw) / 2, (H - sh) / 2, sw, sh);
+      ctx.restore();
     } else {
       ctx.drawImage(results.image, 0, 0, W, H);
     }

@@ -314,7 +314,9 @@ class VirtualBgEffect {
     } else if (this.type === 'image' && this._bgImg) {
       const s  = Math.max(W / this._bgImg.naturalWidth, H / this._bgImg.naturalHeight);
       const sw = this._bgImg.naturalWidth * s, sh = this._bgImg.naturalHeight * s;
+      ctx.save(); ctx.translate(W, 0); ctx.scale(-1, 1);
       ctx.drawImage(this._bgImg, (W - sw) / 2, (H - sh) / 2, sw, sh);
+      ctx.restore();
     } else {
       ctx.drawImage(results.image, 0, 0, W, H);
     }
