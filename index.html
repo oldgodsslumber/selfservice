@@ -504,9 +504,10 @@ const S = {
     remoteTracks:  {},   /* participantId → { video, audio } */
     names:         {},   /* participantId → displayName */
     recActive: false, recSecs: 0, recTimer: null,
-    recorders: {},       /* 'local' | participantId → { recorder, chunks, mime } */
-    recBlobs:    {},     /* 'local' | participantId → { url, ext, name } */
-    downloaded:  {},     /* 'local' | participantId → true once downloaded */
+    takeNum:     0,      /* incremented each time Record is pressed */
+    recorders: {},       /* 'local-tN' | 'pid-tN' → { recorder, chunks, mime } */
+    recBlobs:    {},     /* 'local-tN' | 'pid-tN' → { url, ext, name, take } */
+    downloaded:  {},     /* 'local-tN' | 'pid-tN' → true once downloaded */
     endWarnShown: false, /* true after first End Call click warned about undownloaded files */
     bgEffect:  null,     /* active VirtualBgEffect instance in call */
     origVideoTrack: null, /* original MediaStreamTrack before effect was applied */
@@ -2887,17 +2888,21 @@ function toggleCallRec() { S.call.recActive ? stopCallRec() : startCallRec(); }
 function startCallRec() {
   S.call.recActive     = true;
   S.call.recSecs       = 0;
+  S.call.takeNum++;
+  /* Stop any leftover recorders from a previous take but keep blobs/downloads intact */
+  for (const { recorder } of Object.values(S.call.recorders)) {
+    try { if (recorder.state !== 'inactive') recorder.stop(); } catch(e) {}
+  }
   S.call.recorders     = {};
-  S.call.recBlobs      = {};
-  S.call.downloaded    = {};
   S.call.endWarnShown  = false;
 
   updateCallControls();
   const status = document.getElementById('rec-status');
+  const takeLabel = S.call.takeNum > 1 ? ' (Take ' + S.call.takeNum + ')' : '';
   if (status) status.innerHTML =
     `<span style="display:flex;align-items:center;gap:5px">
        <span style="width:7px;height:7px;background:var(--danger);border-radius:50%;animation:blink 1s infinite;flex-shrink:0"></span>
-       <span id="rec-timer">00:00</span>
+       <span id="rec-timer">00:00</span><span style="font-size:11px;opacity:.7">${takeLabel}</span>
      </span>`;
 
   S.call.recTimer = setInterval(() => {
@@ -2906,6 +2911,8 @@ function startCallRec() {
     if (t) t.textContent = fmtTime(S.call.recSecs);
   }, 1000);
 
+  const tn = S.call.takeNum;
+
   /* Local participant */
   const lv = S.call.localTracks.find(t => t.getType() === 'video');
   const la = S.call.localTracks.find(t => t.getType() === 'audio');
@@ -2913,7 +2920,7 @@ function startCallRec() {
     const tracks = [];
     if (lv) tracks.push(...lv.getOriginalStream().getVideoTracks());
     if (la) tracks.push(...la.getOriginalStream().getAudioTracks());
-    if (tracks.length) startParticipantRec('local', new MediaStream(tracks));
+    if (tracks.length) startParticipantRec('local-t' + tn, new MediaStream(tracks));
   }
 
   /* Remote participants — camera feed */
@@ -2921,13 +2928,13 @@ function startCallRec() {
     const tracks = [];
     if (rt.camera)  tracks.push(...rt.camera.getOriginalStream().getVideoTracks());
     if (rt.audio)   tracks.push(...rt.audio.getOriginalStream().getAudioTracks());
-    if (tracks.length) startParticipantRec(pid, new MediaStream(tracks));
+    if (tracks.length) startParticipantRec(pid + '-t' + tn, new MediaStream(tracks));
   }
   /* Remote participants — screen share (recorded separately if active) */
   for (const [pid, rt] of Object.entries(S.call.remoteTracks)) {
     if (rt.desktop) {
       const dTracks = rt.desktop.getOriginalStream().getVideoTracks();
-      if (dTracks.length) startParticipantRec(`${pid}-screen`, new MediaStream(dTracks));
+      if (dTracks.length) startParticipantRec(pid + '-screen-t' + tn, new MediaStream(dTracks));
     }
   }
 }
@@ -2974,40 +2981,46 @@ function onCallRecStop(id, chunks, mime) {
   const mb    = (blob.size / 1048576).toFixed(1);
   const ext   = actualMime.includes('mp4') ? 'mp4' : 'webm';
   const ts    = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-  const label = id === 'local' ? 'host' : (S.call.names[id] || id).replace(/\s+/g, '-').toLowerCase();
-  const fname = 'call-' + label + '-' + ts + '.' + ext;
 
-  S.call.recBlobs[id] = { url, ext, name: fname };
+  /* Parse the take-aware ID: 'local-t2', 'pid-t1', 'pid-screen-t3' */
+  const takeMatch = id.match(/-t(\d+)$/);
+  const take      = takeMatch ? +takeMatch[1] : 1;
+  const baseId    = takeMatch ? id.replace(/-t\d+$/, '') : id;
+  const rawLabel  = baseId === 'local' ? 'host' : (S.call.names[baseId] || baseId).replace(/\s+/g, '-').toLowerCase();
+  const takeTag   = take > 1 ? '-take' + take : '';
+  const dispTake  = take > 1 ? ' <span style="color:var(--accent);font-weight:600">(Take ' + take + ')</span>' : '';
+  const fname     = 'call-' + rawLabel + takeTag + '-' + ts + '.' + ext;
+
+  S.call.recBlobs[id] = { url, ext, name: fname, take };
   S.call.downloaded[id] = false;
-  S.call.endWarnShown   = false; /* reset warn state when new file arrives */
+  S.call.endWarnShown   = false;
 
   const row = document.getElementById('rec-download-row');
   if (!row) return;
   row.style.display = '';
 
-  /* Render or update the item for this participant */
-  let item = row.querySelector('[data-rec-id="' + id + '"]');
-  if (!item) {
-    item = document.createElement('div');
-    item.className = 'dl-item';
-    item.dataset.recId = id;
-    row.appendChild(item);
-  }
+  /* Always create a new item — each take gets its own row */
+  const item = document.createElement('div');
+  item.className = 'dl-item';
+  item.dataset.recId = id;
+  row.appendChild(item);
+
+  const safeId = id.replace(/[^a-zA-Z0-9_-]/g, '_');
   item.innerHTML =
-    '<span class="dl-badge pending" id="dl-badge-' + id + '">⬇ Not downloaded</span>' +
-    '<span style="font-size:12px;flex:1"><strong>' + label + '</strong> · ' + mb + ' MB · ' + ext.toUpperCase() + '</span>' +
+    '<span class="dl-badge pending" id="dl-badge-' + safeId + '">⬇ Not downloaded</span>' +
+    '<span style="font-size:12px;flex:1"><strong>' + rawLabel + '</strong>' + dispTake + ' · ' + mb + ' MB · ' + ext.toUpperCase() + '</span>' +
     '<a href="' + url + '" download="' + fname + '" class="btn btn-success" ' +
        'style="font-size:12px;padding:5px 10px" onclick="markDownloaded(\'' + id + '\')">' +
       '⬇ Download' +
     '</a>';
 
-  /* Also update End Call button appearance */
   updateEndCallBtn();
 }
 
 function markDownloaded(id) {
   S.call.downloaded[id] = true;
-  const badge = document.getElementById('dl-badge-' + id);
+  const safeId = id.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const badge = document.getElementById('dl-badge-' + safeId);
   if (badge) { badge.className = 'dl-badge done'; badge.textContent = '✓ Downloaded'; }
   /* If all files are now downloaded, reset the warning state */
   const allDone = Object.keys(S.call.recBlobs).every(k => S.call.downloaded[k]);
