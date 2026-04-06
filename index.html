@@ -2522,7 +2522,13 @@ function renderJitsiStep(el) {
 }
 
 function buildGuestUrl(room, token) {
-  const config = '#config.startBitrate=4096&config.disableSimulcast=false&config.resolution=1080';
+  const config = '#config.disableSimulcast=true'
+    + '&config.resolution=1080'
+    + '&config.startBitrate=8192'
+    + '&config.constraints.video.height.ideal=1080'
+    + '&config.constraints.video.height.min=720'
+    + '&config.constraints.video.width.ideal=1920'
+    + '&config.constraints.video.width.min=1280';
   return `https://8x8.vc/${JAAS.appId}/${room}?jwt=${token}${config}`;
 }
 
@@ -2808,7 +2814,9 @@ function onCallTrackAdded(track) {
     const isDesktop = (track.getVideoType?.() === 'desktop');
     if (isDesktop) S.call.remoteTracks[pid].desktop = track;
     else           S.call.remoteTracks[pid].camera  = track;
-    renderCallGrid(); /* main view will pick up desktop > camera priority */
+    /* Re-request maximum quality now that we have the actual track */
+    requestMaxQuality(pid);
+    renderCallGrid();
   } else {
     S.call.remoteTracks[pid].audio = track;
     let aud = document.getElementById(`aud-${pid}`);
@@ -2839,13 +2847,10 @@ function onCallTrackRemoved(track) {
   if (aud) aud.remove();
 }
 
-function onCallUserJoined(id, participant) {
-  S.call.names[id] = participant.getDisplayName() || 'Guest';
-
-  /* Now that we know the participant ID, tell the SFU/P2P layer to
-     treat this person as "on stage" — meaning send us their highest
-     quality layer. Without specifying the ID here the SFU ignores
-     the earlier defaultConstraints call. */
+function requestMaxQuality(id) {
+  if (!S.call.conf) return;
+  /* Tell the SFU/P2P layer to treat this person as "on stage" —
+     send us their highest quality layer (up to 1080p). */
   try {
     S.call.conf.setReceiverVideoConstraints({
       lastN:              -1,
@@ -2855,7 +2860,13 @@ function onCallUserJoined(id, participant) {
       constraints:        { [id]: { maxHeight: 1080, minHeight: 720 } },
     });
   } catch(e) {}
+  /* Also set the preferred max frame height for the conference as a whole */
+  try { S.call.conf.setReceiverConstraints?.({ lastN: -1, defaultConstraints: { maxHeight: 1080 } }); } catch(e) {}
+}
 
+function onCallUserJoined(id, participant) {
+  S.call.names[id] = participant.getDisplayName() || 'Guest';
+  requestMaxQuality(id);
   renderCallGrid();
 }
 

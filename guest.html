@@ -977,7 +977,13 @@ async function joinRoom() {
     if (S.audioCtx)     { S.audioCtx.close(); S.audioCtx = null; }
     cancelAnimationFrame(S.rafId);
 
-    const config = '#config.startBitrate=4096&config.disableSimulcast=false&config.resolution=1080';
+    const config = '#config.disableSimulcast=true'
+      + '&config.resolution=1080'
+      + '&config.startBitrate=8192'
+      + '&config.constraints.video.height.ideal=1080'
+      + '&config.constraints.video.height.min=720'
+      + '&config.constraints.video.width.ideal=1920'
+      + '&config.constraints.video.width.min=1280';
     const url    = `https://8x8.vc/${JAAS.appId}/${room}?jwt=${token}${config}`;
     location.href = url;
 
