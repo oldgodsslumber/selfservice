@@ -818,33 +818,12 @@ async function generatePlanLink() {
   input.value = room;
   S.jitsiRoom = room;
 
-  status.textContent = 'Generating token…';
-  result.style.display = 'none';
-
-  let guestToken;
-  try {
-    guestToken = await generateJaaSToken(false);
-  } catch(e) {
-    status.textContent = 'Token error: ' + e.message;
-    return;
-  }
-
-  const fullUrl = buildGuestUrl(room, guestToken);
-  status.textContent = 'Shortening link…';
-
-  let finalLink = fullUrl;
-  let shortened = false;
-  try {
-    finalLink = await shortenUrl(fullUrl, room);
-    shortened = true;
-  } catch(e) {
-    /* all named aliases taken — show full URL */
-  }
-
+  /* Guest link now points to guest.html setup wizard */
+  const finalLink = location.origin + '/guest.html?room=' + encodeURIComponent(room);
   S._guestLink = finalLink;
   const display = document.getElementById('plan-link-display');
   if (display) display.textContent = finalLink;
-  status.textContent = shortened ? '' : '⚠️ Short link aliases taken — full link shown. Copy still works.';
+  status.textContent = '';
   result.style.display = '';
   status.textContent = '';
 }
@@ -2567,38 +2546,21 @@ async function shortenUrl(url, preferredAlias) {
 }
 
 async function launchCall(room) {
-  /* Generate tokens */
-  let hostToken, guestToken;
+  /* Generate host token only — guests get their own token via guest.html */
+  let hostToken;
   try {
-    [hostToken, guestToken] = await Promise.all([
-      generateJaaSToken(true),
-      generateJaaSToken(false),
-    ]);
+    hostToken = await generateJaaSToken(true);
   } catch(e) {
     showCallError('Token generation failed', e.message);
     return;
   }
 
-  /* Build guest link and shorten it */
-  /* Append Jitsi config overrides so the guest's web client also sends at high quality */
-  const fullGuestLink = buildGuestUrl(room, guestToken);
-  S._guestLink = fullGuestLink;          /* fallback until shortener responds */
+  /* Guest link now points to guest.html setup wizard (not raw 8x8.vc URL) */
+  const guestSetupLink = location.origin + '/guest.html?room=' + encodeURIComponent(room);
+  S._guestLink = guestSetupLink;
 
   const linkEl = document.getElementById('jitsi-link');
-  if (linkEl) linkEl.textContent = 'Shortening link…';
-
-  /* Shorten in background — don't block conference join */
-  shortenUrl(fullGuestLink, room).then(short => {
-    S._guestLink = short;
-    if (linkEl) { linkEl.textContent = short; linkEl.title = fullGuestLink; }
-  }).catch(() => {
-    /* All named aliases taken — show full URL and note why */
-    S._guestLink = fullGuestLink;
-    if (linkEl) {
-      linkEl.textContent = fullGuestLink.slice(0, 60) + '…';
-      linkEl.title = 'Short link aliases for "' + room + '" are all taken today. Full link copied when you click 📋 Copy.';
-    }
-  });
+  if (linkEl) { linkEl.textContent = guestSetupLink; linkEl.title = guestSetupLink; }
 
   /* Load lib-jitsi-meet */
   try {
