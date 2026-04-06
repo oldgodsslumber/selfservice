@@ -650,6 +650,7 @@ function updateNav() {
       case 2: next.disabled = !S.homechecks[2]?.every(Boolean); break;
       case 3: next.disabled = false; break;                         /* equipment — no hard block */
       case 4: next.disabled = false; break;                         /* lighting — no hard block */
+      case 5: next.disabled = (S.mode === 'jitsi' && !S.jitsiRoom); break;
       default: next.disabled = false;
     }
   } else {
@@ -659,6 +660,7 @@ function updateNav() {
       case 2: next.disabled = !S.checks[2].every(Boolean); break;
       case 3: next.disabled = false; break;                         /* equipment check — no hard block */
       case 4: next.disabled = !S.checks[4].every(Boolean); break;  /* framing — must confirm lights */
+      case 5: next.disabled = (S.mode === 'jitsi' && !S.jitsiRoom); break; /* room name required for Jitsi */
       default: next.disabled = false;
     }
   }
@@ -1589,8 +1591,8 @@ function modeMsgHtml(m) {
     return `<div class="info-box">
       <strong>Room name</strong>
       <div style="margin-top:8px">
-        <input id="room-name-input" value="${S.jitsiRoom || ''}" placeholder="e.g. marketing"
-               oninput="S.jitsiRoom=this.value.trim()"
+        <input id="room-name-input" value="${S.jitsiRoom || ''}" placeholder="Room name (required)" required
+               oninput="S.jitsiRoom=this.value.trim(); updateNav();"
                style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px"/>
       </div>
       <div style="margin-top:10px;font-size:12px;color:var(--muted)">
