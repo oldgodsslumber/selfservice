@@ -215,35 +215,57 @@
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
     }
 
-    /* ── CALL LAYOUT — Gallery grid ── */
+    /* ── CALL LAYOUT ── */
     #call-area {
       flex: 1; position: relative; background: #000; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
     }
     #call-gallery {
       display: grid; gap: 6px; padding: 6px;
-      width: 100%; height: 100%;
-      grid-template-columns: 1fr;
+      width: 100%; height: 100%; grid-template-columns: 1fr;
     }
     #call-gallery.tiles-2 { grid-template-columns: 1fr 1fr; }
     #call-gallery.tiles-3 { grid-template-columns: 1fr 1fr; }
     #call-gallery.tiles-4 { grid-template-columns: 1fr 1fr; }
     .gallery-tile {
       position: relative; background: #111; border-radius: 8px; overflow: hidden;
-      display: flex; align-items: center; justify-content: center;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
     }
-    .gallery-tile video {
-      width: 100%; height: 100%; object-fit: cover; display: block;
-    }
+    .gallery-tile video { width: 100%; height: 100%; object-fit: cover; display: block; }
     .gallery-tile video.mirror { transform: scaleX(-1); }
     .gallery-tile .tile-label {
       position: absolute; bottom: 8px; left: 10px;
       background: rgba(0,0,0,0.6); color: #fff;
-      font-size: 12px; font-weight: 600;
-      padding: 3px 10px; border-radius: 20px; pointer-events: none;
+      font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px; pointer-events: none;
     }
-    .gallery-tile .tile-placeholder {
-      color: #555; font-size: 14px; text-align: center; padding: 20px;
+    .gallery-tile .tile-placeholder { color: #555; font-size: 14px; text-align: center; padding: 20px; }
+    /* Focus mode */
+    #focus-wrap { display: flex; flex-direction: column; width: 100%; height: 100%; }
+    #focus-main { flex: 1; position: relative; background: #000; overflow: hidden; }
+    #focus-main video { width: 100%; height: 100%; object-fit: contain; display: block; }
+    #focus-main video.mirror { transform: scaleX(-1); }
+    #focus-main .tile-label {
+      position: absolute; bottom: 12px; left: 12px;
+      background: rgba(0,0,0,0.6); color: #fff;
+      font-size: 13px; font-weight: 600; padding: 4px 12px; border-radius: 20px; pointer-events: none;
+    }
+    #focus-strip {
+      display: flex; gap: 4px; padding: 4px;
+      background: #0a0a0a; flex-shrink: 0; overflow-x: auto; height: 100px;
+    }
+    .strip-tile {
+      position: relative; flex-shrink: 0; width: 140px; height: 100%;
+      background: #111; border-radius: 6px; overflow: hidden; cursor: pointer;
+      border: 2px solid transparent; transition: border-color .15s;
+    }
+    .strip-tile:hover { border-color: var(--accent); }
+    .strip-tile.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    .strip-tile video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .strip-tile video.mirror { transform: scaleX(-1); }
+    .strip-tile .tile-label {
+      position: absolute; bottom: 3px; left: 5px;
+      background: rgba(0,0,0,0.6); color: #fff;
+      font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 10px; pointer-events: none;
     }
     #main-placeholder {
       position: absolute; inset: 0;
@@ -342,6 +364,8 @@ const S = {
     names: {},
     bgEffect: null,
     origVideoTrack: null,
+    viewMode: 'gallery',
+    focusId:  null,
   },
 };
 
@@ -1144,6 +1168,7 @@ function renderCallUI() {
       <button id="cam-btn" class="tb-btn" onclick="toggleCam()" title="Camera on/off"><span class="tb-icon">📷</span>Camera</button>
       <button id="share-btn" class="tb-btn" onclick="toggleShare()" title="Share your screen"><span class="tb-icon">💻</span>Share Screen</button>
       <button id="bg-btn"  class="tb-btn" onclick="toggleBgPanel()" title="Virtual background"><span class="tb-icon">🖼</span>Background</button>
+      <button id="view-btn" class="tb-btn" onclick="toggleViewMode()" title="Switch view"><span class="tb-icon">⊞</span>Gallery</button>
       <div class="spacer"></div>
       <button class="tb-btn end" onclick="leaveCall()" title="Leave call"><span class="tb-icon">📵</span>Leave</button>
     </div>
@@ -1345,13 +1370,9 @@ function onCallUserLeft(id) {
   renderCallGrid();
 }
 
-function renderCallGrid() {
-  const area = document.getElementById('call-area');
-  if (!area) return;
-
+function buildTiles() {
   const tiles = [];
   tiles.push({ id: 'self', label: 'You', isSelf: true });
-
   for (const [pid, name] of Object.entries(S.call.names)) {
     const rt = S.call.remoteTracks[pid] || {};
     tiles.push({ id: pid, label: name || 'Host', track: rt.desktop || rt.camera || null, isDesktop: !!rt.desktop });
@@ -1359,13 +1380,76 @@ function renderCallGrid() {
       tiles.push({ id: pid + '-cam', label: name || 'Host', track: rt.camera });
     }
   }
+  return tiles;
+}
 
+function attachSelfVideo(el) {
+  if (!el) return;
+  if (S.call.bgEffect && S.call.bgEffect._outStream) {
+    el.srcObject = S.call.bgEffect._outStream;
+  } else {
+    for (const t of S.call.localTracks) {
+      if (t.getType() === 'video') t.attach(el);
+    }
+  }
+}
+
+function attachAudioElements() {
+  for (const [id, tracks] of Object.entries(S.call.remoteTracks)) {
+    if (tracks.audio) {
+      let aud = document.getElementById('aud-' + id);
+      if (!aud) { aud = document.createElement('audio'); aud.id = 'aud-' + id; aud.autoplay = true; document.body.appendChild(aud); }
+      tracks.audio.attach(aud);
+    }
+  }
+}
+
+function setFocus(tileId) {
+  S.call.focusId = tileId;
+  S.call.viewMode = 'focus';
+  renderCallGrid();
+  updateViewBtn();
+}
+
+function toggleViewMode() {
+  S.call.viewMode = S.call.viewMode === 'gallery' ? 'focus' : 'gallery';
+  if (S.call.viewMode === 'focus' && !S.call.focusId) {
+    const tiles = buildTiles();
+    const remote = tiles.find(t => !t.isSelf);
+    S.call.focusId = remote ? remote.id : 'self';
+  }
+  renderCallGrid();
+  updateViewBtn();
+}
+
+function updateViewBtn() {
+  const btn = document.getElementById('view-btn');
+  if (!btn) return;
+  const isGallery = S.call.viewMode === 'gallery';
+  btn.innerHTML = '<span class="tb-icon">' + (isGallery ? '⊞' : '⊡') + '</span>' + (isGallery ? 'Gallery' : 'Focus');
+}
+
+function renderCallGrid() {
+  const area = document.getElementById('call-area');
+  if (!area) return;
+  const tiles = buildTiles();
+
+  if (tiles.length <= 1 && !S.call.localTracks.length) {
+    area.innerHTML = '<div id="main-placeholder">Waiting for host to join…</div>';
+    return;
+  }
+
+  if (S.call.viewMode === 'focus') renderFocusView(area, tiles);
+  else renderGalleryView(area, tiles);
+  attachAudioElements();
+}
+
+function renderGalleryView(area, tiles) {
   const count = tiles.length;
   const cls = count >= 4 ? 'tiles-4' : count >= 3 ? 'tiles-3' : count >= 2 ? 'tiles-2' : '';
-
   let html = '<div id="call-gallery" class="' + cls + '">';
   for (const tile of tiles) {
-    html += '<div class="gallery-tile">';
+    html += '<div class="gallery-tile" onclick="setFocus(\'' + tile.id + '\')">';
     if (tile.isSelf) {
       html += '<video id="self-video" autoplay playsinline muted class="mirror"></video>';
     } else if (tile.track) {
@@ -1377,36 +1461,55 @@ function renderCallGrid() {
     html += '</div>';
   }
   html += '</div>';
-
-  if (count <= 1 && !S.call.localTracks.length) {
-    html = '<div id="main-placeholder">Waiting for host to join…</div>';
-  }
-
   area.innerHTML = html;
-
-  const selfVid = document.getElementById('self-video');
-  if (selfVid) {
-    if (S.call.bgEffect && S.call.bgEffect._outStream) {
-      selfVid.srcObject = S.call.bgEffect._outStream;
-    } else {
-      for (const t of S.call.localTracks) {
-        if (t.getType() === 'video') t.attach(selfVid);
-      }
-    }
-  }
-
+  attachSelfVideo(document.getElementById('self-video'));
   for (const tile of tiles) {
     if (tile.isSelf || !tile.track) continue;
     const el = document.getElementById('vid-' + tile.id);
     if (el) tile.track.attach(el);
   }
+}
 
-  for (const [id, tracks] of Object.entries(S.call.remoteTracks)) {
-    if (tracks.audio) {
-      let aud = document.getElementById(`aud-${id}`);
-      if (!aud) { aud = document.createElement('audio'); aud.id = `aud-${id}`; aud.autoplay = true; document.body.appendChild(aud); }
-      tracks.audio.attach(aud);
+function renderFocusView(area, tiles) {
+  let focused = tiles.find(t => t.id === S.call.focusId);
+  if (!focused) focused = tiles.find(t => !t.isSelf) || tiles[0];
+  const others = tiles.filter(t => t.id !== focused.id);
+
+  let html = '<div id="focus-wrap">';
+  html += '<div id="focus-main">';
+  if (focused.isSelf) {
+    html += '<video id="self-video" autoplay playsinline muted class="mirror"></video>';
+  } else if (focused.track) {
+    html += '<video id="vid-' + focused.id + '" autoplay playsinline' + (focused.isDesktop ? '' : ' class="mirror"') + '></video>';
+  } else {
+    html += '<div class="tile-placeholder" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">Waiting for video…</div>';
+  }
+  html += '<div class="tile-label">' + focused.label + (focused.isDesktop ? ' — Screen' : '') + '</div>';
+  html += '</div>';
+
+  if (others.length) {
+    html += '<div id="focus-strip">';
+    for (const tile of others) {
+      html += '<div class="strip-tile" onclick="setFocus(\'' + tile.id + '\')">';
+      if (tile.isSelf) {
+        html += '<video id="self-video-strip" autoplay playsinline muted class="mirror"></video>';
+      } else if (tile.track) {
+        html += '<video id="vid-' + tile.id + '" autoplay playsinline' + (tile.isDesktop ? '' : ' class="mirror"') + '></video>';
+      }
+      html += '<div class="tile-label">' + tile.label + '</div>';
+      html += '</div>';
     }
+    html += '</div>';
+  }
+  html += '</div>';
+  area.innerHTML = html;
+
+  if (focused.isSelf) attachSelfVideo(document.getElementById('self-video'));
+  else if (focused.track) { const el = document.getElementById('vid-' + focused.id); if (el) focused.track.attach(el); }
+
+  for (const tile of others) {
+    if (tile.isSelf) attachSelfVideo(document.getElementById('self-video-strip'));
+    else if (tile.track) { const el = document.getElementById('vid-' + tile.id); if (el) tile.track.attach(el); }
   }
 }
 
