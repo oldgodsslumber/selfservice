@@ -2574,7 +2574,7 @@ async function launchCall(room) {
 }
 
 function showCallError(title, detail) {
-  const grid = document.getElementById('call-grid');
+  const grid = document.getElementById('call-area') || document.getElementById('call-grid');
   if (grid) grid.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:center;height:100%">
       <div style="text-align:center;color:var(--danger)">
@@ -2640,11 +2640,27 @@ function joinConference(room, token) {
     conf.on(JMJ.events.conference.CONFERENCE_JOINED,  onCallJoined);
     conf.on(JMJ.events.conference.USER_JOINED,        onCallUserJoined);
     conf.on(JMJ.events.conference.USER_LEFT,          onCallUserLeft);
-    conf.on(JMJ.events.conference.CONFERENCE_FAILED,  err => showCallError('Conference failed', String(err)));
-    conf.on(JMJ.events.conference.CONFERENCE_ERROR,   err => showCallError('Conference error',  String(err)));
+    conf.on(JMJ.events.conference.CONFERENCE_FAILED,  (err, ...args) => {
+      console.error('CONFERENCE_FAILED:', err, args);
+      showCallError('Conference failed', String(err) + (args.length ? ' — ' + args.join(', ') : ''));
+    });
+    conf.on(JMJ.events.conference.CONFERENCE_ERROR,   (err, ...args) => {
+      console.error('CONFERENCE_ERROR:', err, args);
+      showCallError('Conference error', String(err));
+    });
+    conf.on(JMJ.events.conference.AUTH_STATUS_CHANGED, (auth, id) => {
+      console.warn('AUTH_STATUS_CHANGED:', auth, id);
+    });
 
     setConnStatus('Joining room…');
-    conf.join();
+    conf.join(token);
+
+    /* Safety timeout — if CONFERENCE_JOINED hasn't fired after 15s, surface an error */
+    setTimeout(() => {
+      if (!S.call.localTracks.length && S.call.conf === conf) {
+        setConnStatus('Still trying to join… If this persists, check the browser console (F12) for errors.');
+      }
+    }, 15000);
   });
 
   conn.addEventListener(JMJ.events.connection.CONNECTION_FAILED, err => {
