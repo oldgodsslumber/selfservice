@@ -2708,21 +2708,31 @@ function joinConference(room, token) {
 async function onCallJoined() {
   /* Create local tracks using devices selected during setup */
   let tracks = [];
-  try {
-    tracks = await JitsiMeetJS.createLocalTracks({
-      devices: ['audio', 'video'],
-      constraints: {
-        video: {
-          width:     { ideal: 1920, max: 1920 },
-          height:    { ideal: 1080, max: 1080 },
-          frameRate: { ideal: 30,   max: 30   },
-        },
+  const trackOpts = {
+    devices: ['audio', 'video'],
+    constraints: {
+      video: {
+        width:     { ideal: 1920, max: 1920 },
+        height:    { ideal: 1080, max: 1080 },
+        frameRate: { ideal: 30,   max: 30   },
       },
-      ...(S.dev.curVideoId ? { cameraDeviceId: S.dev.curVideoId } : {}),
-      ...(S.dev.curAudioId ? { micDeviceId:    S.dev.curAudioId } : {}),
-    });
+    },
+  };
+  if (S.dev.curVideoId) trackOpts.cameraDeviceId = S.dev.curVideoId;
+  if (S.dev.curAudioId) trackOpts.micDeviceId    = S.dev.curAudioId;
+  try {
+    tracks = await JitsiMeetJS.createLocalTracks(trackOpts);
   } catch(e) {
-    console.warn('Could not create local tracks:', e);
+    console.warn('Could not create local tracks with preferred devices:', e);
+    /* Fallback: try without specific device IDs */
+    try {
+      tracks = await JitsiMeetJS.createLocalTracks({ devices: ['audio', 'video'] });
+    } catch(e2) {
+      console.warn('Fallback track creation also failed:', e2);
+      /* Last resort: try audio and video separately */
+      try { const a = await JitsiMeetJS.createLocalTracks({ devices: ['audio'] }); tracks.push(...a); } catch(e3) {}
+      try { const v = await JitsiMeetJS.createLocalTracks({ devices: ['video'] }); tracks.push(...v); } catch(e3) {}
+    }
   }
 
   S.call.localTracks = tracks;
