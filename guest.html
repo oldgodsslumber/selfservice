@@ -1539,32 +1539,43 @@ function updateCallControls() {
 }
 
 async function toggleShare() {
-  const existing = S.call.localTracks.find(t => t.getVideoType?.() === 'desktop');
-  if (existing) {
-    try { await S.call.conf.removeTrack(existing); } catch(e) {}
-    existing.dispose();
-    S.call.localTracks = S.call.localTracks.filter(t => t !== existing);
+  if (S.call._desktopTrack) {
+    try { await S.call.conf.removeTrack(S.call._desktopTrack); } catch(e) {}
+    S.call._desktopTrack.dispose();
+    S.call.localTracks = S.call.localTracks.filter(t => t !== S.call._desktopTrack);
+    S.call._desktopTrack = null;
+    if (S.call._desktopStream) { S.call._desktopStream.getTracks().forEach(t => t.stop()); S.call._desktopStream = null; }
     updateCallControls();
     renderCallGrid();
     return;
   }
   try {
-    const tracks = await JitsiMeetJS.createLocalTracks({ devices: ['desktop'] });
+    const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+    S.call._desktopStream = stream;
+    const tracks = await JitsiMeetJS.createLocalTracks({
+      devices: ['desktop'],
+      desktopStream: stream,
+    });
     for (const t of tracks) {
       S.call.localTracks.push(t);
+      S.call._desktopTrack = t;
       try { await S.call.conf.addTrack(t); } catch(e) {}
       t.addEventListener(JitsiMeetJS.events.track.LOCAL_TRACK_STOPPED, () => {
         S.call.localTracks = S.call.localTracks.filter(x => x !== t);
+        S.call._desktopTrack = null;
+        S.call._desktopStream = null;
         updateCallControls();
         renderCallGrid();
       });
     }
+    stream.getVideoTracks()[0]?.addEventListener('ended', () => {
+      if (S.call._desktopTrack) toggleShare();
+    });
     updateCallControls();
     renderCallGrid();
   } catch(e) {
-    /* User cancelled the picker or permission denied — both are fine, just ignore */
     const s = String(e);
-    if (!s.includes('cancel') && !s.includes('NotAllowed') && !s.includes('Permission')) {
+    if (!s.includes('cancel') && !s.includes('NotAllowed') && !s.includes('Permission') && !s.includes('AbortError')) {
       console.warn('Screen share error:', e);
     }
   }
