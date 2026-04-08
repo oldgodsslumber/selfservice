@@ -1541,7 +1541,7 @@ function updateCallControls() {
 async function toggleShare() {
   if (S.call._desktopTrack) {
     try { await S.call.conf.removeTrack(S.call._desktopTrack); } catch(e) {}
-    S.call._desktopTrack.dispose();
+    try { S.call._desktopTrack.dispose(); } catch(e) {}
     S.call.localTracks = S.call.localTracks.filter(t => t !== S.call._desktopTrack);
     S.call._desktopTrack = null;
     if (S.call._desktopStream) { S.call._desktopStream.getTracks().forEach(t => t.stop()); S.call._desktopStream = null; }
@@ -1549,35 +1549,49 @@ async function toggleShare() {
     renderCallGrid();
     return;
   }
+  let stream;
   try {
-    const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-    S.call._desktopStream = stream;
-    const tracks = await JitsiMeetJS.createLocalTracks({
-      devices: ['desktop'],
-      desktopStream: stream,
+    stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+  } catch(e) {
+    return;
+  }
+  S.call._desktopStream = stream;
+
+  try {
+    const JMJ = window.JitsiMeetJS;
+    const videoTrack = stream.getVideoTracks()[0];
+    if (!videoTrack) { stream.getTracks().forEach(t => t.stop()); return; }
+
+    const t = new JMJ.JitsiLocalTrack({
+      stream,
+      track: videoTrack,
+      mediaType: 'video',
+      videoType: 'desktop',
+      sourceType: 'desktop',
+      sourceId: 'screen',
     });
-    for (const t of tracks) {
-      S.call.localTracks.push(t);
-      S.call._desktopTrack = t;
-      try { await S.call.conf.addTrack(t); } catch(e) {}
-      t.addEventListener(JitsiMeetJS.events.track.LOCAL_TRACK_STOPPED, () => {
+
+    S.call.localTracks.push(t);
+    S.call._desktopTrack = t;
+    await S.call.conf.addTrack(t);
+
+    videoTrack.addEventListener('ended', () => {
+      if (S.call._desktopTrack === t) {
+        try { S.call.conf.removeTrack(t); } catch(e) {}
+        try { t.dispose(); } catch(e) {}
         S.call.localTracks = S.call.localTracks.filter(x => x !== t);
         S.call._desktopTrack = null;
         S.call._desktopStream = null;
         updateCallControls();
         renderCallGrid();
-      });
-    }
-    stream.getVideoTracks()[0]?.addEventListener('ended', () => {
-      if (S.call._desktopTrack) toggleShare();
+      }
     });
     updateCallControls();
     renderCallGrid();
   } catch(e) {
-    const s = String(e);
-    if (!s.includes('cancel') && !s.includes('NotAllowed') && !s.includes('Permission') && !s.includes('AbortError')) {
-      console.warn('Screen share error:', e);
-    }
+    console.warn('Screen share error:', e);
+    stream.getTracks().forEach(t => t.stop());
+    S.call._desktopStream = null;
   }
 }
 
