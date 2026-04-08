@@ -215,33 +215,40 @@
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
     }
 
-    /* ── CALL LAYOUT ── */
-    #call-area { flex: 1; position: relative; background: #000; overflow: hidden; }
-    #main-video { width: 100%; height: 100%; object-fit: contain; display: block; background: #000; }
-    #main-label {
-      position: absolute; bottom: 12px; left: 12px;
+    /* ── CALL LAYOUT — Gallery grid ── */
+    #call-area {
+      flex: 1; position: relative; background: #000; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #call-gallery {
+      display: grid; gap: 6px; padding: 6px;
+      width: 100%; height: 100%;
+      grid-template-columns: 1fr;
+    }
+    #call-gallery.tiles-2 { grid-template-columns: 1fr 1fr; }
+    #call-gallery.tiles-3 { grid-template-columns: 1fr 1fr; }
+    #call-gallery.tiles-4 { grid-template-columns: 1fr 1fr; }
+    .gallery-tile {
+      position: relative; background: #111; border-radius: 8px; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .gallery-tile video {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    .gallery-tile video.mirror { transform: scaleX(-1); }
+    .gallery-tile .tile-label {
+      position: absolute; bottom: 8px; left: 10px;
       background: rgba(0,0,0,0.6); color: #fff;
-      font-size: 13px; font-weight: 600;
-      padding: 4px 12px; border-radius: 20px; pointer-events: none;
+      font-size: 12px; font-weight: 600;
+      padding: 3px 10px; border-radius: 20px; pointer-events: none;
+    }
+    .gallery-tile .tile-placeholder {
+      color: #555; font-size: 14px; text-align: center; padding: 20px;
     }
     #main-placeholder {
       position: absolute; inset: 0;
       display: flex; align-items: center; justify-content: center;
       color: #444; font-size: 15px;
-    }
-    #pip-wrap {
-      position: absolute; bottom: 12px; right: 12px;
-      width: 200px; aspect-ratio: 16/9;
-      background: #111; border-radius: 8px; overflow: hidden;
-      border: 2px solid rgba(255,255,255,0.15);
-      cursor: move; z-index: 10;
-    }
-    #pip-wrap video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-    #pip-label {
-      position: absolute; bottom: 5px; left: 8px;
-      background: rgba(0,0,0,0.55); color: #fff;
-      font-size: 11px; font-weight: 600;
-      padding: 2px 7px; border-radius: 20px; pointer-events: none;
     }
     /* Toolbar */
     .call-toolbar {
@@ -1331,35 +1338,56 @@ function renderCallGrid() {
   const area = document.getElementById('call-area');
   if (!area) return;
 
-  const pids      = Object.keys(S.call.names);
-  const pid       = pids[0] || null;
-  const rt        = pid ? (S.call.remoteTracks[pid] || {}) : {};
-  const hostName  = pid ? (S.call.names[pid] || 'Host') : null;
+  const tiles = [];
+  tiles.push({ id: 'self', label: 'You', isSelf: true });
 
-  const mainTrack = rt.desktop || rt.camera || null;
-  const mainLabel = rt.desktop ? `${hostName} — Screen` : (hostName || '');
-
-  area.innerHTML = `
-    <video id="main-video" autoplay playsinline style="${mainTrack ? '' : 'display:none'}"></video>
-    <div id="main-placeholder" style="${mainTrack ? 'display:none' : ''}">
-      ${pid ? 'Waiting for host video…' : 'Waiting for host to join…'}
-    </div>
-    ${mainTrack ? '<div id="main-label">' + mainLabel + '</div>' : ''}
-    <div id="pip-wrap" onmousedown="pipDragStart(event)">
-      <video id="pip-video" autoplay playsinline muted></video>
-      <div id="pip-label">You</div>
-    </div>`;
-
-  if (mainTrack) mainTrack.attach(document.getElementById('main-video'));
-
-  /* Attach self-view — use bg canvas stream if active, otherwise Jitsi track */
-  const pip = document.getElementById('pip-video');
-  if (S.call.bgEffect && S.call.bgEffect._outStream && pip) {
-    pip.srcObject = S.call.bgEffect._outStream;
-  } else {
-    for (const t of S.call.localTracks) {
-      if (t.getType() === 'video') t.attach(pip);
+  for (const [pid, name] of Object.entries(S.call.names)) {
+    const rt = S.call.remoteTracks[pid] || {};
+    tiles.push({ id: pid, label: name || 'Host', track: rt.desktop || rt.camera || null, isDesktop: !!rt.desktop });
+    if (rt.desktop && rt.camera) {
+      tiles.push({ id: pid + '-cam', label: name || 'Host', track: rt.camera });
     }
+  }
+
+  const count = tiles.length;
+  const cls = count >= 4 ? 'tiles-4' : count >= 3 ? 'tiles-3' : count >= 2 ? 'tiles-2' : '';
+
+  let html = '<div id="call-gallery" class="' + cls + '">';
+  for (const tile of tiles) {
+    html += '<div class="gallery-tile">';
+    if (tile.isSelf) {
+      html += '<video id="self-video" autoplay playsinline muted class="mirror"></video>';
+    } else if (tile.track) {
+      html += '<video id="vid-' + tile.id + '" autoplay playsinline' + (tile.isDesktop ? '' : ' class="mirror"') + '></video>';
+    } else {
+      html += '<div class="tile-placeholder">Waiting for video…</div>';
+    }
+    html += '<div class="tile-label">' + tile.label + (tile.isDesktop ? ' — Screen' : '') + '</div>';
+    html += '</div>';
+  }
+  html += '</div>';
+
+  if (count <= 1 && !S.call.localTracks.length) {
+    html = '<div id="main-placeholder">Waiting for host to join…</div>';
+  }
+
+  area.innerHTML = html;
+
+  const selfVid = document.getElementById('self-video');
+  if (selfVid) {
+    if (S.call.bgEffect && S.call.bgEffect._outStream) {
+      selfVid.srcObject = S.call.bgEffect._outStream;
+    } else {
+      for (const t of S.call.localTracks) {
+        if (t.getType() === 'video') t.attach(selfVid);
+      }
+    }
+  }
+
+  for (const tile of tiles) {
+    if (tile.isSelf || !tile.track) continue;
+    const el = document.getElementById('vid-' + tile.id);
+    if (el) tile.track.attach(el);
   }
 
   for (const [id, tracks] of Object.entries(S.call.remoteTracks)) {
@@ -1369,24 +1397,6 @@ function renderCallGrid() {
       tracks.audio.attach(aud);
     }
   }
-}
-
-function pipDragStart(e) {
-  const pip = document.getElementById('pip-wrap');
-  if (!pip) return;
-  let startX = e.clientX, startY = e.clientY;
-  const rect = pip.getBoundingClientRect();
-  let left = rect.left, top = rect.top;
-  pip.style.right = 'auto'; pip.style.bottom = 'auto';
-  pip.style.left = left + 'px'; pip.style.top = top + 'px';
-  const move = ev => {
-    left += ev.clientX - startX; top += ev.clientY - startY;
-    startX = ev.clientX; startY = ev.clientY;
-    pip.style.left = left + 'px'; pip.style.top = top + 'px';
-  };
-  const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
-  document.addEventListener('mousemove', move);
-  document.addEventListener('mouseup', up);
 }
 
 /* ── Controls ── */
@@ -1452,7 +1462,7 @@ async function applyCallBgEffect(id) {
   if (S.call.origVideoTrack) await replaceVideoSender(S.call.origVideoTrack);
 
   if (id === 'none') {
-    const pip = document.getElementById('pip-video');
+    const pip = document.getElementById('self-video');
     if (pip && vt) { try { vt.detach(pip); } catch(e) {} vt.attach(pip); }
     S.call.origVideoTrack = null;
     return;
@@ -1482,7 +1492,7 @@ async function applyCallBgEffect(id) {
     }
 
     await replaceVideoSender(canvasVideoTrack);
-    const pip = document.getElementById('pip-video');
+    const pip = document.getElementById('self-video');
     if (pip) { try { vt.detach(pip); } catch(e) {} pip.srcObject = canvasStream; }
     S.call.bgEffect = effect;
   } catch(e) {
@@ -1519,6 +1529,14 @@ async function leaveCall() {
 /* =============================================================
    BOOT
    ============================================================= */
+/* ?skip=1&room=NAME jumps directly into the call */
+(function checkSkip() {
+  const params = new URLSearchParams(location.search);
+  if (params.get('skip') === '1' && S.room) {
+    S.step = 3; /* show join room step, then auto-join */
+    setTimeout(() => joinRoom(), 300);
+  }
+})();
 render();
 </script>
 </body>
