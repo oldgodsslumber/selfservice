@@ -71,6 +71,13 @@ module.exports = async function handler(req, res) {
         name: userName || (isModerator ? 'Studio Host' : 'Guest'),
         id: require('crypto').randomUUID(),
       },
+      features: {
+        livestreaming: true,
+        recording:     true,
+        transcription: true,
+        'outbound-call': true,
+        'sip-outbound-call': true,
+      },
     },
   };
 
