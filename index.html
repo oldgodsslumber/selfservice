@@ -2925,66 +2925,29 @@ function toggleBgPanel() {
 }
 
 async function toggleShare() {
-  /* Stop existing share */
-  if (S.call._desktopTrack) {
-    try { await S.call.conf.removeTrack(S.call._desktopTrack); } catch(e) {}
-    try { S.call._desktopTrack.dispose(); } catch(e) {}
-    S.call.localTracks = S.call.localTracks.filter(t => t !== S.call._desktopTrack);
-    S.call._desktopTrack = null;
-    if (S.call._desktopStream) { S.call._desktopStream.getTracks().forEach(t => t.stop()); S.call._desktopStream = null; }
+  const existing = S.call.localTracks.find(t => t.getVideoType?.() === 'desktop');
+  if (existing) {
+    try { await S.call.conf.removeTrack(existing); } catch(e) {}
+    try { existing.dispose(); } catch(e) {}
+    S.call.localTracks = S.call.localTracks.filter(t => t !== existing);
     updateCallControls();
     renderCallGrid();
     return;
   }
-  /* Start sharing — native getDisplayMedia gives the full picker */
-  let stream;
   try {
-    stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-  } catch(e) {
-    /* User cancelled or denied — totally fine */
-    return;
-  }
-  S.call._desktopStream = stream;
-
-  /* Wrap in a JitsiLocalTrack so the conference can send it */
-  try {
-    const JMJ = window.JitsiMeetJS;
-    const videoTrack = stream.getVideoTracks()[0];
-    if (!videoTrack) { stream.getTracks().forEach(t => t.stop()); return; }
-
-    const t = new JMJ.JitsiLocalTrack({
-      stream,
-      track: videoTrack,
-      mediaType: 'video',
-      videoType: 'desktop',
-      sourceType: 'desktop',
-      sourceId: 'screen',
-    });
-
-    S.call.localTracks.push(t);
-    S.call._desktopTrack = t;
-    await S.call.conf.addTrack(t);
-
-    /* Auto-stop when user clicks browser's "Stop sharing" */
-    videoTrack.addEventListener('ended', () => {
-      if (S.call._desktopTrack === t) {
-        try { S.call.conf.removeTrack(t); } catch(e) {}
-        try { t.dispose(); } catch(e) {}
+    const tracks = await JitsiMeetJS.createLocalTracks({ devices: ['desktop'] });
+    for (const t of tracks) {
+      S.call.localTracks.push(t);
+      try { await S.call.conf.addTrack(t); } catch(e) {}
+      t.addEventListener(JitsiMeetJS.events.track.LOCAL_TRACK_STOPPED, () => {
         S.call.localTracks = S.call.localTracks.filter(x => x !== t);
-        S.call._desktopTrack = null;
-        S.call._desktopStream = null;
         updateCallControls();
         renderCallGrid();
-      }
-    });
+      });
+    }
     updateCallControls();
     renderCallGrid();
-  } catch(e) {
-    console.warn('Screen share error:', e);
-    /* Clean up the stream if we couldn't add the track */
-    stream.getTracks().forEach(t => t.stop());
-    S.call._desktopStream = null;
-  }
+  } catch(e) { /* user cancelled or browser restriction — ignore */ }
 }
 
 function onCallTrackAdded(track) {
