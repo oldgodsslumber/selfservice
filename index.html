@@ -2934,8 +2934,21 @@ async function toggleShare() {
     renderCallGrid();
     return;
   }
+  /* Get display media ourselves — no constraints so the full picker shows
+     (Entire Screen, Window, AND Tab). lib-jitsi-meet's createLocalTracks
+     restricts to browser tabs when it calls getDisplayMedia internally. */
+  let nativeStream;
   try {
-    const tracks = await JitsiMeetJS.createLocalTracks({ devices: ['desktop'] });
+    nativeStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+  } catch(e) { return; /* user cancelled picker */ }
+
+  try {
+    /* Pass our stream to createLocalTracks — it wraps it in a JitsiLocalTrack
+       without calling getDisplayMedia a second time */
+    const tracks = await JitsiMeetJS.createLocalTracks({
+      devices: ['desktop'],
+      desktopStream: nativeStream,
+    });
     for (const t of tracks) {
       S.call.localTracks.push(t);
       try { await S.call.conf.addTrack(t); } catch(e) {}
@@ -2945,9 +2958,23 @@ async function toggleShare() {
         renderCallGrid();
       });
     }
+    /* Also listen on the native track for browser stop button */
+    nativeStream.getVideoTracks()[0]?.addEventListener('ended', () => {
+      const dt = S.call.localTracks.find(t => t.getVideoType?.() === 'desktop');
+      if (dt) {
+        try { S.call.conf.removeTrack(dt); } catch(e) {}
+        try { dt.dispose(); } catch(e) {}
+        S.call.localTracks = S.call.localTracks.filter(t => t !== dt);
+        updateCallControls();
+        renderCallGrid();
+      }
+    });
     updateCallControls();
     renderCallGrid();
-  } catch(e) { /* user cancelled or browser restriction — ignore */ }
+  } catch(e) {
+    /* createLocalTracks with desktopStream failed — clean up */
+    nativeStream.getTracks().forEach(t => t.stop());
+  }
 }
 
 function onCallTrackAdded(track) {
