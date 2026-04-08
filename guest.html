@@ -1373,6 +1373,10 @@ function onCallUserLeft(id) {
 function buildTiles() {
   const tiles = [];
   tiles.push({ id: 'self', label: 'You', isSelf: true });
+  const localDesktop = S.call.localTracks.find(t => t.getVideoType?.() === 'desktop');
+  if (localDesktop) {
+    tiles.push({ id: 'self-screen', label: 'You — Screen', isSelf: true, isDesktop: true, localTrack: localDesktop });
+  }
   for (const [pid, name] of Object.entries(S.call.names)) {
     const rt = S.call.remoteTracks[pid] || {};
     tiles.push({ id: pid, label: name || 'Host', track: rt.desktop || rt.camera || null, isDesktop: !!rt.desktop });
@@ -1444,29 +1448,34 @@ function renderCallGrid() {
   attachAudioElements();
 }
 
+function focusTileHtml(tile, vidId) {
+  if (tile.isSelf && !tile.isDesktop) return '<video id="' + vidId + '" autoplay playsinline muted class="mirror"></video>';
+  if (tile.isSelf && tile.isDesktop)  return '<video id="vid-' + tile.id + '" autoplay playsinline muted></video>';
+  if (tile.track)                     return '<video id="vid-' + tile.id + '" autoplay playsinline' + (tile.isDesktop ? '' : ' class="mirror"') + '></video>';
+  return '<div class="tile-placeholder">Waiting for video…</div>';
+}
+
+function attachTile(tile, vidId) {
+  if (tile.isSelf && !tile.isDesktop) { attachSelfVideo(document.getElementById(vidId)); return; }
+  if (tile.localTrack) { const el = document.getElementById('vid-' + tile.id); if (el) tile.localTrack.attach(el); return; }
+  if (tile.track)      { const el = document.getElementById('vid-' + tile.id); if (el) tile.track.attach(el); }
+}
+
 function renderGalleryView(area, tiles) {
   const count = tiles.length;
   const cls = count >= 4 ? 'tiles-4' : count >= 3 ? 'tiles-3' : count >= 2 ? 'tiles-2' : '';
   let html = '<div id="call-gallery" class="' + cls + '">';
   for (const tile of tiles) {
     html += '<div class="gallery-tile" onclick="setFocus(\'' + tile.id + '\')">';
-    if (tile.isSelf) {
-      html += '<video id="self-video" autoplay playsinline muted class="mirror"></video>';
-    } else if (tile.track) {
-      html += '<video id="vid-' + tile.id + '" autoplay playsinline' + (tile.isDesktop ? '' : ' class="mirror"') + '></video>';
-    } else {
-      html += '<div class="tile-placeholder">Waiting for video…</div>';
-    }
-    html += '<div class="tile-label">' + tile.label + (tile.isDesktop ? ' — Screen' : '') + '</div>';
-    html += '</div>';
+    html += focusTileHtml(tile, 'self-video');
+    html += '<div class="tile-label">' + tile.label + '</div></div>';
   }
   html += '</div>';
   area.innerHTML = html;
   attachSelfVideo(document.getElementById('self-video'));
   for (const tile of tiles) {
-    if (tile.isSelf || !tile.track) continue;
-    const el = document.getElementById('vid-' + tile.id);
-    if (el) tile.track.attach(el);
+    if (tile.localTrack) { const el = document.getElementById('vid-' + tile.id); if (el) tile.localTrack.attach(el); }
+    else if (!tile.isSelf && tile.track) { const el = document.getElementById('vid-' + tile.id); if (el) tile.track.attach(el); }
   }
 }
 
@@ -1475,42 +1484,22 @@ function renderFocusView(area, tiles) {
   if (!focused) focused = tiles.find(t => !t.isSelf) || tiles[0];
   const others = tiles.filter(t => t.id !== focused.id);
 
-  let html = '<div id="focus-wrap">';
-  html += '<div id="focus-main">';
-  if (focused.isSelf) {
-    html += '<video id="self-video" autoplay playsinline muted class="mirror"></video>';
-  } else if (focused.track) {
-    html += '<video id="vid-' + focused.id + '" autoplay playsinline' + (focused.isDesktop ? '' : ' class="mirror"') + '></video>';
-  } else {
-    html += '<div class="tile-placeholder" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">Waiting for video…</div>';
-  }
-  html += '<div class="tile-label">' + focused.label + (focused.isDesktop ? ' — Screen' : '') + '</div>';
-  html += '</div>';
-
+  let html = '<div id="focus-wrap"><div id="focus-main">';
+  html += focusTileHtml(focused, 'self-video');
+  html += '<div class="tile-label">' + focused.label + '</div></div>';
   if (others.length) {
     html += '<div id="focus-strip">';
     for (const tile of others) {
       html += '<div class="strip-tile" onclick="setFocus(\'' + tile.id + '\')">';
-      if (tile.isSelf) {
-        html += '<video id="self-video-strip" autoplay playsinline muted class="mirror"></video>';
-      } else if (tile.track) {
-        html += '<video id="vid-' + tile.id + '" autoplay playsinline' + (tile.isDesktop ? '' : ' class="mirror"') + '></video>';
-      }
-      html += '<div class="tile-label">' + tile.label + '</div>';
-      html += '</div>';
+      html += focusTileHtml(tile, 'self-video-strip');
+      html += '<div class="tile-label">' + tile.label + '</div></div>';
     }
     html += '</div>';
   }
   html += '</div>';
   area.innerHTML = html;
-
-  if (focused.isSelf) attachSelfVideo(document.getElementById('self-video'));
-  else if (focused.track) { const el = document.getElementById('vid-' + focused.id); if (el) focused.track.attach(el); }
-
-  for (const tile of others) {
-    if (tile.isSelf) attachSelfVideo(document.getElementById('self-video-strip'));
-    else if (tile.track) { const el = document.getElementById('vid-' + tile.id); if (el) tile.track.attach(el); }
-  }
+  attachTile(focused, 'self-video');
+  for (const tile of others) attachTile(tile, 'self-video-strip');
 }
 
 /* ── Controls ── */
@@ -1573,7 +1562,11 @@ async function toggleShare() {
     updateCallControls();
     renderCallGrid();
   } catch(e) {
-    if (!String(e).includes('cancel')) console.warn('Screen share error:', e);
+    /* User cancelled the picker or permission denied — both are fine, just ignore */
+    const s = String(e);
+    if (!s.includes('cancel') && !s.includes('NotAllowed') && !s.includes('Permission')) {
+      console.warn('Screen share error:', e);
+    }
   }
 }
 

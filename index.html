@@ -2453,6 +2453,11 @@ async function generateJaaSToken(isModerator) {
 function buildTiles() {
   const tiles = [];
   tiles.push({ id: 'self', label: 'You (Host)', isSelf: true });
+  /* Local screen share gets its own tile */
+  const localDesktop = S.call.localTracks.find(t => t.getVideoType?.() === 'desktop');
+  if (localDesktop) {
+    tiles.push({ id: 'self-screen', label: 'You (Host) — Screen', isSelf: true, isDesktop: true, localTrack: localDesktop });
+  }
   for (const [pid, name] of Object.entries(S.call.names)) {
     const rt = S.call.remoteTracks[pid] || {};
     tiles.push({ id: pid, label: name || 'Guest', track: rt.desktop || rt.camera || null, isDesktop: !!rt.desktop });
@@ -2536,14 +2541,16 @@ function renderGalleryView(area, tiles) {
   let html = '<div id="call-gallery" class="' + cls + '">';
   for (const tile of tiles) {
     html += '<div class="gallery-tile" onclick="setFocus(\'' + tile.id + '\')">';
-    if (tile.isSelf) {
+    if (tile.isSelf && !tile.isDesktop) {
       html += '<video id="self-video" autoplay playsinline muted class="mirror"></video>';
+    } else if (tile.isSelf && tile.isDesktop) {
+      html += '<video id="vid-' + tile.id + '" autoplay playsinline muted></video>';
     } else if (tile.track) {
       html += '<video id="vid-' + tile.id + '" autoplay playsinline' + (tile.isDesktop ? '' : ' class="mirror"') + '></video>';
     } else {
       html += '<div class="tile-placeholder">Waiting for video…</div>';
     }
-    html += '<div class="tile-label">' + tile.label + (tile.isDesktop ? ' — Screen' : '') + '</div>';
+    html += '<div class="tile-label">' + tile.label + (tile.isDesktop && !tile.isSelf ? ' — Screen' : '') + '</div>';
     html += '</div>';
   }
   html += '</div>';
@@ -2551,69 +2558,52 @@ function renderGalleryView(area, tiles) {
 
   attachSelfVideo(document.getElementById('self-video'));
   for (const tile of tiles) {
-    if (tile.isSelf || !tile.track) continue;
-    const el = document.getElementById('vid-' + tile.id);
-    if (el) tile.track.attach(el);
-  }
-}
-
-function renderFocusView(area, tiles) {
-  /* Find the focused tile */
-  let focused = tiles.find(t => t.id === S.call.focusId);
-  if (!focused) focused = tiles.find(t => !t.isSelf) || tiles[0];
-  const others = tiles.filter(t => t.id !== focused.id);
-
-  let html = '<div id="focus-wrap">';
-
-  /* Main area */
-  html += '<div id="focus-main">';
-  if (focused.isSelf) {
-    html += '<video id="self-video" autoplay playsinline muted class="mirror"></video>';
-  } else if (focused.track) {
-    html += '<video id="vid-' + focused.id + '" autoplay playsinline' + (focused.isDesktop ? '' : ' class="mirror"') + '></video>';
-  } else {
-    html += '<div class="tile-placeholder" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">Waiting for video…</div>';
-  }
-  html += '<div class="tile-label">' + focused.label + (focused.isDesktop ? ' — Screen' : '') + '</div>';
-  html += '</div>';
-
-  /* Strip */
-  if (others.length) {
-    html += '<div id="focus-strip">';
-    for (const tile of others) {
-      const active = tile.id === focused.id ? ' active' : '';
-      html += '<div class="strip-tile' + active + '" onclick="setFocus(\'' + tile.id + '\')">';
-      if (tile.isSelf) {
-        html += '<video id="self-video-strip" autoplay playsinline muted class="mirror"></video>';
-      } else if (tile.track) {
-        html += '<video id="vid-' + tile.id + '" autoplay playsinline' + (tile.isDesktop ? '' : ' class="mirror"') + '></video>';
-      }
-      html += '<div class="tile-label">' + tile.label + '</div>';
-      html += '</div>';
-    }
-    html += '</div>';
-  }
-
-  html += '</div>';
-  area.innerHTML = html;
-
-  /* Attach focused */
-  if (focused.isSelf) {
-    attachSelfVideo(document.getElementById('self-video'));
-  } else if (focused.track) {
-    const el = document.getElementById('vid-' + focused.id);
-    if (el) focused.track.attach(el);
-  }
-
-  /* Attach strip tiles */
-  for (const tile of others) {
-    if (tile.isSelf) {
-      attachSelfVideo(document.getElementById('self-video-strip'));
-    } else if (tile.track) {
+    if (tile.localTrack) {
+      const el = document.getElementById('vid-' + tile.id);
+      if (el) tile.localTrack.attach(el);
+    } else if (!tile.isSelf && tile.track) {
       const el = document.getElementById('vid-' + tile.id);
       if (el) tile.track.attach(el);
     }
   }
+}
+
+function focusTileHtml(tile, vidId) {
+  if (tile.isSelf && !tile.isDesktop) return '<video id="' + vidId + '" autoplay playsinline muted class="mirror"></video>';
+  if (tile.isSelf && tile.isDesktop)  return '<video id="vid-' + tile.id + '" autoplay playsinline muted></video>';
+  if (tile.track)                     return '<video id="vid-' + tile.id + '" autoplay playsinline' + (tile.isDesktop ? '' : ' class="mirror"') + '></video>';
+  return '<div class="tile-placeholder" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">Waiting for video…</div>';
+}
+
+function attachTile(tile, vidId) {
+  if (tile.isSelf && !tile.isDesktop) { attachSelfVideo(document.getElementById(vidId)); return; }
+  if (tile.localTrack) { const el = document.getElementById('vid-' + tile.id); if (el) tile.localTrack.attach(el); return; }
+  if (tile.track)      { const el = document.getElementById('vid-' + tile.id); if (el) tile.track.attach(el); }
+}
+
+function renderFocusView(area, tiles) {
+  let focused = tiles.find(t => t.id === S.call.focusId);
+  if (!focused) focused = tiles.find(t => !t.isSelf) || tiles[0];
+  const others = tiles.filter(t => t.id !== focused.id);
+
+  let html = '<div id="focus-wrap"><div id="focus-main">';
+  html += focusTileHtml(focused, 'self-video');
+  html += '<div class="tile-label">' + focused.label + '</div></div>';
+
+  if (others.length) {
+    html += '<div id="focus-strip">';
+    for (const tile of others) {
+      html += '<div class="strip-tile" onclick="setFocus(\'' + tile.id + '\')">';
+      html += focusTileHtml(tile, 'self-video-strip');
+      html += '<div class="tile-label">' + tile.label + '</div></div>';
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+  area.innerHTML = html;
+
+  attachTile(focused, 'self-video');
+  for (const tile of others) attachTile(tile, 'self-video-strip');
 }
 
 function renderJitsiStep(el) {
@@ -2958,7 +2948,10 @@ async function toggleShare() {
     }
     updateCallControls();
   } catch(e) {
-    if (!String(e).includes('cancel')) console.warn('Screen share error:', e);
+    const s = String(e);
+    if (!s.includes('cancel') && !s.includes('NotAllowed') && !s.includes('Permission')) {
+      console.warn('Screen share error:', e);
+    }
   }
 }
 
