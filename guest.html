@@ -321,7 +321,7 @@ const _urlRoom = new URLSearchParams(location.search).get('room') || '';
 
 const S = {
   step: 0, STEPS: 4,
-  checks: [false, false, false],   /* step-0 distractions checklist */
+  checks: [false, false, false, false],   /* step-0 distractions checklist */
   stream:   null,
   audioCtx: null, analyser: null, rafId: null,
   dev: { allAudio: [], allVideo: [], curAudioId: null, curVideoId: null },
@@ -527,7 +527,25 @@ function crow(i, title, desc) {
   </div>`;
 }
 
+function detectBrowser() {
+  const ua = navigator.userAgent;
+  if (/Firefox\//i.test(ua)) return 'Firefox';
+  if (/Edg\//i.test(ua))     return 'Edge';
+  if (/Chrome\//i.test(ua))  return 'Chrome';
+  if (/Safari\//i.test(ua))  return 'Safari';
+  return 'Unknown';
+}
+
 function renderStep0() {
+  const browser = detectBrowser();
+  const isSupported = (browser === 'Chrome' || browser === 'Firefox');
+  const browserNote = isSupported
+    ? ''
+    : '<div style="margin-top:14px;padding:10px 14px;background:rgba(245,158,11,0.1);border:1px solid var(--warn);border-radius:8px;font-size:13px;color:var(--warn)">'
+      + '⚠️ You appear to be using <strong>' + browser + '</strong>. If you run into issues with your camera or call, '
+      + 'try switching to <strong>Chrome</strong> or <strong>Firefox</strong> — they work best with this app.'
+      + '</div>';
+
   return `
   <div>
     <div class="step-title">Step 1 — Prepare Your Space</div>
@@ -536,7 +554,9 @@ function renderStep0() {
       ${crow(0, 'Close Outlook', 'Prevents notification sounds and pop-ups during the call')}
       ${crow(1, 'Close Webex', 'Avoids incoming call interruptions')}
       ${crow(2, 'Phone on Do Not Disturb', 'Silences calls, texts, and lock-screen notifications')}
+      ${crow(3, 'Disconnect from VPN', 'VPNs can block the video call connection — disconnect if you\'re able to')}
     </div>
+    ${browserNote}
     <div class="info-box" style="margin-top:18px">
       <strong>You've been invited to a virtual recording session.</strong><br>
       This quick setup takes about 2 minutes and ensures you look and sound great for your host.
@@ -633,8 +653,16 @@ async function initStream(el) {
       msg  = 'No camera or microphone found.';
       hint = 'Make sure your webcam and headset are plugged in, then reload.';
     } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-      msg  = 'Camera could not be opened.';
-      hint = 'Another app may be using your camera. Close Webex, Zoom, or Teams and try again.';
+      msg  = 'Camera is in use by another app.';
+      hint = 'Your webcam can only be used by one app at a time. '
+           + '<strong>Close any of these that might be open:</strong>'
+           + '<ul style="margin:8px 0 0 16px;text-align:left;line-height:1.8">'
+           + '<li>Webex / Zoom / Teams</li>'
+           + '<li>OBS / Camtasia / Loom</li>'
+           + '<li>Windows Camera app</li>'
+           + '<li>Any other video call or recording app</li>'
+           + '</ul>'
+           + 'After closing them, click Reload below.';
     }
     ld.innerHTML = `
       <div style="text-align:center;padding:14px 20px">

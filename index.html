@@ -472,7 +472,7 @@ const S = {
   checks: { 1:[false], 2:[false,false,false], 4:[false,false] },
 
   /* checklist booleans indexed by step — home */
-  homechecks: { 1:[false], 2:[false,false,false] },
+  homechecks: { 1:[false], 2:[false,false,false,false] },
   chromeClosed: false,
 
   /* camera / audio */
@@ -1081,12 +1081,16 @@ async function initStream() {
       msg  = 'No camera or microphone found.';
       hint = 'Make sure the USB-C dock is plugged in, then reload.';
     } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-      msg  = 'Camera could not be opened.';
-      hint = 'This usually means the page was opened directly from a file. ' +
-             '<strong>Double-click <code>start-server.bat</code></strong> (Windows) or ' +
-             '<strong><code>start-server.command</code></strong> (Mac) to launch the app correctly — ' +
-             'this also fixes the repeated permission prompt. ' +
-             'If you\'re already using the server, close Webex/Zoom and try again.';
+      msg  = 'Camera is in use by another app.';
+      hint = 'Your webcam can only be used by one app at a time. ' +
+             '<strong>Close any of these that might be open:</strong>' +
+             '<ul style="margin:8px 0 0 16px;text-align:left;line-height:1.8">' +
+             '<li>Webex / Zoom / Teams</li>' +
+             '<li>OBS / Camtasia / Loom</li>' +
+             '<li>Windows Camera app</li>' +
+             '<li>Any other video call or recording app</li></ul>' +
+             'If you opened this file directly, <strong>double-click <code>start-server.bat</code></strong> (Windows) ' +
+             'or <strong><code>start-server.command</code></strong> (Mac) instead. After closing other apps, click Reload below.';
     }
 
     ld.innerHTML = `
@@ -1821,7 +1825,25 @@ function renderHomeStep1() {
   </div>`;
 }
 
+function detectBrowser() {
+  const ua = navigator.userAgent;
+  if (/Firefox\//i.test(ua)) return 'Firefox';
+  if (/Edg\//i.test(ua))     return 'Edge';
+  if (/Chrome\//i.test(ua))  return 'Chrome';
+  if (/Safari\//i.test(ua))  return 'Safari';
+  return 'Unknown';
+}
+
 function renderHomeStep2() {
+  const browser = detectBrowser();
+  const isSupported = (browser === 'Chrome' || browser === 'Firefox');
+  const browserNote = isSupported
+    ? ''
+    : '<div style="margin-top:14px;padding:10px 14px;background:rgba(245,158,11,0.1);border:1px solid var(--warn);border-radius:8px;font-size:13px;color:var(--warn)">'
+      + '⚠️ You appear to be using <strong>' + browser + '</strong>. If you run into issues with your camera or call, '
+      + 'try switching to <strong>Chrome</strong> or <strong>Firefox</strong> — they work best with this app.'
+      + '</div>';
+
   return `
   <div>
     <div class="step-title">Step 2 — Prepare Your Space</div>
@@ -1830,7 +1852,9 @@ function renderHomeStep2() {
       ${hcrow(2, 0, 'Close Outlook', 'Prevents notification sounds and pop-ups during recording')}
       ${hcrow(2, 1, 'Close Webex', 'Avoids incoming call interruptions')}
       ${hcrow(2, 2, 'Phone on Do Not Disturb', 'Silences calls, texts, and lock-screen notifications')}
+      ${hcrow(2, 3, 'Disconnect from VPN', 'VPNs can block the video call connection — disconnect if you\'re able to')}
     </div>
+    ${browserNote}
   </div>`;
 }
 
