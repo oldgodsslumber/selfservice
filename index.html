@@ -511,7 +511,7 @@ const S = {
   location: null,          /* null | 'studio' | 'home' */
 
   /* checklist booleans indexed by step — studio */
-  checks: { 1:[false], 2:[false,false,false], 4:[false,false] },
+  checks: { 1:[false], 2:[false,false,false,false], 4:[false,false] },
 
   /* checklist booleans indexed by step — home */
   homechecks: { 1:[false], 2:[false,false,false,false] },
@@ -956,6 +956,15 @@ function renderStep0() {
    STEP 2 — PREPARE
    ============================================================= */
 function renderStep1() {
+  const browser = detectBrowser();
+  const isSupported = (browser === 'Chrome' || browser === 'Firefox');
+  const browserNote = isSupported
+    ? ''
+    : '<div style="margin-top:14px;padding:10px 14px;background:rgba(245,158,11,0.1);border:1px solid var(--warn);border-radius:8px;font-size:13px;color:var(--warn)">'
+      + '⚠️ You appear to be using <strong>' + browser + '</strong>. If you run into issues with your camera or call, '
+      + 'try switching to <strong>Chrome</strong> or <strong>Firefox</strong> — they work best with this app.'
+      + '</div>';
+
   return `
   <div>
     <div class="step-title">Step 2 — Prepare Your Space</div>
@@ -964,7 +973,9 @@ function renderStep1() {
       ${crow(2, 0, 'Close Outlook', 'Prevents notification sounds and pop-ups during recording')}
       ${crow(2, 1, 'Close Webex', 'Avoids incoming call interruptions')}
       ${crow(2, 2, 'Phone on Do Not Disturb', 'Silences calls, texts, and lock-screen notifications')}
+      ${crow(2, 3, 'Disconnect from VPN', 'VPNs can block the video call connection — disconnect if you\'re able to')}
     </div>
+    ${browserNote}
   </div>`;
 }
 
