@@ -1373,9 +1373,8 @@ function onCallUserLeft(id) {
 function buildTiles() {
   const tiles = [];
   tiles.push({ id: 'self', label: 'You', isSelf: true });
-  const localDesktop = S.call.localTracks.find(t => t.getVideoType?.() === 'desktop');
-  if (localDesktop) {
-    tiles.push({ id: 'self-screen', label: 'You — Screen', isSelf: true, isDesktop: true, localTrack: localDesktop });
+  if (S.call._screenStream) {
+    tiles.push({ id: 'self-screen', label: 'You — Screen', isSelf: true, isDesktop: true, nativeStream: S.call._screenStream });
   }
   for (const [pid, name] of Object.entries(S.call.names)) {
     const rt = S.call.remoteTracks[pid] || {};
@@ -1457,8 +1456,8 @@ function focusTileHtml(tile, vidId) {
 
 function attachTile(tile, vidId) {
   if (tile.isSelf && !tile.isDesktop) { attachSelfVideo(document.getElementById(vidId)); return; }
-  if (tile.localTrack) { const el = document.getElementById('vid-' + tile.id); if (el) tile.localTrack.attach(el); return; }
-  if (tile.track)      { const el = document.getElementById('vid-' + tile.id); if (el) tile.track.attach(el); }
+  if (tile.nativeStream) { const el = document.getElementById('vid-' + tile.id); if (el) el.srcObject = tile.nativeStream; return; }
+  if (tile.track)        { const el = document.getElementById('vid-' + tile.id); if (el) tile.track.attach(el); }
 }
 
 function renderGalleryView(area, tiles) {
@@ -1474,7 +1473,7 @@ function renderGalleryView(area, tiles) {
   area.innerHTML = html;
   attachSelfVideo(document.getElementById('self-video'));
   for (const tile of tiles) {
-    if (tile.localTrack) { const el = document.getElementById('vid-' + tile.id); if (el) tile.localTrack.attach(el); }
+    if (tile.nativeStream) { const el = document.getElementById('vid-' + tile.id); if (el) el.srcObject = tile.nativeStream; }
     else if (!tile.isSelf && tile.track) { const el = document.getElementById('vid-' + tile.id); if (el) tile.track.attach(el); }
   }
 }
@@ -1532,56 +1531,52 @@ function updateCallControls() {
     camBtn.innerHTML = `<span class="tb-icon">${muted ? '🚫' : '📷'}</span>${muted ? 'Cam Off' : 'Camera'}`;
   }
   if (shareBtn) {
-    const sharing = S.call.localTracks.some(t => t.getVideoType?.() === 'desktop');
+    const sharing = !!S.call._screenStream;
     shareBtn.classList.toggle('active', sharing);
     shareBtn.innerHTML = `<span class="tb-icon">💻</span>${sharing ? 'Stop Share' : 'Share Screen'}`;
   }
 }
 
 async function toggleShare() {
-  const existing = S.call.localTracks.find(t => t.getVideoType?.() === 'desktop');
-  if (existing) {
-    try { await S.call.conf.removeTrack(existing); } catch(e) {}
-    try { existing.dispose(); } catch(e) {}
-    S.call.localTracks = S.call.localTracks.filter(t => t !== existing);
+  /* Stop existing share — restore camera */
+  if (S.call._screenStream) {
+    S.call._screenStream.getTracks().forEach(t => t.stop());
+    S.call._screenStream = null;
+    if (S.call._prShareTrack) {
+      await replaceVideoSender(S.call._prShareTrack);
+      S.call._prShareTrack = null;
+    }
     updateCallControls();
     renderCallGrid();
     return;
   }
-  let nativeStream;
+  /* Start sharing — native getDisplayMedia for full picker */
+  let stream;
   try {
-    nativeStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+    stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
   } catch(e) { return; }
 
-  try {
-    const tracks = await JitsiMeetJS.createLocalTracks({
-      devices: ['desktop'],
-      desktopStream: nativeStream,
-    });
-    for (const t of tracks) {
-      S.call.localTracks.push(t);
-      try { await S.call.conf.addTrack(t); } catch(e) {}
-      t.addEventListener(JitsiMeetJS.events.track.LOCAL_TRACK_STOPPED, () => {
-        S.call.localTracks = S.call.localTracks.filter(x => x !== t);
-        updateCallControls();
-        renderCallGrid();
-      });
-    }
-    nativeStream.getVideoTracks()[0]?.addEventListener('ended', () => {
-      const dt = S.call.localTracks.find(t => t.getVideoType?.() === 'desktop');
-      if (dt) {
-        try { S.call.conf.removeTrack(dt); } catch(e) {}
-        try { dt.dispose(); } catch(e) {}
-        S.call.localTracks = S.call.localTracks.filter(t => t !== dt);
-        updateCallControls();
-        renderCallGrid();
-      }
-    });
-    updateCallControls();
-    renderCallGrid();
-  } catch(e) {
-    nativeStream.getTracks().forEach(t => t.stop());
+  const screenTrack = stream.getVideoTracks()[0];
+  if (!screenTrack) { stream.getTracks().forEach(t => t.stop()); return; }
+
+  /* Save current camera sender so we can restore it */
+  const sessions = [S.call.conf?.jvbJingleSession, S.call.conf?.p2pJingleSession].filter(Boolean);
+  for (const sess of sessions) {
+    const pc = sess?.peerconnection?.peerconnection || sess?.peerconnection;
+    if (!pc || typeof pc.getSenders !== 'function') continue;
+    const sender = pc.getSenders().find(s => s.track?.kind === 'video');
+    if (sender?.track) { S.call._prShareTrack = sender.track; break; }
   }
+
+  await replaceVideoSender(screenTrack);
+  S.call._screenStream = stream;
+
+  screenTrack.addEventListener('ended', () => {
+    if (S.call._screenStream === stream) toggleShare();
+  });
+
+  updateCallControls();
+  renderCallGrid();
 }
 
 function toggleBgPanel() {
