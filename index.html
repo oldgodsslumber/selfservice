@@ -506,6 +506,8 @@
 /* =============================================================
    STATE
    ============================================================= */
+const _isMac = /Mac/i.test(navigator.platform);
+
 const S = {
   step: 0,
   STEPS: 7,
@@ -2959,7 +2961,11 @@ async function toggleShare() {
   /* Start sharing — use the native getDisplayMedia saved at page load */
   let stream;
   try {
-    stream = await window._nativeGDM({ video: true });
+    stream = await window._nativeGDM({
+      video: { displaySurface: 'window' },
+      selfBrowserSurface: 'exclude',
+      monitorTypeSurfaces: 'include',
+    });
   } catch(e) {
     _shareLock = false;
     return; /* user cancelled or permission denied */
@@ -2967,6 +2973,33 @@ async function toggleShare() {
 
   const screenTrack = stream.getVideoTracks()[0];
   if (!screenTrack) { stream.getTracks().forEach(t => t.stop()); _shareLock = false; return; }
+
+  /* Detect macOS Screen Recording permission issue — if the track dies
+     within 500ms, the OS blocked it. Show instructions instead of looping. */
+  const shareStart = Date.now();
+  let trackDied = false;
+  await new Promise(r => {
+    const check = () => {
+      if (screenTrack.readyState === 'ended') { trackDied = true; r(); }
+      else if (Date.now() - shareStart > 500) r();
+      else setTimeout(check, 50);
+    };
+    check();
+  });
+  if (trackDied) {
+    stream.getTracks().forEach(t => t.stop());
+    _shareLock = false;
+    if (_isMac) {
+      alert('Can\'t share windows or your screen?\n\n'
+        + 'On Mac, Chrome needs Screen Recording permission.\n\n'
+        + '1. Open System Settings → Privacy & Security → Screen Recording\n'
+        + '2. Remove Chrome from the list (click —)\n'
+        + '3. Re-add Chrome (click +)\n'
+        + '4. Quit Chrome completely and reopen it\n\n'
+        + 'This is a one-time macOS setup.');
+    }
+    return;
+  }
 
   /* Save current camera sender so we can restore it */
   if (!S.call._prShareTrack) {
