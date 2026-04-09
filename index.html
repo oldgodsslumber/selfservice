@@ -2968,7 +2968,16 @@ async function toggleShare() {
     });
   } catch(e) {
     _shareLock = false;
-    return; /* user cancelled or permission denied */
+    /* macOS system-level permission denied — show instructions */
+    if (_isMac && e.name === 'NotAllowedError' && String(e.message).toLowerCase().includes('system')) {
+      alert('Chrome needs Screen Recording permission on this Mac.\n\n'
+        + '1. Open System Settings → Privacy & Security → Screen Recording\n'
+        + '2. Remove Chrome from the list (click —)\n'
+        + '3. Re-add Chrome (click +)\n'
+        + '4. Quit Chrome completely and reopen it\n\n'
+        + 'This is a one-time macOS setup.');
+    }
+    return;
   }
 
   const screenTrack = stream.getVideoTracks()[0];
