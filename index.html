@@ -2934,49 +2934,53 @@ function toggleBgPanel() {
   if (btn) btn.classList.toggle('active', panel.classList.contains('open'));
 }
 
+let _shareInProgress = false;
 async function toggleShare() {
-  /* Stop existing share — restore original camera track */
-  if (S.call._screenStream) {
-    S.call._screenStream.getTracks().forEach(t => t.stop());
-    S.call._screenStream = null;
-    /* Restore camera track to WebRTC senders */
-    if (S.call._prShareTrack) {
-      await replaceVideoSender(S.call._prShareTrack);
-      S.call._prShareTrack = null;
+  if (_shareInProgress) return;
+  _shareInProgress = true;
+  try {
+    /* Stop existing share — restore original camera track */
+    if (S.call._screenStream) {
+      S.call._screenStream.getTracks().forEach(t => t.stop());
+      S.call._screenStream = null;
+      if (S.call._prShareTrack) {
+        await replaceVideoSender(S.call._prShareTrack);
+        S.call._prShareTrack = null;
+      }
+      updateCallControls();
+      renderCallGrid();
+      return;
     }
+    /* Start sharing — native getDisplayMedia for full picker */
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+    } catch(e) { return; /* user cancelled */ }
+
+    const screenTrack = stream.getVideoTracks()[0];
+    if (!screenTrack) { stream.getTracks().forEach(t => t.stop()); return; }
+
+    /* Save current camera sender track so we can restore it later */
+    const sessions = [S.call.conf?.jvbJingleSession, S.call.conf?.p2pJingleSession].filter(Boolean);
+    for (const sess of sessions) {
+      const pc = sess?.peerconnection?.peerconnection || sess?.peerconnection;
+      if (!pc || typeof pc.getSenders !== 'function') continue;
+      const sender = pc.getSenders().find(s => s.track?.kind === 'video');
+      if (sender?.track) { S.call._prShareTrack = sender.track; break; }
+    }
+
+    await replaceVideoSender(screenTrack);
+    S.call._screenStream = stream;
+
+    screenTrack.addEventListener('ended', () => {
+      if (S.call._screenStream === stream) toggleShare();
+    });
+
     updateCallControls();
     renderCallGrid();
-    return;
+  } finally {
+    _shareInProgress = false;
   }
-  /* Start sharing — native getDisplayMedia for full picker */
-  let stream;
-  try {
-    stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-  } catch(e) { return; /* user cancelled */ }
-
-  const screenTrack = stream.getVideoTracks()[0];
-  if (!screenTrack) { stream.getTracks().forEach(t => t.stop()); return; }
-
-  /* Save current camera sender track so we can restore it later */
-  const sessions = [S.call.conf?.jvbJingleSession, S.call.conf?.p2pJingleSession].filter(Boolean);
-  for (const sess of sessions) {
-    const pc = sess?.peerconnection?.peerconnection || sess?.peerconnection;
-    if (!pc || typeof pc.getSenders !== 'function') continue;
-    const sender = pc.getSenders().find(s => s.track?.kind === 'video');
-    if (sender?.track) { S.call._prShareTrack = sender.track; break; }
-  }
-
-  /* Replace the video sender with our screen track */
-  await replaceVideoSender(screenTrack);
-  S.call._screenStream = stream;
-
-  /* Auto-stop when user clicks browser's "Stop sharing" */
-  screenTrack.addEventListener('ended', () => {
-    if (S.call._screenStream === stream) toggleShare();
-  });
-
-  updateCallControls();
-  renderCallGrid();
 }
 
 function onCallTrackAdded(track) {
