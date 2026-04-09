@@ -457,6 +457,8 @@
     #bg-panel.open { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     #bg-panel > .bp-label { font-size: 12px; color: var(--muted); white-space: nowrap; }
   </style>
+  <!-- Save native getDisplayMedia before ANY script can monkey-patch it -->
+  <script>window._nativeGDM = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);</script>
 </head>
 <body>
 
@@ -2729,11 +2731,6 @@ async function launchCall(room) {
   const linkEl = document.getElementById('jitsi-link');
   if (linkEl) { linkEl.textContent = guestSetupLink; linkEl.title = guestSetupLink; }
 
-  /* Save native getDisplayMedia before lib-jitsi-meet can monkey-patch it */
-  if (!window._nativeGetDisplayMedia && navigator.mediaDevices.getDisplayMedia) {
-    window._nativeGetDisplayMedia = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);
-  }
-
   /* Load lib-jitsi-meet */
   try {
     await loadScript('https://8x8.vc/libs/lib-jitsi-meet.min.js');
@@ -2940,34 +2937,39 @@ function toggleBgPanel() {
   if (btn) btn.classList.toggle('active', panel.classList.contains('open'));
 }
 
-let _shareInProgress = false;
+let _shareLock = false;
 async function toggleShare() {
-  if (_shareInProgress) return;
-  _shareInProgress = true;
-  try {
-    /* Stop existing share — restore original camera track */
-    if (S.call._screenStream) {
-      S.call._screenStream.getTracks().forEach(t => t.stop());
-      S.call._screenStream = null;
-      if (S.call._prShareTrack) {
-        await replaceVideoSender(S.call._prShareTrack);
-        S.call._prShareTrack = null;
-      }
-      updateCallControls();
-      renderCallGrid();
-      return;
+  if (_shareLock) return;
+  _shareLock = true;
+
+  /* Stop existing share */
+  if (S.call._screenStream) {
+    S.call._screenStream.getTracks().forEach(t => t.stop());
+    S.call._screenStream = null;
+    if (S.call._prShareTrack) {
+      await replaceVideoSender(S.call._prShareTrack);
+      S.call._prShareTrack = null;
     }
-    /* Start sharing — native getDisplayMedia for full picker */
-    let stream;
-    try {
-      const gdm = window._nativeGetDisplayMedia || navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);
-      stream = await gdm({ video: true, audio: false });
-    } catch(e) { return; /* user cancelled */ }
+    updateCallControls();
+    renderCallGrid();
+    _shareLock = false;
+    return;
+  }
 
-    const screenTrack = stream.getVideoTracks()[0];
-    if (!screenTrack) { stream.getTracks().forEach(t => t.stop()); return; }
+  /* Start sharing — use the native getDisplayMedia saved at page load */
+  let stream;
+  try {
+    stream = await window._nativeGDM({ video: true });
+  } catch(e) {
+    _shareLock = false;
+    return; /* user cancelled or permission denied */
+  }
 
-    /* Save current camera sender track so we can restore it later */
+  const screenTrack = stream.getVideoTracks()[0];
+  if (!screenTrack) { stream.getTracks().forEach(t => t.stop()); _shareLock = false; return; }
+
+  /* Save current camera sender so we can restore it */
+  if (!S.call._prShareTrack) {
     const sessions = [S.call.conf?.jvbJingleSession, S.call.conf?.p2pJingleSession].filter(Boolean);
     for (const sess of sessions) {
       const pc = sess?.peerconnection?.peerconnection || sess?.peerconnection;
@@ -2975,34 +2977,25 @@ async function toggleShare() {
       const sender = pc.getSenders().find(s => s.track?.kind === 'video');
       if (sender?.track) { S.call._prShareTrack = sender.track; break; }
     }
+  }
 
-    await replaceVideoSender(screenTrack);
-    S.call._screenStream = stream;
-    S.call._shareStartedAt = Date.now();
+  await replaceVideoSender(screenTrack);
+  S.call._screenStream = stream;
+  _shareLock = false;
 
-    screenTrack.addEventListener('ended', () => {
-      /* Only auto-stop if the share lasted more than 2s — prevents a loop
-         where macOS kills the track immediately due to Screen Recording
-         permission, which would re-trigger getDisplayMedia endlessly. */
-      if (S.call._screenStream === stream && (Date.now() - S.call._shareStartedAt) > 2000) {
-        toggleShare();
-      } else if (S.call._screenStream === stream) {
-        /* Share died immediately — clean up silently without re-prompting */
-        S.call._screenStream.getTracks().forEach(t => t.stop());
-        S.call._screenStream = null;
-        if (S.call._prShareTrack) {
-          replaceVideoSender(S.call._prShareTrack).then(() => { S.call._prShareTrack = null; });
-        }
-        updateCallControls();
-        renderCallGrid();
-      }
-    });
-
+  /* When the user stops sharing (browser button), clean up — NO re-prompt */
+  screenTrack.addEventListener('ended', () => {
+    if (!S.call._screenStream) return;
+    S.call._screenStream = null;
+    if (S.call._prShareTrack) {
+      replaceVideoSender(S.call._prShareTrack).then(() => { S.call._prShareTrack = null; });
+    }
     updateCallControls();
     renderCallGrid();
-  } finally {
-    _shareInProgress = false;
-  }
+  });
+
+  updateCallControls();
+  renderCallGrid();
 }
 
 function onCallTrackAdded(track) {
