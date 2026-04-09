@@ -1176,6 +1176,9 @@ function renderCallUI() {
 }
 
 async function launchCall(room, token) {
+  if (!window._nativeGetDisplayMedia && navigator.mediaDevices.getDisplayMedia) {
+    window._nativeGetDisplayMedia = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);
+  }
   try {
     await loadScript('https://8x8.vc/libs/lib-jitsi-meet.min.js');
   } catch(e) {
@@ -1207,9 +1210,10 @@ function joinConference(room, token) {
   if (!JMJ) { showCallError('SDK not loaded', ''); return; }
 
   JMJ.init({
-    disableAudioLevels: true,
-    disableSimulcast:   true,
-    useIPv6:            false,
+    disableAudioLevels:    true,
+    disableSimulcast:      true,
+    useIPv6:               false,
+    desktopSharingEnabled: false,
     videoQuality: {
       maxBitratesVideo: { low: 500000, standard: 2500000, high: 6000000 },
       minHeightForQualityLvl: { 360: 'standard', 720: 'high', 1080: 'high' },
@@ -1555,7 +1559,8 @@ async function toggleShare() {
     }
     let stream;
     try {
-      stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+      const gdm = window._nativeGetDisplayMedia || navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);
+      stream = await gdm({ video: true, audio: false });
     } catch(e) { return; }
 
     const screenTrack = stream.getVideoTracks()[0];

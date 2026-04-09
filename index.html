@@ -2729,6 +2729,11 @@ async function launchCall(room) {
   const linkEl = document.getElementById('jitsi-link');
   if (linkEl) { linkEl.textContent = guestSetupLink; linkEl.title = guestSetupLink; }
 
+  /* Save native getDisplayMedia before lib-jitsi-meet can monkey-patch it */
+  if (!window._nativeGetDisplayMedia && navigator.mediaDevices.getDisplayMedia) {
+    window._nativeGetDisplayMedia = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);
+  }
+
   /* Load lib-jitsi-meet */
   try {
     await loadScript('https://8x8.vc/libs/lib-jitsi-meet.min.js');
@@ -2757,9 +2762,10 @@ function joinConference(room, token) {
   if (!JMJ) { showCallError('SDK not loaded', ''); return; }
 
   JMJ.init({
-    disableAudioLevels: true,
-    disableSimulcast:   true,    /* single high-quality stream instead of 3 degraded layers */
-    useIPv6:            false,
+    disableAudioLevels:    true,
+    disableSimulcast:      true,
+    useIPv6:               false,
+    desktopSharingEnabled: false,  /* we handle screen share ourselves via replaceVideoSender */
     videoQuality: {
       maxBitratesVideo: {
         low:      500000,
@@ -2954,7 +2960,8 @@ async function toggleShare() {
     /* Start sharing — native getDisplayMedia for full picker */
     let stream;
     try {
-      stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+      const gdm = window._nativeGetDisplayMedia || navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);
+      stream = await gdm({ video: true, audio: false });
     } catch(e) { return; /* user cancelled */ }
 
     const screenTrack = stream.getVideoTracks()[0];
