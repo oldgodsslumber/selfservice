@@ -1571,9 +1571,20 @@ async function toggleShare() {
 
     await replaceVideoSender(screenTrack);
     S.call._screenStream = stream;
+    S.call._shareStartedAt = Date.now();
 
     screenTrack.addEventListener('ended', () => {
-      if (S.call._screenStream === stream) toggleShare();
+      if (S.call._screenStream === stream && (Date.now() - S.call._shareStartedAt) > 2000) {
+        toggleShare();
+      } else if (S.call._screenStream === stream) {
+        S.call._screenStream.getTracks().forEach(t => t.stop());
+        S.call._screenStream = null;
+        if (S.call._prShareTrack) {
+          replaceVideoSender(S.call._prShareTrack).then(() => { S.call._prShareTrack = null; });
+        }
+        updateCallControls();
+        renderCallGrid();
+      }
     });
 
     updateCallControls();
