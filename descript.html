@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Descript Room Setup</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0f1117;
+      --surf:     #1c1f26;
+      --surf2:    #252930;
+      --accent:   #4f8ef7;
+      --accent2:  #6ba3ff;
+      --success:  #22c55e;
+      --warn:     #f59e0b;
+      --danger:   #ef4444;
+      --text:     #f1f5f9;
+      --muted:    #94a3b8;
+      --border:   #2d3748;
+      --radius:   12px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg); color: var(--text);
+      height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--surf); border-bottom: 1px solid var(--border);
+      padding: 13px 24px; display: flex; align-items: center; gap: 20px; flex-shrink: 0;
+    }
+    header h1 { font-size: 16px; font-weight: 700; white-space: nowrap; letter-spacing: -0.01em; }
+
+    /* ── STEP BAR ── */
+    .step-bar { display: flex; align-items: center; flex: 1; overflow: hidden; }
+    .pip {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+      background: var(--surf2); border: 2px solid var(--border); color: var(--muted);
+      transition: all 0.25s;
+    }
+    .pip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .pip.done   { background: var(--success); border-color: var(--success); color: #fff; }
+    .connector  { flex: 1; height: 2px; background: var(--border); transition: background 0.25s; }
+    .connector.done { background: var(--success); }
+
+    /* ── MAIN / FOOTER ── */
+    main { flex: 1; overflow-y: auto; display: flex; justify-content: center; padding: 24px 20px; }
+    .content { width: 100%; max-width: 680px; }
+    footer {
+      border-top: 1px solid var(--border); background: var(--surf);
+      padding: 13px 24px; display: flex; justify-content: space-between;
+      align-items: center; flex-shrink: 0;
+    }
+
+    /* ── TYPE ── */
+    .step-title { font-size: 23px; font-weight: 700; line-height: 1.2; margin-bottom: 5px; }
+    .step-sub   { color: var(--muted); font-size: 14px; line-height: 1.6; margin-bottom: 22px; }
+    .sec-label  {
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--muted); margin: 18px 0 8px;
+    }
+
+    /* ── CHECK ROWS ── */
+    .checklist { display: flex; flex-direction: column; gap: 9px; }
+    .check-row {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 13px 15px; background: var(--surf);
+      border: 2px solid var(--border); border-radius: 10px;
+      cursor: pointer; transition: border-color 0.15s, background 0.15s; user-select: none;
+    }
+    .check-row:hover { border-color: var(--accent); }
+    .check-row.on { border-color: var(--success); background: rgba(34,197,94,0.07); }
+    .cbox {
+      width: 21px; height: 21px; border-radius: 5px;
+      border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px; font-size: 12px; font-weight: 700; transition: all 0.15s;
+    }
+    .check-row.on .cbox { background: var(--success); border-color: var(--success); color: #fff; }
+    .crow-title { font-weight: 600; font-size: 15px; line-height: 1.3; }
+    .crow-desc  { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      padding: 10px 20px; border-radius: 8px; border: none;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 7px;
+      transition: all 0.15s; text-decoration: none; white-space: nowrap;
+    }
+    .btn:disabled { opacity: 0.38; cursor: not-allowed; pointer-events: none; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent2); transform: translateY(-1px); }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-success:hover:not(:disabled) { background: #16a34a; transform: translateY(-1px); }
+    .btn-ghost   { background: var(--surf2); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover:not(:disabled) { border-color: var(--accent); }
+
+    /* ── CARD / INFO ── */
+    .card { background: var(--surf); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+    .info-box {
+      background: rgba(79,142,247,0.07); border: 1px solid rgba(79,142,247,0.24);
+      border-radius: 10px; padding: 12px 15px;
+      font-size: 14px; color: var(--muted); line-height: 1.55; margin-top: 12px;
+    }
+    .info-box strong { color: var(--text); }
+
+    /* ── VIDEO ── */
+    .vid-wrap {
+      position: relative; width: 100%; aspect-ratio: 16/9;
+      background: #000; border-radius: var(--radius); overflow: hidden; margin-bottom: 14px;
+    }
+    .vid-wrap video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; }
+    .vid-overlay {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center; pointer-events: none;
+    }
+    .cam-loading {
+      position: absolute; inset: 0; background: #000;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 11px; font-size: 14px; color: var(--muted);
+    }
+    .spinner {
+      width: 26px; height: 26px;
+      border: 3px solid var(--border); border-top-color: var(--accent);
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── AUDIO METER ── */
+    .meter-track { height: 22px; background: var(--surf2); border-radius: 11px; overflow: hidden; position: relative; }
+    .meter-fill {
+      height: 100%; width: 2%; border-radius: 11px;
+      background: linear-gradient(90deg, #22c55e 0%, #86efac 55%, #f59e0b 80%, #ef4444 100%);
+      transition: width 0.04s linear;
+    }
+    .meter-lbl {
+      position: absolute; inset: 0; display: flex; align-items: center; padding: 0 12px;
+      font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.8);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.6); pointer-events: none;
+    }
+
+    /* ── DEVICE ROWS ── */
+    .dev-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 14px; background: var(--surf2); border-radius: 10px; margin-bottom: 8px;
+    }
+    .sdot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .sdot.green { background: var(--success); box-shadow: 0 0 7px var(--success); }
+    .dev-info { flex: 1; min-width: 0; }
+    .dev-name { font-size: 14px; font-weight: 600; }
+    .dev-sub  { font-size: 12px; color: var(--muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dev-sel {
+      background: var(--surf); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 5px 8px; font-size: 12px; max-width: 200px; flex-shrink: 0;
+    }
+
+    /* ── BRIGHTNESS ── */
+    .bright-result { display: flex; align-items: center; gap: 10px; padding: 10px 13px; border-radius: 8px; font-size: 14px; }
+    .bright-result.good      { background: rgba(34,197,94,0.1);   border: 1px solid var(--success); }
+    .bright-result.error     { background: rgba(239,68,68,0.1);   border: 1px solid var(--danger);  }
+    .bright-result.warn      { background: rgba(245,158,11,0.12); border: 1px solid var(--warn);    }
+    .bright-result.warn-mild { background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.4); }
+    .bright-result.info      { background: rgba(79,142,247,0.07); border: 1px solid rgba(79,142,247,0.3); }
+    .bright-icon  { font-size: 20px; }
+    .bright-title { font-weight: 600; line-height: 1.2; }
+    .bright-sub   { font-size: 12px; color: var(--muted); }
+
+    /* ── BACKGROUND SELECTOR ── */
+    .bg-selector { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
+    .bg-opt {
+      width: 88px; height: 54px; border-radius: 8px; border: 2px solid var(--border);
+      background: var(--surf2); background-size: cover; background-position: center;
+      cursor: pointer; position: relative; overflow: hidden;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 3px; transition: border-color .15s, box-shadow .15s;
+      color: var(--text); padding: 0; flex-shrink: 0;
+    }
+    .bg-opt:hover     { border-color: var(--accent); }
+    .bg-opt.bg-active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(79,142,247,0.4); }
+    .bg-opt-lbl {
+      font-size: 10px; font-weight: 600;
+      background: rgba(0,0,0,0.65); padding: 2px 5px; border-radius: 3px;
+      white-space: nowrap; position: absolute; bottom: 4px;
+    }
+
+    /* ── COMPLETION ── */
+    .completion { text-align: center; padding: 44px 20px; }
+    .completion .big-icon { font-size: 70px; margin-bottom: 14px; }
+    .completion h2 { font-size: 26px; font-weight: 700; margin-bottom: 10px; }
+    .completion p  { color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 360px; margin: 0 auto; }
+
+    /* ── JITSI FULL-PAGE TAKEOVER ── */
+    body.jitsi-mode header,
+    body.jitsi-mode footer { display: none !important; }
+    body.jitsi-mode main   { padding: 0; }
+    body.jitsi-mode .content { max-width: none; width: 100%; height: 100%;
+                               display: flex; flex-direction: column; }
+    .jitsi-bar {
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+      padding: 7px 12px;
+      background: rgba(15,17,23,0.97);
+      border-bottom: 1px solid var(--border);
+    }
+    .jitsi-bar code {
+      flex: 1; font-size: 11px; color: var(--muted);
+      background: var(--surf2); padding: 5px 9px;
+      border-radius: 6px; border: 1px solid var(--border);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+    }
+
+    /* ── CALL LAYOUT ── */
+    #call-area {
+      flex: 1; position: relative; background: #000; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #call-gallery {
+      display: grid; gap: 6px; padding: 6px;
+      width: 100%; height: 100%; grid-template-columns: 1fr;
+    }
+    #call-gallery.tiles-2 { grid-template-columns: 1fr 1fr; }
+    #call-gallery.tiles-3 { grid-template-columns: 1fr 1fr; }
+    #call-gallery.tiles-4 { grid-template-columns: 1fr 1fr; }
+    .gallery-tile {
+      position: relative; background: #111; border-radius: 8px; overflow: hidden;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+    }
+    .gallery-tile video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .gallery-tile video.mirror { transform: scaleX(-1); }
+    .gallery-tile .tile-label {
+      position: absolute; bottom: 8px; left: 10px;
+      background: rgba(0,0,0,0.6); color: #fff;
+      font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px; pointer-events: none;
+    }
+    .gallery-tile .tile-placeholder { color: #555; font-size: 14px; text-align: center; padding: 20px; }
+    /* Focus mode */
+    #focus-wrap { display: flex; flex-direction: column; width: 100%; height: 100%; }
+    #focus-main { flex: 1; position: relative; background: #000; overflow: hidden; }
+    #focus-main video { width: 100%; height: 100%; object-fit: contain; display: block; }
+    #focus-main video.mirror { transform: scaleX(-1); }
+    #focus-main .tile-label {
+      position: absolute; bottom: 12px; left: 12px;
+      background: rgba(0,0,0,0.6); color: #fff;
+      font-size: 13px; font-weight: 600; padding: 4px 12px; border-radius: 20px; pointer-events: none;
+    }
+    #focus-strip {
+      display: flex; gap: 4px; padding: 4px;
+      background: #0a0a0a; flex-shrink: 0; overflow-x: auto; height: 100px;
+    }
+    .strip-tile {
+      position: relative; flex-shrink: 0; width: 140px; height: 100%;
+      background: #111; border-radius: 6px; overflow: hidden; cursor: pointer;
+      border: 2px solid transparent; transition: border-color .15s;
+    }
+    .strip-tile:hover { border-color: var(--accent); }
+    .strip-tile.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    .strip-tile video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .strip-tile video.mirror { transform: scaleX(-1); }
+    .strip-tile .tile-label {
+      position: absolute; bottom: 3px; left: 5px;
+      background: rgba(0,0,0,0.6); color: #fff;
+      font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 10px; pointer-events: none;
+    }
+    #main-placeholder {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      color: #444; font-size: 15px;
+    }
+    /* Toolbar */
+    .call-toolbar {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; flex-shrink: 0; padding: 10px 14px;
+      background: rgba(15,17,23,0.97); border-top: 1px solid var(--border);
+    }
+    .call-toolbar .spacer { flex: 1; }
+    .tb-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      background: rgba(255,255,255,0.08); border: none; border-radius: 10px;
+      color: #fff; cursor: pointer; padding: 8px 14px; min-width: 64px;
+      font-size: 11px; font-weight: 500; transition: background .15s;
+    }
+    .tb-btn:hover { background: rgba(255,255,255,0.16); }
+    .tb-btn .tb-icon { font-size: 20px; line-height: 1; }
+    .tb-btn.active  { background: var(--danger); }
+    .tb-btn.end     { background: #c0392b; }
+    .tb-btn.end:hover { background: #e74c3c; }
+    /* Background panel in call */
+    #bg-panel {
+      flex-shrink: 0; padding: 8px 12px;
+      background: var(--surf); border-top: 1px solid var(--border);
+      display: none;
+    }
+    #bg-panel.open { display: block; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 560px) {
+      .step-title { font-size: 19px; }
+      .pip        { width: 22px; height: 22px; font-size: 10px; }
+    }
+  </style>
+  <script>window._nativeGDM = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);</script>
+</head>
+<body>
+
+<header>
+  <h1>🎬 Descript Room Setup</h1>
+  <div class="step-bar" id="step-bar"></div>
+  <span style="font-size:10px;color:#333;cursor:default;margin-left:auto;flex-shrink:0" onclick="S.step=3;render();">v2.1.4</span>
+</header>
+
+<main>
+  <div class="content" id="content"></div>
+</main>
+
+<footer>
+  <button class="btn btn-ghost" id="btn-back" onclick="nav(-1)" style="visibility:hidden">← Back</button>
+  <button class="btn btn-primary" id="btn-next" onclick="nav(1)">Next →</button>
+</footer>
+
+<script>
+/* =============================================================
+   STATE
+   ============================================================= */
+/* Parse ?url= from URL (the Descript Room link) */
+const _urlRoom = new URLSearchParams(location.search).get('url') || '';
+const _isMac = /Mac/i.test(navigator.platform);
+
+const S = {
+  step: 0, STEPS: 4,
+  checks: [false, false, false, false],   /* step-0 distractions checklist */
+  stream:   null,
+  audioCtx: null, analyser: null, rafId: null,
+  dev: { allAudio: [], allVideo: [], curAudioId: null, curVideoId: null },
+  brightness: null, bgType: 'none', blurRadius: 16,
+  room: _urlRoom,
+};
+
+/* =============================================================
+   VIRTUAL BACKGROUND
+   ============================================================= */
+const BG_OPTIONS = [
+  { id: 'none',  label: 'Off',           src: null,             icon: '✕'  },
+  { id: 'blur',  label: 'Blur',          src: null,             icon: '🌫' },
+  { id: 'pega1', label: 'Pega Classic',  src: 'bg-pega-1.png', icon: null },
+  { id: 'pega2', label: 'Pega Abstract', src: 'bg-pega-2.png', icon: null },
+];
+
+class VirtualBgEffect {
+  constructor(type, imageSrc, blurRadius) {
+    this.type = type; this.imageSrc = imageSrc; this.blurRadius = blurRadius || 16;
+    this._running = false; this._seg = null; this._video = null;
+    this._canvas = null; this._ctx = null; this._bgImg = null;
+    this._outStream = null; this._rafId = null;
+  }
+  async startEffect(stream) {
+    this._seg = await VirtualBgEffect._getSegmenter();
+    if (this.type === 'image' && this.imageSrc) {
+      this._bgImg = await new Promise((res, rej) => {
+        const img = new Image();
+        img.onload = () => res(img);
+        img.onerror = () => rej(new Error('Could not load: ' + this.imageSrc));
+        img.src = this.imageSrc;
+      });
+    }
+    const video = document.createElement('video');
+    video.srcObject = stream; video.muted = true; video.autoplay = true; video.playsInline = true;
+    await new Promise(res => { video.onloadedmetadata = res; setTimeout(res, 2000); });
+    await video.play().catch(() => {});
+    const W = video.videoWidth || 1280, H = video.videoHeight || 720;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    this._video = video; this._canvas = canvas; this._ctx = canvas.getContext('2d');
+    this._running = true;
+    this._seg.onResults(r => this._onResults(r));
+    this._scheduleFrame();
+    this._outStream = canvas.captureStream(30);
+    return this._outStream;
+  }
+  _scheduleFrame() {
+    if (!this._running || !this._seg || !this._video) return;
+    this._rafId = requestAnimationFrame(() => {
+      this._seg.send({ image: this._video }).catch(() => {}).finally(() => this._scheduleFrame());
+    });
+  }
+  _onResults(results) {
+    if (!this._running || !this._ctx) return;
+    const ctx = this._ctx, W = this._canvas.width, H = this._canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    if (this.type === 'blur') {
+      const r = this.blurRadius;
+      ctx.filter = 'blur(' + r + 'px)';
+      ctx.drawImage(results.image, -r * 1.5, -r * 1.5, W + r * 3, H + r * 3);
+      ctx.filter = 'none';
+    } else if (this.type === 'image' && this._bgImg) {
+      const s  = Math.max(W / this._bgImg.naturalWidth, H / this._bgImg.naturalHeight);
+      const sw = this._bgImg.naturalWidth * s, sh = this._bgImg.naturalHeight * s;
+      ctx.save(); ctx.translate(W, 0); ctx.scale(-1, 1);
+      ctx.drawImage(this._bgImg, (W - sw) / 2, (H - sh) / 2, sw, sh);
+      ctx.restore();
+    } else {
+      ctx.drawImage(results.image, 0, 0, W, H);
+    }
+    const tmp = document.createElement('canvas');
+    tmp.width = W; tmp.height = H;
+    const tCtx = tmp.getContext('2d');
+    tCtx.drawImage(results.segmentationMask, 0, 0, W, H);
+    tCtx.globalCompositeOperation = 'source-in';
+    tCtx.drawImage(results.image, 0, 0, W, H);
+    ctx.drawImage(tmp, 0, 0);
+  }
+  stopEffect() {
+    this._running = false;
+    if (this._rafId)     { cancelAnimationFrame(this._rafId); this._rafId = null; }
+    if (this._outStream) { this._outStream.getTracks().forEach(t => t.stop()); this._outStream = null; }
+    if (this._seg)       { this._seg.onResults(() => {}); }
+    this._video = null; this._canvas = null; this._ctx = null;
+  }
+  isEnabled() { return this._running; }
+  static _promise = null;
+  static _getSegmenter() {
+    if (!VirtualBgEffect._promise) VirtualBgEffect._promise = VirtualBgEffect._load();
+    return VirtualBgEffect._promise;
+  }
+  static async _load() {
+    if (!window.SelfieSegmentation) {
+      await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js');
+    }
+    if (!window.SelfieSegmentation) throw new Error('SelfieSegmentation failed to load');
+    const seg = new window.SelfieSegmentation({
+      locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${f}`,
+    });
+    seg.setOptions({ modelSelection: 1 });
+    seg.onResults(() => {});
+    try { await seg.initialize(); } catch(e) {}
+    return seg;
+  }
+}
+
+let _previewEffect = null;
+
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    if (document.querySelector(`script[src="${src}"]`)) { res(); return; }
+    const s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+/* =============================================================
+   STEP BAR
+   ============================================================= */
+function renderBar() {
+  const bar = document.getElementById('step-bar');
+  bar.innerHTML = '';
+  for (let i = 0; i < S.STEPS; i++) {
+    if (i > 0) {
+      const c = document.createElement('div');
+      c.className = 'connector' + (i <= S.step ? ' done' : '');
+      bar.appendChild(c);
+    }
+    const p = document.createElement('div');
+    p.className = 'pip' + (i === S.step ? ' active' : i < S.step ? ' done' : '');
+    p.textContent = i < S.step ? '✓' : String(i + 1);
+    bar.appendChild(p);
+  }
+}
+
+/* =============================================================
+   NAVIGATION
+   ============================================================= */
+function nav(dir) {
+  if (dir === 1 && S.step === 3) { joinRoom(); return; }
+  S.step = Math.max(0, Math.min(S.STEPS - 1, S.step + dir));
+  render();
+}
+
+function updateNav() {
+  const back = document.getElementById('btn-back');
+  const next = document.getElementById('btn-next');
+  back.style.visibility = S.step === 0 ? 'hidden' : 'visible';
+  next.className = S.step === 3 ? 'btn btn-success' : 'btn btn-primary';
+  next.textContent = S.step === 3 ? 'Open Room →' : 'Next →';
+  if (S.step === 0) {
+    next.disabled = !S.checks.every(Boolean);
+  } else {
+    next.disabled = false;
+  }
+}
+
+/* =============================================================
+   RENDER DISPATCH
+   ============================================================= */
+function render() {
+  renderBar();
+  updateNav();
+  const el = document.getElementById('content');
+  if      (S.step === 0) { el.innerHTML = renderStep0(); bindChecks(el); }
+  else if (S.step === 1) { renderStep1(el); }
+  else if (S.step === 2) { renderStep2(el); }
+  else if (S.step === 3) { el.innerHTML = renderStep3(); }
+}
+
+/* =============================================================
+   STEP 0 — CLOSE DISTRACTIONS
+   ============================================================= */
+function bindChecks(root) {
+  root.querySelectorAll('.check-row[data-i]').forEach(row => {
+    row.addEventListener('click', () => {
+      const i = +row.dataset.i;
+      S.checks[i] = !S.checks[i];
+      row.classList.toggle('on', S.checks[i]);
+      row.querySelector('.cbox').textContent = S.checks[i] ? '✓' : '';
+      updateNav();
+    });
+  });
+}
+
+function crow(i, title, desc) {
+  const on = S.checks[i] ?? false;
+  return `<div class="check-row${on?' on':''}" data-i="${i}">
+    <div class="cbox">${on?'✓':''}</div>
+    <div><div class="crow-title">${title}</div><div class="crow-desc">${desc}</div></div>
+  </div>`;
+}
+
+function detectBrowser() {
+  const ua = navigator.userAgent;
+  if (/Firefox\//i.test(ua)) return 'Firefox';
+  if (/Edg\//i.test(ua))     return 'Edge';
+  if (/Chrome\//i.test(ua))  return 'Chrome';
+  if (/Safari\//i.test(ua))  return 'Safari';
+  return 'Unknown';
+}
+
+function renderStep0() {
+  const browser = detectBrowser();
+  const isSupported = (browser === 'Chrome' || browser === 'Firefox');
+  const browserNote = isSupported
+    ? ''
+    : '<div style="margin-top:14px;padding:10px 14px;background:rgba(245,158,11,0.1);border:1px solid var(--warn);border-radius:8px;font-size:13px;color:var(--warn)">'
+      + '⚠️ You appear to be using <strong>' + browser + '</strong>. If you run into issues with your camera or call, '
+      + 'try switching to <strong>Chrome</strong> or <strong>Firefox</strong> — they work best with this app.'
+      + '</div>';
+
+  return `
+  <div>
+    <div class="step-title">Step 1 — Prepare Your Space</div>
+    <div class="step-sub">Eliminate interruptions before we get started. Check off each item.</div>
+    <div class="checklist">
+      ${crow(0, 'Close Outlook', 'Prevents notification sounds and pop-ups during the call')}
+      ${crow(1, 'Close Webex', 'Avoids incoming call interruptions')}
+      ${crow(2, 'Phone on Do Not Disturb', 'Silences calls, texts, and lock-screen notifications')}
+      ${crow(3, 'Disconnect from VPN', 'VPNs can block the video call connection — disconnect if you\'re able to')}
+    </div>
+    ${browserNote}
+    <div class="info-box" style="margin-top:18px">
+      <strong>You've been invited to a Descript recording session.</strong><br>
+      This quick setup takes about 2 minutes and ensures you look and sound great before you open your Descript Room.
+    </div>
+  </div>`;
+}
+
+/* =============================================================
+   STEP 1 — CAMERA & AUDIO
+   ============================================================= */
+function renderStep1(el) {
+  el.innerHTML = `
+  <div>
+    <div class="step-title">Step 2 — Camera &amp; Audio</div>
+    <div class="step-sub">Check your camera preview and make sure your microphone is picking up your voice.</div>
+
+    <div class="vid-wrap">
+      <video id="guest-video" autoplay playsinline muted></video>
+      <div class="cam-loading" id="cam-loading">
+        <div class="spinner"></div><span>Starting camera…</span>
+      </div>
+    </div>
+
+    <div id="dev-area"></div>
+
+    <div class="sec-label">Microphone Level</div>
+    <div class="meter-track">
+      <div class="meter-fill" id="audio-fill"></div>
+      <div class="meter-lbl">Speak to test your microphone</div>
+    </div>
+  </div>`;
+
+  initStream(el);
+}
+
+async function initStream(el) {
+  if (S.stream) {
+    attachStream('guest-video');
+    renderDevArea();
+    startAudioMon();
+    return;
+  }
+  try {
+    async function tryGetTrack(constraints, retries = 2) {
+      for (let i = 0; i <= retries; i++) {
+        if (i > 0) await new Promise(r => setTimeout(r, i * 800));
+        try { return await navigator.mediaDevices.getUserMedia(constraints); }
+        catch(e) { if (e.name !== 'NotReadableError' && e.name !== 'TrackStartError') throw e; }
+      }
+      return null;
+    }
+
+    const ld = document.getElementById('cam-loading');
+    if (ld) { const sp = ld.querySelector('span'); if (sp) sp.textContent = 'Starting camera…'; }
+
+    const videoStream =
+      await tryGetTrack({ video: { width:{ideal:1920}, height:{ideal:1080}, frameRate:{ideal:30} }, audio: false }) ||
+      await tryGetTrack({ video: { width:{ideal:1280}, height:{ideal:720},  frameRate:{ideal:30} }, audio: false }) ||
+      await tryGetTrack({ video: true, audio: false });
+
+    if (ld) { const sp = ld.querySelector('span'); if (sp) sp.textContent = 'Starting microphone…'; }
+    const audioStream = await tryGetTrack({ video: false, audio: true });
+
+    if (!videoStream && !audioStream) throw new Error('Could not access camera or microphone.');
+
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    S.dev.allAudio = devices.filter(d => d.kind === 'audioinput');
+    S.dev.allVideo = devices.filter(d => d.kind === 'videoinput');
+
+    const tracks = [
+      ...(videoStream ? videoStream.getVideoTracks() : []),
+      ...(audioStream ? audioStream.getAudioTracks() : []),
+    ];
+    S.stream = new MediaStream(tracks);
+
+    const vt = S.stream.getVideoTracks()[0];
+    const at = S.stream.getAudioTracks()[0];
+    S.dev.curVideoId = vt?.getSettings().deviceId;
+    S.dev.curAudioId = at?.getSettings().deviceId;
+
+    attachStream('guest-video');
+    renderDevArea();
+    startAudioMon();
+
+  } catch(err) {
+    const ld = document.getElementById('cam-loading');
+    if (!ld) return;
+    let msg = 'Could not access camera or microphone.';
+    let hint = 'Check your browser\'s site permissions and try again.';
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      msg  = 'Permission denied.';
+      hint = 'Click the camera icon in your browser\'s address bar and choose <strong>Allow</strong>, then reload the page.';
+    } else if (err.name === 'NotFoundError') {
+      msg  = 'No camera or microphone found.';
+      hint = 'Make sure your webcam and headset are plugged in, then reload.';
+    } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+      msg  = 'Camera is in use by another app.';
+      hint = 'Your webcam can only be used by one app at a time. '
+           + '<strong>Close any of these that might be open:</strong>'
+           + '<ul style="margin:8px 0 0 16px;text-align:left;line-height:1.8">'
+           + '<li>Webex / Zoom / Teams</li>'
+           + '<li>OBS / Camtasia / Loom</li>'
+           + '<li>Windows Camera app</li>'
+           + '<li>Any other video call or recording app</li>'
+           + '</ul>'
+           + 'After closing them, click Reload below.';
+    }
+    ld.innerHTML = `
+      <div style="text-align:center;padding:14px 20px">
+        <div style="font-size:28px;margin-bottom:8px">⚠️</div>
+        <div style="color:var(--danger);font-weight:600;margin-bottom:6px">${msg}</div>
+        <div style="color:var(--muted);font-size:13px;line-height:1.5">${hint}</div>
+        <button class="btn btn-ghost" onclick="location.reload()"
+                style="margin-top:14px;font-size:13px">↺ Reload page</button>
+      </div>`;
+  }
+}
+
+function attachStream(id) {
+  const el = document.getElementById(id);
+  if (!el || !S.stream) return;
+  const useCanvas = _previewEffect && _previewEffect._outStream;
+  el.srcObject = useCanvas ? _previewEffect._outStream : S.stream;
+  el.onloadedmetadata = () => {
+    const ld = document.getElementById('cam-loading');
+    if (ld) ld.style.display = 'none';
+  };
+}
+
+function renderDevArea() {
+  const area = document.getElementById('dev-area');
+  if (!area) return;
+
+  const curVidLabel = S.dev.allVideo.find(d => d.deviceId === S.dev.curVideoId)?.label || 'Default camera';
+  const curAudLabel = S.dev.allAudio.find(d => d.deviceId === S.dev.curAudioId)?.label || 'Default microphone';
+
+  const vidOpts = S.dev.allVideo.map(d =>
+    `<option value="${d.deviceId}"${d.deviceId === S.dev.curVideoId ? ' selected' : ''}>${d.label || 'Camera'}</option>`
+  ).join('');
+  const audOpts = S.dev.allAudio.map(d =>
+    `<option value="${d.deviceId}"${d.deviceId === S.dev.curAudioId ? ' selected' : ''}>${d.label || 'Microphone'}</option>`
+  ).join('');
+
+  area.innerHTML = `
+    <div class="sec-label">Camera</div>
+    <div class="dev-row">
+      <div class="sdot green"></div>
+      <div class="dev-info">
+        <div class="dev-name">Active Camera</div>
+        <div class="dev-sub">${curVidLabel}</div>
+      </div>
+      ${S.dev.allVideo.length > 1
+        ? `<select class="dev-sel" onchange="switchDevices(this.value, S.dev.curAudioId)">${vidOpts}</select>`
+        : ''}
+    </div>
+    <div class="sec-label">Microphone</div>
+    <div class="dev-row">
+      <div class="sdot green"></div>
+      <div class="dev-info">
+        <div class="dev-name">Active Microphone</div>
+        <div class="dev-sub">${curAudLabel}</div>
+      </div>
+      ${S.dev.allAudio.length > 1
+        ? `<select class="dev-sel" onchange="switchDevices(S.dev.curVideoId, this.value)">${audOpts}</select>`
+        : ''}
+    </div>`;
+}
+
+async function switchDevices(vid, aud) {
+  if (_previewEffect) { _previewEffect.stopEffect(); _previewEffect = null; }
+  const oldStream = S.stream;
+  try {
+    let newStream;
+    try {
+      newStream = await navigator.mediaDevices.getUserMedia({
+        video: vid ? { deviceId: { exact: vid } } : true,
+        audio: aud ? { deviceId: { exact: aud } } : true,
+      });
+    } catch(e) {
+      if (e.name !== 'OverconstrainedError' && e.name !== 'NotFoundError') throw e;
+      newStream = await navigator.mediaDevices.getUserMedia({
+        video: vid ? { deviceId: { ideal: vid } } : true,
+        audio: aud ? { deviceId: { ideal: aud } } : true,
+      });
+    }
+    if (oldStream) oldStream.getTracks().forEach(t => t.stop());
+    S.stream = newStream;
+    const vt = newStream.getVideoTracks()[0];
+    const at = newStream.getAudioTracks()[0];
+    S.dev.curVideoId = vt ? (vt.getSettings().deviceId || vid) : vid;
+    S.dev.curAudioId = at ? (at.getSettings().deviceId || aud) : aud;
+    if (S.audioCtx) { S.audioCtx.close(); S.audioCtx = null; S.analyser = null; }
+    attachStream('guest-video');
+    renderDevArea();
+    startAudioMon();
+  } catch(e) {
+    alert('Could not switch to that device.\n\n' + e.name + ': ' + e.message);
+  }
+}
+
+function startAudioMon() {
+  if (!S.stream || S.audioCtx) return;
+  try {
+    S.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const src = S.audioCtx.createMediaStreamSource(S.stream);
+    S.analyser = S.audioCtx.createAnalyser();
+    S.analyser.fftSize = 512;
+    src.connect(S.analyser);
+    rafAudio();
+  } catch(e) { console.warn('Audio monitor:', e); }
+}
+
+function rafAudio() {
+  S.rafId = requestAnimationFrame(rafAudio);
+  if (!S.analyser) return;
+  const buf = new Uint8Array(S.analyser.frequencyBinCount);
+  S.analyser.getByteFrequencyData(buf);
+  const avg = buf.reduce((a, b) => a + b, 0) / buf.length;
+  const pct = Math.min(100, Math.max(2, (avg / 72) * 100));
+  const bar = document.getElementById('audio-fill');
+  if (bar) bar.style.width = pct + '%';
+}
+
+/* =============================================================
+   STEP 2 — LIGHTING + BACKGROUND
+   ============================================================= */
+function renderStep2(el) {
+  el.innerHTML = `
+  <div>
+    <div class="step-title">Step 3 — Lighting &amp; Background</div>
+    <div class="step-sub">Fit yourself inside the silhouette, then check your lighting.</div>
+
+    <div class="vid-wrap">
+      <video id="guest-video" autoplay playsinline muted></video>
+      <div class="vid-overlay">
+        <img src="guideline.png" style="width:100%;height:100%;object-fit:cover;mix-blend-mode:screen;opacity:0.85;" alt="">
+      </div>
+      <div class="cam-loading" id="cam-loading" style="display:none">
+        <div class="spinner"></div><span>Starting camera…</span>
+      </div>
+    </div>
+
+    <div class="sec-label" style="margin-top:16px">Lighting Check</div>
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+        <button class="btn btn-ghost" onclick="checkBrightness()" style="font-size:13px">☀️ Analyze Lighting</button>
+        <div id="bright-out" style="flex:1">
+          ${S.brightness ? brightHtml(S.brightness) : '<span style="font-size:13px;color:var(--muted)">Click to analyze your current lighting</span>'}
+        </div>
+      </div>
+    </div>
+
+    <div class="info-box" style="margin-top:14px">
+      <strong>Tips for better home lighting:</strong><br>
+      • <strong>Face a light source</strong> — sit facing a window or lamp, not with it behind you<br>
+      • <strong>Too dark?</strong> Bring in a desk lamp or ring light and point it at your face<br>
+      • <strong>Too bright?</strong> Draw a sheer curtain or move the lamp further back
+    </div>
+  </div>`;
+
+  attachStream('guest-video');
+  VirtualBgEffect._getSegmenter().catch(() => {});
+}
+
+function checkBrightness() {
+  const rawSrc = (_previewEffect && _previewEffect._video)
+    ? _previewEffect._video
+    : document.getElementById('guest-video');
+  if (!rawSrc || !S.stream) return;
+
+  const W = 1281, H = 720;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+  ctx.translate(W, 0); ctx.scale(-1, 1);
+  ctx.drawImage(rawSrc, 0, 0, W, H);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+  const px = ctx.getImageData(0, 0, W, H).data;
+  const cw = W / 3, rh = H / 3;
+  const sum = [[0,0,0],[0,0,0],[0,0,0]];
+  const cnt = [[0,0,0],[0,0,0],[0,0,0]];
+  for (let y = 0; y < H; y++) {
+    const row = Math.min(2, Math.floor(y / rh));
+    for (let x = 0; x < W; x++) {
+      const cc = Math.min(2, Math.floor(x / cw));
+      const i  = (y * W + x) * 4;
+      sum[row][cc] += 0.2126 * px[i] + 0.7152 * px[i+1] + 0.0722 * px[i+2];
+      cnt[row][cc]++;
+    }
+  }
+  const avg = sum.map((row, r) => row.map((s, cc) => s / cnt[r][cc]));
+  const M = avg[1][1];
+  const LABELS = [
+    ['upper left corner', 'top of the frame',   'upper right corner'],
+    ['left side',         'center',              'right side'],
+    ['lower left corner', 'bottom of the frame', 'lower right corner'],
+  ];
+  const cells = [];
+  for (let r = 0; r < 3; r++)
+    for (let cc = 0; cc < 3; cc++)
+      cells.push({ r, cc, lum: avg[r][cc], label: LABELS[r][cc], isCenter: r===1 && cc===1 });
+
+  const bg     = cells.filter(cell => !cell.isCenter);
+  const maxBg  = bg.reduce((a, b) => a.lum > b.lum ? a : b);
+  const spread = maxBg.lum - bg.reduce((a, b) => a.lum < b.lum ? a : b).lum;
+  const hotDelta = maxBg.lum - M;
+
+  function rate(lum) {
+    if (lum < 42)  return -2; if (lum < 66)  return -1;
+    if (lum > 212) return  2; if (lum > 188) return  1;
+    return 0;
+  }
+  const rM = rate(M);
+
+  function intensityWord(d) {
+    if (d > 80) return 'a lot brighter'; if (d > 50) return 'noticeably brighter';
+    return 'a bit brighter';
+  }
+
+  function hotHint(cell) {
+    const { r, cc } = cell;
+    if (r===0&&cc===0) return 'Looks like a window or overhead light up high on your left — closing the blind or scooting slightly right should even it out.';
+    if (r===0&&cc===1) return 'Probably an overhead light or a high window directly behind you — try closing the blind or tilting your camera angle down a touch.';
+    if (r===0&&cc===2) return 'Looks like a window or overhead light up high on your right — closing the blind or scooting slightly left should help.';
+    if (r===1&&cc===0) return 'There\'s likely a lamp or window on your left throwing extra light in. Try closing that blind or moving the lamp behind your camera instead.';
+    if (r===1&&cc===2) return 'There\'s likely a lamp or window on your right throwing extra light in. Try closing that blind or moving the lamp behind your camera instead.';
+    if (r===2&&cc===0) return 'Looks like stray light is hitting the lower left — could be a floor lamp or light bouncing off your desk on that side.';
+    if (r===2&&cc===1) return 'Light might be bouncing up from your desk or the floor. A darker surface under your setup or raising your light source should help.';
+    if (r===2&&cc===2) return 'Looks like stray light is hitting the lower right — could be a floor lamp or light bouncing off your desk on that side.';
+    return 'Try balancing your room lighting a bit.';
+  }
+
+  let cls, icon, title, sub;
+  if (Math.abs(rM) === 2) {
+    cls = 'error'; icon = rM < 0 ? '🌑' : '🌟';
+    if (rM < 0) { title = 'Your face is too dark'; sub = 'It\'s pretty hard to see you clearly from here. A light pointing at your face from the front — even a desk lamp — would make a big difference.'; }
+    else { title = 'You\'re a bit washed out'; sub = 'The light hitting you is too intense. Try moving it back, turning it down, or angling it slightly off to the side so it\'s not aimed straight at your face.'; }
+    if (spread > 55) sub += ' On top of that, the ' + maxBg.label + ' is ' + intensityWord(hotDelta) + ' than the rest — ' + hotHint(maxBg).charAt(0).toLowerCase() + hotHint(maxBg).slice(1);
+  } else if (Math.abs(rM) === 1) {
+    cls = spread > 55 ? 'warn' : 'warn-mild'; icon = rM < 0 ? '🌒' : '🌤';
+    if (rM < 0) { title = 'You\'re a little underlit'; sub = 'You look slightly dim — bumping up your light or moving it a bit closer should do it.'; }
+    else { title = 'You\'re slightly overexposed'; sub = 'You look a touch bright. Pulling the light back just a little or reducing its intensity should fix it.'; }
+    if (spread > 55) sub += ' Also, the ' + maxBg.label + ' is ' + intensityWord(hotDelta) + ' than the rest. ' + hotHint(maxBg);
+  } else if (spread > 65) {
+    cls = 'warn-mild'; icon = '🌓';
+    title = 'Your face looks good — but the background\'s a little uneven';
+    sub = 'The ' + maxBg.label + ' is ' + intensityWord(hotDelta) + ' than the center of the frame. ' + hotHint(maxBg);
+  } else if (spread > 35 && hotDelta > 25) {
+    cls = 'info'; icon = '💡';
+    title = 'Looking good';
+    const hint = hotHint(maxBg);
+    sub = 'The ' + maxBg.label + ' is ' + intensityWord(hotDelta) + ' than the rest, but it\'s subtle. If you want it more even: ' + hint.charAt(0).toLowerCase() + hint.slice(1);
+  } else {
+    cls = 'good'; icon = '✅';
+    title = 'Lighting looks great!';
+    sub = 'Even and well-lit all the way across (left ' + Math.round(avg[1][0]) + ' · center ' + Math.round(M) + ' · right ' + Math.round(avg[1][2]) + ').';
+  }
+
+  S.brightness = cls === 'error' ? (rM < 0 ? 'dark' : 'bright') : 'good';
+  const out = document.getElementById('bright-out');
+  if (out) out.innerHTML = brightHtml(cls, icon, title, sub);
+}
+
+function brightHtml(cls, icon, title, sub) {
+  if (arguments.length === 1) {
+    const MAP = {
+      good:   ['good',  '✅', 'Lighting looks great!',    'Well-lit and not overexposed.'],
+      dark:   ['error', '🌑', 'Your face is too dark',    'Bring a light source closer and point it at your face.'],
+      bright: ['error', '🌟', 'Your face is overexposed', 'Reduce light intensity or move the source further back.'],
+    };
+    [cls, icon, title, sub] = MAP[cls] || MAP.good;
+  }
+  return '<div class="bright-result ' + cls + '">'
+       + '<span class="bright-icon">' + icon + '</span>'
+       + '<div><div class="bright-title">' + title + '</div>'
+       + '<div class="bright-sub">' + sub + '</div></div></div>';
+}
+
+function renderBgSelector(activeId) {
+  const opts = BG_OPTIONS.map(o => {
+    const active   = o.id === activeId ? ' bg-active' : '';
+    const bgStyle  = o.src ? ' style="background-image:url(\'' + o.src + '\')"' : '';
+    const iconHtml = !o.src ? '<span style="font-size:15px">' + o.icon + '</span>' : '';
+    return '<button class="bg-opt' + active + '" onclick="setBgEffect(\'' + o.id + '\')" title="' + o.label + '"' + bgStyle + '>'
+         + iconHtml + '<span class="bg-opt-lbl">' + o.label + '</span></button>';
+  }).join('');
+  const sliderDisplay = activeId === 'blur' ? 'flex' : 'none';
+  const slider = '<div id="blur-slider-row" style="display:' + sliderDisplay + ';align-items:center;gap:10px;margin-top:8px">'
+    + '<span style="font-size:12px;color:var(--muted);white-space:nowrap">Blur strength</span>'
+    + '<input id="blur-slider" type="range" min="4" max="40" value="' + S.blurRadius + '"'
+    + ' oninput="setBlurRadius(+this.value)"'
+    + ' style="flex:1;accent-color:var(--accent)">'
+    + '<span id="blur-val" style="font-size:12px;color:var(--muted);width:32px;text-align:right">' + S.blurRadius + 'px</span>'
+    + '</div>';
+  return '<div class="sec-label" style="margin-top:14px">Virtual Background</div>'
+       + '<div class="bg-selector">' + opts + '</div>' + slider;
+}
+
+function setBlurRadius(r) {
+  S.blurRadius = r;
+  const lbl = document.getElementById('blur-val');
+  if (lbl) lbl.textContent = r + 'px';
+  if (_previewEffect && _previewEffect.type === 'blur') _previewEffect.blurRadius = r;
+}
+
+async function setBgEffect(id) {
+  S.bgType = id;
+  document.querySelectorAll('.bg-opt').forEach(b => {
+    b.classList.toggle('bg-active', b.title === BG_OPTIONS.find(o => o.id === id)?.label);
+  });
+  const opt = BG_OPTIONS.find(o => o.id === id);
+  const sliderRow = document.getElementById('blur-slider-row');
+  if (sliderRow) sliderRow.style.display = id === 'blur' ? 'flex' : 'none';
+
+  if (id === 'none') {
+    if (_previewEffect) { _previewEffect.stopEffect(); _previewEffect = null; }
+    const pv = document.getElementById('guest-video');
+    if (pv && S.stream) pv.srcObject = S.stream;
+    return;
+  }
+
+  /* ── Lighting preview context only — Descript handles its own backgrounds ── */
+  const effect = new VirtualBgEffect(
+    id === 'blur' ? 'blur' : 'image',
+    opt?.src || null,
+    S.blurRadius
+  );
+  const pv = document.getElementById('guest-video');
+  if (pv && S.stream) {
+    if (_previewEffect) { _previewEffect.stopEffect(); _previewEffect = null; }
+    try {
+      const out = await effect.startEffect(S.stream);
+      const ld = document.getElementById('cam-loading');
+      if (ld) ld.style.display = 'none';
+      pv.srcObject = out;
+      _previewEffect = effect;
+    } catch(e) {
+      console.warn('Preview bg effect failed:', e);
+      alert('Virtual background failed: ' + e.message);
+    }
+  }
+}
+
+/* =============================================================
+   STEP 3 — OPEN DESCRIPT ROOM
+   ============================================================= */
+function renderStep3() {
+  return `
+  <div>
+    <div class="step-title">Step 4 — Open Your Descript Room</div>
+    <div class="step-sub">Paste the Descript Room link your host shared with you, then click Open Room.</div>
+
+    <div class="card" style="margin-bottom:14px">
+      <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px">Descript Room Link</label>
+      <input id="room-input" type="url"
+        value="${S.room}"
+        placeholder="https://web.descript.com/room/..."
+        style="width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:14px"
+        oninput="S.room=this.value.trim()">
+      <div style="font-size:12px;color:var(--muted);margin-top:6px">
+        The full URL to your Descript Room — usually starts with <code>https://web.descript.com/room/</code>
+      </div>
+    </div>
+
+    <div id="join-status" style="font-size:13px;color:var(--muted);margin-bottom:10px;min-height:18px"></div>
+
+    <div class="info-box">
+      <strong>What happens next:</strong> Clicking Open Room will release your camera and microphone
+      and redirect you to the Descript Room in this tab. Descript will then ask for permission to
+      use your camera and mic — allow it, and you'll be in the session.<br><br>
+      <strong>Tip:</strong> Descript records locally on each participant's device for best quality,
+      so you may be asked to download a small recording at the end.
+    </div>
+  </div>`;
+}
+
+/* =============================================================
+   OPEN DESCRIPT ROOM — release camera/mic and redirect
+   ============================================================= */
+function joinRoom() {
+  const inp = document.getElementById('room-input');
+  const raw = (inp ? inp.value : S.room).trim();
+
+  if (!raw) {
+    if (inp) { inp.focus(); inp.style.borderColor = 'var(--danger)'; }
+    return;
+  }
+
+  /* Validate URL — must be an http(s) URL, preferably a Descript link */
+  let parsed;
+  try { parsed = new URL(raw); }
+  catch(e) {
+    const status = document.getElementById('join-status');
+    if (status) status.innerHTML = '<span style="color:var(--danger)">⚠ That doesn\'t look like a valid URL. Paste the full link your host sent you.</span>';
+    if (inp) inp.style.borderColor = 'var(--danger)';
+    return;
+  }
+
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    const status = document.getElementById('join-status');
+    if (status) status.innerHTML = '<span style="color:var(--danger)">⚠ Link must start with https://</span>';
+    if (inp) inp.style.borderColor = 'var(--danger)';
+    return;
+  }
+
+  if (inp) inp.style.borderColor = '';
+  S.room = raw;
+
+  const status = document.getElementById('join-status');
+  const btn    = document.getElementById('btn-next');
+  if (status) status.textContent = 'Releasing camera and opening room…';
+  if (btn) btn.disabled = true;
+
+  /* Release camera/mic so Descript can pick them up cleanly */
+  if (_previewEffect) { _previewEffect.stopEffect(); _previewEffect = null; }
+  if (S.stream)       { S.stream.getTracks().forEach(t => t.stop()); S.stream = null; }
+  if (S.audioCtx)     { try { S.audioCtx.close(); } catch(e) {} S.audioCtx = null; S.analyser = null; }
+  cancelAnimationFrame(S.rafId);
+
+  /* Give the browser a beat to fully release the devices, then navigate */
+  setTimeout(() => { location.href = raw; }, 400);
+}
+
+/* =============================================================
+   BOOT
+   ============================================================= */
+/* ?skip=1&url=<descript-url> jumps directly to the open-room step */
+(function checkSkip() {
+  const params = new URLSearchParams(location.search);
+  if (params.get('skip') === '1' && S.room) {
+    S.step = 3; /* show open room step, then auto-redirect */
+    setTimeout(() => joinRoom(), 300);
+  }
+})();
+render();
+</script>
+</body>
+</html>
