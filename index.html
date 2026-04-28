@@ -192,6 +192,16 @@
     .pp-bot-mid   { bottom: 0; left: 50%; transform: translateX(-50%); }
     .pp-bot-right { bottom: 0; right: 0; }
 
+    /* On wide viewports, let the prep stage break out of .content's 680px cap
+       so chips spread across the screen instead of clustering in the middle. */
+    @media (min-width: 900px) {
+      .prep-stage {
+        width: min(96vw, 1000px);
+        margin-left: 50%;
+        transform: translateX(-50%);
+      }
+    }
+
     @media (max-width: 620px) {
       .prep-stage { min-height: 0; }
       .prep-stage-hint { display: none; }
