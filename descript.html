@@ -86,6 +86,77 @@
     .crow-title { font-weight: 600; font-size: 15px; line-height: 1.3; }
     .crow-desc  { font-size: 13px; color: var(--muted); margin-top: 2px; }
 
+    /* ── PREP STAGE (scattered confirmation chips) ── */
+    .prep-stage {
+      position: relative;
+      min-height: clamp(420px, 56vh, 520px);
+      max-width: 100%;
+      margin: 14px auto 4px;
+    }
+    .prep-stage-hint {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: var(--muted); font-size: 14px;
+      text-align: center; pointer-events: none;
+      opacity: 0.65; max-width: 200px;
+      font-weight: 500;
+    }
+    .prep-chip {
+      position: absolute;
+      width: clamp(190px, 33%, 230px);
+      background: var(--surf);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 13px 14px;
+      cursor: pointer; user-select: none;
+      display: flex; align-items: center; gap: 12px;
+      transition: border-color 0.15s, background 0.15s;
+      z-index: 2;
+    }
+    .prep-chip:hover { border-color: var(--accent); }
+    .prep-chip.on    { border-color: var(--success); background: rgba(34,197,94,0.08); }
+    .prep-chip-icon {
+      font-size: 30px; line-height: 1;
+      flex-shrink: 0;
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+    }
+    .prep-chip-body { flex: 1; min-width: 0; padding-right: 14px; }
+    .prep-chip .cbox {
+      position: absolute;
+      top: 7px; right: 7px;
+      width: 17px; height: 17px;
+      border-radius: 4px;
+      border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 0;
+      font-size: 10px; font-weight: 700;
+      transition: all 0.15s;
+    }
+    .prep-chip.on .cbox { background: var(--success); border-color: var(--success); color: #fff; }
+    .prep-chip-title { font-weight: 600; font-size: 13.5px; line-height: 1.3; }
+    .prep-chip-arrow { font-size: 11.5px; color: var(--muted); margin-top: 3px; line-height: 1.25; }
+    .prep-chip.on .prep-chip-arrow { color: var(--success); opacity: 0.8; }
+
+    .pp-top-left  { top: 0;    left: 0; }
+    .pp-top-right { top: 0;    right: 0; }
+    .pp-mid-left  { top: 50%;  left: 0;   transform: translateY(-50%); }
+    .pp-mid-right { top: 50%;  right: 0;  transform: translateY(-50%); }
+    .pp-bot-left  { bottom: 0; left: 0; }
+    .pp-bot-mid   { bottom: 0; left: 50%; transform: translateX(-50%); }
+    .pp-bot-right { bottom: 0; right: 0; }
+
+    @media (max-width: 620px) {
+      .prep-stage { min-height: 0; }
+      .prep-stage-hint { display: none; }
+      .prep-chip {
+        position: static; width: 100%;
+        margin-bottom: 10px;
+        transform: none !important;
+      }
+    }
+
     /* ── BUTTONS ── */
     .btn {
       padding: 10px 20px; border-radius: 8px; border: none;
@@ -333,7 +404,8 @@ const _isMac = /Mac/i.test(navigator.platform);
 
 const S = {
   step: 0, STEPS: 4,
-  checks: [false, false, false, false],   /* step-0 distractions checklist */
+  /* step-0 prep order: [tabs, Outlook, Webex, phoneDND, VPN] */
+  checks: [false, false, false, false, false],
   stream:   null,
   audioCtx: null, analyser: null, rafId: null,
   dev: { allAudio: [], allVideo: [], curAudioId: null, curVideoId: null },
@@ -511,7 +583,7 @@ function render() {
    STEP 0 — CLOSE DISTRACTIONS
    ============================================================= */
 function bindChecks(root) {
-  root.querySelectorAll('.check-row[data-i]').forEach(row => {
+  root.querySelectorAll('.check-row[data-i], .prep-chip[data-i]').forEach(row => {
     row.addEventListener('click', () => {
       const i = +row.dataset.i;
       S.checks[i] = !S.checks[i];
@@ -527,6 +599,34 @@ function crow(i, title, desc) {
   return `<div class="check-row${on?' on':''}" data-i="${i}">
     <div class="cbox">${on?'✓':''}</div>
     <div><div class="crow-title">${title}</div><div class="crow-desc">${desc}</div></div>
+  </div>`;
+}
+
+function prepChip(i, icon, title, arrow, posClass) {
+  const on = S.checks[i] ?? false;
+  return `<div class="prep-chip ${posClass}${on?' on':''}" data-i="${i}">
+    <div class="prep-chip-icon">${icon}</div>
+    <div class="prep-chip-body">
+      <div class="prep-chip-title">${title}</div>
+      <div class="prep-chip-arrow">${arrow}</div>
+    </div>
+    <div class="cbox">${on?'✓':''}</div>
+  </div>`;
+}
+
+function prepStageHtml() {
+  const vpnPos   = _isMac ? 'pp-top-right' : 'pp-bot-right';
+  const vpnArrow = _isMac
+    ? '↗ menu bar, top-right'
+    : '↘ system tray, bottom-right';
+  return `
+  <div class="prep-stage">
+    <div class="prep-stage-hint">Let's prepare your space!</div>
+    ${prepChip(0, '📑',  'Close extra browser tabs', '↑ top of this window', 'pp-top-left')}
+    ${prepChip(1, '📧',  'Quit Outlook',             '↓ dock / taskbar',     'pp-bot-left')}
+    ${prepChip(2, '💬', 'Quit Webex',               '↓ dock / taskbar',     'pp-bot-mid')}
+    ${prepChip(3, '📱', 'Phone on Do Not Disturb',  'on your phone',        'pp-mid-right')}
+    ${prepChip(4, '🛡️', 'Disconnect from VPN',      vpnArrow,                vpnPos)}
   </div>`;
 }
 
@@ -552,13 +652,8 @@ function renderStep0() {
   return `
   <div>
     <div class="step-title">Step 1 — Prepare Your Space</div>
-    <div class="step-sub">Eliminate interruptions before we get started. Check off each item.</div>
-    <div class="checklist">
-      ${crow(0, 'Close Outlook', 'Prevents notification sounds and pop-ups during the call')}
-      ${crow(1, 'Close Webex', 'Avoids incoming call interruptions')}
-      ${crow(2, 'Phone on Do Not Disturb', 'Silences calls, texts, and lock-screen notifications')}
-      ${crow(3, 'Disconnect from VPN', 'VPNs can block the video call connection — disconnect if you\'re able to')}
-    </div>
+    <div class="step-sub">Take care of each one before we get started. Each tile points to where you'll find it on your ${_isMac ? 'Mac' : 'PC'}.</div>
+    ${prepStageHtml()}
     ${browserNote}
     <div class="info-box" style="margin-top:18px">
       <strong>You've been invited to a Descript recording session.</strong><br>
