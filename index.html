@@ -48,20 +48,6 @@
       white-space: nowrap;
       letter-spacing: -0.01em;
     }
-    .settings-gear {
-      margin-left: auto;
-      background: none;
-      border: none;
-      color: #555;
-      font-size: 18px;
-      cursor: pointer;
-      padding: 4px 6px;
-      border-radius: 4px;
-      line-height: 1;
-      flex-shrink: 0;
-    }
-    .settings-gear:hover { color: #aaa; background: rgba(255,255,255,.06); }
-
     /* ── STEP BAR ── */
     .step-bar { display: flex; align-items: center; flex: 1; overflow: hidden; }
     .pip {
@@ -134,7 +120,7 @@
     /* ── PREP STAGE (scattered confirmation chips) ── */
     .prep-stage {
       position: relative;
-      min-height: clamp(420px, 56vh, 520px);
+      min-height: clamp(540px, 70vh, 660px);
       max-width: 100%;
       margin: 14px auto 4px;
     }
@@ -186,6 +172,7 @@
 
     .pp-top-left  { top: 0;    left: 0; }
     .pp-top-right { top: 0;    right: 0; }
+    .pp-r-2       { top: 22%;  right: 0; }
     .pp-mid-left  { top: 50%;  left: 0;   transform: translateY(-50%); }
     .pp-mid-right { top: 50%;  right: 0;  transform: translateY(-50%); }
     .pp-bot-left  { bottom: 0; left: 0; }
@@ -393,121 +380,6 @@
       .pip         { width: 22px; height: 22px; font-size: 10px; }
     }
 
-    /* ── JITSI FULL-PAGE TAKEOVER ── */
-    body.jitsi-mode header,
-    body.jitsi-mode footer { display: none !important; }
-    body.jitsi-mode main   { padding: 0; }
-    body.jitsi-mode .content { max-width: none; width: 100%; height: 100%;
-                               display: flex; flex-direction: column; }
-    .jitsi-bar {
-      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
-      padding: 7px 12px;
-      background: rgba(15,17,23,0.97);
-      border-bottom: 1px solid var(--border);
-    }
-    .jitsi-bar code {
-      flex: 1; font-size: 11px; color: var(--muted);
-      background: var(--surf2); padding: 5px 9px;
-      border-radius: 6px; border: 1px solid var(--border);
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-      min-width: 0;
-    }
-
-    /* ── CALL LAYOUT ── */
-    #call-area {
-      flex: 1; position: relative; background: #000; overflow: hidden;
-      display: flex; align-items: center; justify-content: center;
-    }
-    /* Gallery mode */
-    #call-gallery {
-      display: grid; gap: 6px; padding: 6px;
-      width: 100%; height: 100%;
-      grid-template-columns: 1fr;
-    }
-    #call-gallery.tiles-2 { grid-template-columns: 1fr 1fr; }
-    #call-gallery.tiles-3 { grid-template-columns: 1fr 1fr; }
-    #call-gallery.tiles-4 { grid-template-columns: 1fr 1fr; }
-    .gallery-tile {
-      position: relative; background: #111; border-radius: 8px; overflow: hidden;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
-    }
-    .gallery-tile video {
-      width: 100%; height: 100%; object-fit: cover; display: block;
-    }
-    .gallery-tile video.mirror { transform: scaleX(-1); }
-    .gallery-tile .tile-label {
-      position: absolute; bottom: 8px; left: 10px;
-      background: rgba(0,0,0,0.6); color: #fff;
-      font-size: 12px; font-weight: 600;
-      padding: 3px 10px; border-radius: 20px; pointer-events: none;
-    }
-    .gallery-tile .tile-placeholder {
-      color: #555; font-size: 14px; text-align: center; padding: 20px;
-    }
-    /* Focus mode */
-    #focus-wrap {
-      display: flex; flex-direction: column; width: 100%; height: 100%;
-    }
-    #focus-main {
-      flex: 1; position: relative; background: #000; overflow: hidden;
-    }
-    #focus-main video {
-      width: 100%; height: 100%; object-fit: contain; display: block;
-    }
-    #focus-main video.mirror { transform: scaleX(-1); }
-    #focus-main .tile-label {
-      position: absolute; bottom: 12px; left: 12px;
-      background: rgba(0,0,0,0.6); color: #fff;
-      font-size: 13px; font-weight: 600;
-      padding: 4px 12px; border-radius: 20px; pointer-events: none;
-    }
-    #focus-strip {
-      display: flex; gap: 4px; padding: 4px;
-      background: #0a0a0a; flex-shrink: 0; overflow-x: auto;
-      height: 100px;
-    }
-    .strip-tile {
-      position: relative; flex-shrink: 0; width: 140px; height: 100%;
-      background: #111; border-radius: 6px; overflow: hidden; cursor: pointer;
-      border: 2px solid transparent; transition: border-color .15s;
-    }
-    .strip-tile:hover { border-color: var(--accent); }
-    .strip-tile.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-    .strip-tile video {
-      width: 100%; height: 100%; object-fit: cover; display: block;
-    }
-    .strip-tile video.mirror { transform: scaleX(-1); }
-    .strip-tile .tile-label {
-      position: absolute; bottom: 3px; left: 5px;
-      background: rgba(0,0,0,0.6); color: #fff;
-      font-size: 10px; font-weight: 600;
-      padding: 1px 6px; border-radius: 10px; pointer-events: none;
-    }
-    #main-placeholder {
-      position: absolute; inset: 0;
-      display: flex; align-items: center; justify-content: center;
-      color: #444; font-size: 15px;
-    }
-    /* Toolbar */
-    .call-toolbar {
-      display: flex; align-items: center; justify-content: center;
-      gap: 10px; flex-shrink: 0; padding: 10px 14px;
-      background: rgba(15,17,23,0.97); border-top: 1px solid var(--border);
-    }
-    .call-toolbar .spacer { flex: 1; }
-    .tb-btn {
-      display: flex; flex-direction: column; align-items: center; gap: 3px;
-      background: rgba(255,255,255,0.08); border: none; border-radius: 10px;
-      color: #fff; cursor: pointer; padding: 8px 14px; min-width: 64px;
-      font-size: 11px; font-weight: 500; transition: background .15s;
-    }
-    .tb-btn:hover { background: rgba(255,255,255,0.16); }
-    .tb-btn .tb-icon { font-size: 20px; line-height: 1; }
-    .tb-btn.active  { background: var(--danger); }
-    .tb-btn.rec-on  { background: var(--danger); animation: blink 1.4s infinite; }
-    .tb-btn.end     { background: #c0392b; }
-    .tb-btn.end:hover { background: #e74c3c; }
 
     /* ── BACKGROUND SELECTOR ── */
     .bg-selector {
@@ -529,14 +401,6 @@
       background: rgba(0,0,0,0.65); padding: 2px 5px; border-radius: 3px;
       white-space: nowrap; position: absolute; bottom: 4px;
     }
-    /* Background panel in call mode */
-    #bg-panel {
-      flex-shrink: 0; padding: 8px 12px;
-      background: var(--surf); border-top: 1px solid var(--border);
-      display: none;
-    }
-    #bg-panel.open { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    #bg-panel > .bp-label { font-size: 12px; color: var(--muted); white-space: nowrap; }
   </style>
   <!-- Save native getDisplayMedia before ANY script can monkey-patch it -->
   <script>window._nativeGDM = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);</script>
@@ -546,33 +410,8 @@
 <header>
   <h1>📹 Recording Room Setup</h1>
   <div class="step-bar" id="step-bar"></div>
-  <button class="settings-gear" onclick="openSettingsModal()" title="Proxy settings">⚙</button>
 </header>
 
-<!-- Settings modal -->
-<div id="settings-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:none;align-items:center;justify-content:center">
-  <div style="background:#1a1a2e;border:1px solid #333;border-radius:12px;padding:28px 32px;width:min(460px,90vw);color:#e0e0e0">
-    <h2 style="margin:0 0 6px;font-size:18px">Proxy Settings</h2>
-    <p style="margin:0 0 20px;font-size:13px;color:#888">Optional — keeps the JaaS credentials off this page. Leave blank to use the embedded key.</p>
-    <div style="margin-bottom:16px">
-      <label style="display:block;font-size:13px;margin-bottom:4px">Proxy URL</label>
-      <input id="sett-proxy-url" type="text" placeholder="/api/jaas-token"
-        style="width:100%;box-sizing:border-box;padding:8px 10px;background:#111;border:1px solid #444;border-radius:6px;color:#e0e0e0;font-size:14px">
-      <div style="font-size:12px;color:#666;margin-top:4px">Leave as <code>/api/jaas-token</code> when hosted on Vercel.</div>
-    </div>
-    <div style="margin-bottom:24px">
-      <label style="display:block;font-size:13px;margin-bottom:4px">Proxy Token</label>
-      <input id="sett-proxy-token" type="password" placeholder="Shared secret from your admin" autocomplete="off"
-        style="width:100%;box-sizing:border-box;padding:8px 10px;background:#111;border:1px solid #444;border-radius:6px;color:#e0e0e0;font-size:14px">
-      <div style="font-size:12px;color:#666;margin-top:4px">Stored only in this browser (localStorage).</div>
-    </div>
-    <div style="display:flex;gap:10px">
-      <button onclick="saveSettingsModal()" style="flex:1;padding:10px;background:#4f8ef7;border:none;border-radius:6px;color:#fff;font-size:14px;cursor:pointer">Save</button>
-      <button onclick="closeSettingsModal()" style="flex:1;padding:10px;background:#333;border:none;border-radius:6px;color:#e0e0e0;font-size:14px;cursor:pointer">Cancel</button>
-    </div>
-    <div style="margin-top:16px;font-size:11px;color:#444;text-align:center;cursor:default" onclick="closeSettingsModal();S.location='studio';S.step=5;S.mode='jitsi';render();">v2.1.4</div>
-  </div>
-</div>
 
 <main>
   <div class="content" id="content"></div>
@@ -596,11 +435,12 @@ const S = {
   location: null,          /* null | 'studio' | 'home' */
 
   /* checklist booleans indexed by step — studio
-     step 2 prep order: [tabs, Outlook, Webex, phoneDND, VPN] */
-  checks: { 1:[false], 2:[false,false,false,false,false], 4:[false,false] },
+     step 2 prep order: [tabs, Outlook, Webex, phoneDND, VPN, ringLight, overheadOff] */
+  checks: { 1:[false], 2:[false,false,false,false,false,false,false], 4:[] },
 
-  /* checklist booleans indexed by step — home (same prep order) */
-  homechecks: { 1:[false], 2:[false,false,false,false,false] },
+  /* checklist booleans indexed by step — home
+     step 2 prep order: [tabs, Outlook, Webex, phoneDND, VPN, mouse] */
+  homechecks: { 2:[false,false,false,false,false,false] },
 
   /* camera / audio */
   stream:   null,
@@ -619,29 +459,11 @@ const S = {
   brightness:    null,   /* null | 'good' | 'dark' | 'bright' */
   brightnessVal: 0,
 
-  mode: null,            /* null | 'virtual' | 'local' | 'jitsi' */
+  mode: null,            /* null | 'virtual' | 'local' | 'descript' */
 
-  jitsiRoom: null,       /* room name for Jitsi call */
+  descriptRoom: '',      /* Descript Room URL when mode === 'descript' */
   bgType: 'none',        /* 'none' | 'blur' | 'pega1' | 'pega2' */
   blurRadius: 16,        /* px — controlled by blur slider */
-
-  /* lib-jitsi-meet call state */
-  call: {
-    conn: null, conf: null,
-    localTracks:   [],   /* JitsiTrack[] */
-    remoteTracks:  {},   /* participantId → { video, audio } */
-    names:         {},   /* participantId → displayName */
-    recActive: false, recSecs: 0, recTimer: null,
-    takeNum:     0,      /* incremented each time Record is pressed */
-    recorders: {},       /* 'local-tN' | 'pid-tN' → { recorder, chunks, mime } */
-    recBlobs:    {},     /* 'local-tN' | 'pid-tN' → { url, ext, name, take } */
-    downloaded:  {},     /* 'local-tN' | 'pid-tN' → true once downloaded */
-    endWarnShown: false, /* true after first End Call click warned about undownloaded files */
-    bgEffect:  null,     /* active VirtualBgEffect instance in call */
-    origVideoTrack: null, /* original MediaStreamTrack before effect was applied */
-    viewMode: 'gallery', /* 'gallery' | 'focus' */
-    focusId:  null,      /* tile id currently in focus (null = first remote) */
-  },
 
   recorder: null,
   chunks:   [],
@@ -653,47 +475,6 @@ const S = {
   prompter: null,
 };
 
-/* =============================================================
-   PROXY SETTINGS  (stored in localStorage; override the embedded key)
-   ============================================================= */
-const PROXY = { url: '', token: '' };
-(function loadProxy() {
-  PROXY.url   = localStorage.getItem('ss_proxy_url')   || '';
-  PROXY.token = localStorage.getItem('ss_proxy_token') || '';
-  /* Auto-detect: when served over HTTP/HTTPS (i.e. Vercel or local server),
-     default to the relative proxy endpoint so no manual setup is needed. */
-  if (!PROXY.url && location.protocol.startsWith('http')) PROXY.url = '/api/jaas-token';
-})();
-function saveProxy(url, token) {
-  PROXY.url   = (url   || '').trim();
-  PROXY.token = (token || '').trim();
-  localStorage.setItem('ss_proxy_url',   PROXY.url);
-  localStorage.setItem('ss_proxy_token', PROXY.token);
-}
-function openSettingsModal() {
-  const m = document.getElementById('settings-modal');
-  document.getElementById('sett-proxy-url').value   = PROXY.url   || '/api/jaas-token';
-  document.getElementById('sett-proxy-token').value = PROXY.token || '';
-  m.style.display = 'flex';
-}
-function closeSettingsModal() {
-  document.getElementById('settings-modal').style.display = 'none';
-}
-function saveSettingsModal() {
-  const url   = document.getElementById('sett-proxy-url').value;
-  const token = document.getElementById('sett-proxy-token').value;
-  saveProxy(url, token);
-  closeSettingsModal();
-}
-
-/* =============================================================
-   JAAS CONFIGURATION  (appId/kid only — private key lives in Vercel)
-   ============================================================= */
-const JAAS = {
-  appId: 'vpaas-magic-cookie-005ad6f5ab934d24a6836927b161c62d',
-  kid:   'vpaas-magic-cookie-005ad6f5ab934d24a6836927b161c62d/a1d586',
-  privateKey: '',
-};
 
 /* =============================================================
    STEP BAR
@@ -719,32 +500,11 @@ function renderBar() {
    ============================================================= */
 function nav(dir) {
   if (dir === 1 && S.step === 6) {
-    /* Check for undownloaded recordings before ending */
-    const hasPending = Object.keys(S.call.recBlobs).some(k => !S.call.downloaded[k]);
-    if (hasPending && !S.call.endWarnShown) {
-      /* First click — warn and highlight */
-      S.call.endWarnShown = true;
-      const row = document.getElementById('rec-download-row');
-      if (row) {
-        row.style.display = '';
-        row.classList.add('warn-pending');
-        row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-      updateEndCallBtn();
-      return;
-    }
+    if (S.mode === 'descript') { openDescriptRoom(); return; }
     finish();
     return;
   }
-  if (dir === 1 && S.step === 0 && S.mode === 'jitsi') {
-    const inp = document.getElementById('room-name-input');
-    const room = (inp ? inp.value : S.jitsiRoom || '').trim().replace(/\s+/g, '-').toLowerCase();
-    if (!room) { if (inp) { inp.focus(); inp.style.borderColor = 'var(--danger)'; } return; }
-    if (inp) inp.style.borderColor = '';
-    S.jitsiRoom = room;
-    if (inp) inp.value = room;
-  }
-  if (dir === 1 && S.step === 5 && S.mode !== 'local' && S.mode !== 'jitsi') return;
+  if (dir === 1 && S.step === 5 && S.mode !== 'local' && S.mode !== 'descript') return;
   S.step = Math.max(0, Math.min(S.STEPS - 1, S.step + dir));
   render();
 }
@@ -756,8 +516,8 @@ function updateNav() {
   back.style.visibility = S.step === 0 ? 'hidden' : 'visible';
 
   if (S.step === 5) {
-    next.style.visibility = (S.mode === 'local' || S.mode === 'jitsi') ? 'visible' : 'hidden';
-    next.textContent = S.mode === 'jitsi' ? 'Launch Call →' : 'Continue →';
+    next.style.visibility = (S.mode === 'local' || S.mode === 'descript') ? 'visible' : 'hidden';
+    next.textContent = 'Continue →';
     next.className = 'btn btn-primary';
     next.disabled = false;
     return;
@@ -765,7 +525,11 @@ function updateNav() {
 
   next.style.visibility = 'visible';
   next.className = S.step === 6 ? 'btn btn-success' : 'btn btn-primary';
-  next.textContent = S.step === 6 ? (S.mode === 'jitsi' ? 'End Call ✓' : 'Finish ✓') : 'Next →';
+  if (S.step === 6) {
+    next.textContent = S.mode === 'descript' ? 'Open Room →' : 'Finish ✓';
+  } else {
+    next.textContent = 'Next →';
+  }
 
   if (S.step === 0) {
     next.style.visibility = (S.location === 'studio' || S.location === 'home') ? 'visible' : 'hidden';
@@ -776,11 +540,11 @@ function updateNav() {
   if (S.location === 'home') {
     switch (S.step) {
       case 0: next.disabled = !S.location; break;
-      case 1: next.disabled = !S.homechecks[1]?.[0]; break;        /* mouse checkbox */
+      case 1: next.disabled = false; break;                         /* intro page — no block */
       case 2: next.disabled = !S.homechecks[2]?.every(Boolean); break;
       case 3: next.disabled = false; break;                         /* equipment — no hard block */
       case 4: next.disabled = false; break;                         /* lighting — no hard block */
-      case 5: next.disabled = (S.mode === 'jitsi' && !S.jitsiRoom); break;
+      case 6: next.disabled = (S.mode === 'descript' && !S.descriptRoom); break;
       default: next.disabled = false;
     }
   } else {
@@ -789,8 +553,8 @@ function updateNav() {
       case 1: next.disabled = !S.checks[1][0]; break;
       case 2: next.disabled = !S.checks[2].every(Boolean); break;
       case 3: next.disabled = false; break;                         /* equipment check — no hard block */
-      case 4: next.disabled = !S.checks[4].every(Boolean); break;  /* framing — must confirm lights */
-      case 5: next.disabled = (S.mode === 'jitsi' && !S.jitsiRoom); break; /* room name required for Jitsi */
+      case 4: next.disabled = false; break;                         /* camera framing — no hard block */
+      case 6: next.disabled = (S.mode === 'descript' && !S.descriptRoom); break;
       default: next.disabled = false;
     }
   }
@@ -800,14 +564,6 @@ function updateNav() {
    RENDER DISPATCH
    ============================================================= */
 function render() {
-  document.body.classList.toggle('jitsi-mode', S.step === 6 && S.mode === 'jitsi');
-
-  /* Tear down any live call when navigating away from step 6 */
-  if (S.call.conf && S.step !== 6) {
-    leaveConference();
-    if (S.stream) { S.stream.getTracks().forEach(t => t.stop()); S.stream = null; }
-    if (S.audioCtx) { S.audioCtx.close(); S.audioCtx = null; S.analyser = null; }
-  }
   renderBar();
   updateNav();
   const el = document.getElementById('content');
@@ -818,7 +574,7 @@ function render() {
   else if (S.step === 3 && S.location === 'studio') { renderStep3(el); }  /* equipment check */
   else if (S.step === 4 && S.location === 'studio') { renderStep2(el); }  /* camera framing */
   else if (S.step === 5 && S.location === 'studio') { el.innerHTML = renderStep4(); }
-  else if (S.step === 6 && S.mode === 'jitsi')      { renderJitsiStep(el); }
+  else if (S.step === 6 && S.mode === 'descript')   { el.innerHTML = renderDescriptStep(); }
   else if (S.step === 6 && S.location === 'studio') { el.innerHTML = renderStep5(); setTimeout(() => attachStream('rec-video'), 60); }
   else if (S.step === 1 && S.location === 'home') { el.innerHTML = renderHomeStep1(); bindHomeChecks(el); }
   else if (S.step === 2 && S.location === 'home') { el.innerHTML = renderHomeStep2(); bindHomeChecks(el); }
@@ -891,9 +647,8 @@ function prepChip(attr, s, i, icon, title, arrow, posClass, on) {
   </div>`;
 }
 
-/* Build the prep-stage HTML. `attr` is 'data-s' for studio or 'data-hs' for home.
-   `arr` is the underlying boolean array for the 5 prep items. */
-function prepStageHtml(attr, s, arr) {
+function studioPrepStageHtml() {
+  const arr = S.checks[2];
   const vpnPos   = _isMac ? 'pp-top-right' : 'pp-bot-right';
   const vpnArrow = _isMac
     ? '↗ menu bar, top-right'
@@ -902,11 +657,32 @@ function prepStageHtml(attr, s, arr) {
   return `
   <div class="prep-stage">
     <div class="prep-stage-hint">Let's prepare your space!</div>
-    ${prepChip(attr, s, 0, '📑',  'Close extra browser tabs', '↑ top of this window', 'pp-top-left', arr[0])}
-    ${prepChip(attr, s, 1, '📧',  'Quit Outlook',             '↓ dock / taskbar',     'pp-bot-left', arr[1])}
-    ${prepChip(attr, s, 2, '💬', 'Quit Webex',               '↓ dock / taskbar',     'pp-bot-mid',  arr[2])}
-    ${prepChip(attr, s, 3, '📱', 'Phone on Do Not Disturb',  'on your phone',        'pp-mid-right',arr[3])}
-    ${prepChip(attr, s, 4, '🛡️', 'Disconnect from VPN',      vpnArrow,                vpnPos,        arr[4])}
+    ${prepChip('data-s', 2, 0, '📑',  'Close extra browser tabs', '↑ top of this window', 'pp-top-left',  arr[0])}
+    ${prepChip('data-s', 2, 1, '📧',  'Quit Outlook',             '↓ dock / taskbar',     'pp-bot-left',  arr[1])}
+    ${prepChip('data-s', 2, 2, '💬',  'Quit Webex',               '↓ dock / taskbar',     'pp-bot-mid',   arr[2])}
+    ${prepChip('data-s', 2, 3, '📱',  'Phone on Do Not Disturb',  'on your phone',        'pp-mid-left',  arr[3])}
+    ${prepChip('data-s', 2, 4, '🛡️', 'Disconnect from VPN',      vpnArrow,               vpnPos,         arr[4])}
+    ${prepChip('data-s', 2, 5, '💡',  'Turn ON the ring light',   'on the desk',          'pp-r-2',       arr[5])}
+    ${prepChip('data-s', 2, 6, '🌑',  'Turn OFF overhead lights', 'wall switch',          'pp-mid-right', arr[6])}
+  </div>`;
+}
+
+function homePrepStageHtml() {
+  const arr = S.homechecks[2];
+  const vpnPos   = _isMac ? 'pp-top-right' : 'pp-bot-right';
+  const vpnArrow = _isMac
+    ? '↗ menu bar, top-right'
+    : '↘ system tray, bottom-right';
+
+  return `
+  <div class="prep-stage">
+    <div class="prep-stage-hint">Let's prepare your space!</div>
+    ${prepChip('data-hs', 2, 0, '📑',  'Close extra browser tabs', '↑ top of this window', 'pp-top-left',  arr[0])}
+    ${prepChip('data-hs', 2, 1, '📧',  'Quit Outlook',             '↓ dock / taskbar',     'pp-bot-left',  arr[1])}
+    ${prepChip('data-hs', 2, 2, '💬',  'Quit Webex',               '↓ dock / taskbar',     'pp-bot-mid',   arr[2])}
+    ${prepChip('data-hs', 2, 3, '📱',  'Phone on Do Not Disturb',  'on your phone',        'pp-mid-right', arr[3])}
+    ${prepChip('data-hs', 2, 4, '🛡️', 'Disconnect from VPN',      vpnArrow,               vpnPos,         arr[4])}
+    ${prepChip('data-hs', 2, 5, '🖱️', 'Attach a physical mouse',  'USB or Bluetooth',     'pp-mid-left',  arr[5])}
   </div>`;
 }
 
@@ -940,19 +716,19 @@ function renderLocation() {
     <div id="link-planner" style="display:none;margin-top:20px;background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px">
       <div style="font-weight:600;margin-bottom:12px;font-size:14px">Generate a guest link</div>
       <div style="display:flex;gap:8px;align-items:center">
-        <input id="plan-room-input" placeholder="Room name (e.g. livelaughlove)"
+        <input id="plan-room-input" type="url" placeholder="https://web.descript.com/room/..."
                style="flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px"
                oninput="document.getElementById('plan-result').style.display='none'"
-               value="${S.jitsiRoom || ''}"/>
+               value="${S.descriptRoom || ''}"/>
         <button class="btn btn-primary" onclick="generatePlanLink()" style="flex-shrink:0;font-size:13px;padding:7px 14px">Generate</button>
       </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px">Paste the Descript Room link your guest will join — they'll skip the URL-entry step.</div>
       <div id="plan-result" style="display:none;margin-top:14px">
         <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Share this link with your guest:</div>
         <div style="display:flex;gap:8px;align-items:center">
           <code id="plan-link-display" style="flex:1;font-size:13px;word-break:break-all"></code>
           <button class="btn btn-ghost" onclick="copyPlanLink(event)" style="font-size:12px;padding:5px 10px;flex-shrink:0">📋 Copy</button>
         </div>
-        <div style="margin-top:8px;font-size:11px;color:var(--muted)">Valid for 24 hours. Come back and start the call when you're ready.</div>
       </div>
       <div id="plan-status" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
     </div>
@@ -976,17 +752,21 @@ async function generatePlanLink() {
   const result = document.getElementById('plan-result');
   if (!input || !status) return;
 
-  const room = input.value.trim().replace(/\s+/g, '-').toLowerCase();
-  if (!room) { status.textContent = 'Please enter a room name.'; return; }
-  input.value = room;
-  S.jitsiRoom = room;
+  const raw = input.value.trim();
+  if (!raw) { status.textContent = 'Please paste your Descript Room link.'; return; }
+  let parsed;
+  try { parsed = new URL(raw); }
+  catch(e) { status.textContent = 'That doesn\'t look like a valid URL.'; return; }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    status.textContent = 'Link must start with https://';
+    return;
+  }
+  S.descriptRoom = raw;
 
-  /* Guest link now points to guest.html setup wizard */
-  const finalLink = location.origin + '/guest.html?room=' + encodeURIComponent(room);
+  const finalLink = location.origin + '/guest.html?url=' + encodeURIComponent(raw);
   S._guestLink = finalLink;
   const display = document.getElementById('plan-link-display');
   if (display) display.textContent = finalLink;
-  status.textContent = '';
   result.style.display = '';
   status.textContent = '';
 }
@@ -1087,7 +867,7 @@ function renderStep1() {
   <div>
     <div class="step-title">Step 2 — Prepare Your Space</div>
     <div class="step-sub">Take care of each one before you start. Each tile points to where you'll find it on your ${_isMac ? 'Mac' : 'PC'}.</div>
-    ${prepStageHtml('data-s', 2, S.checks[2])}
+    ${studioPrepStageHtml()}
     ${browserNote}
   </div>`;
 }
@@ -1098,7 +878,7 @@ function renderStep1() {
 function renderStep2(el) {
   el.innerHTML = `
   <div>
-    <div class="step-title">Step 4 — Camera Position &amp; Lights</div>
+    <div class="step-title">Step 4 — Camera Position</div>
     <div class="step-sub">Fit yourself inside the silhouette. Your eyes should meet the blue guide line.</div>
 
     <div class="vid-wrap">
@@ -1110,11 +890,6 @@ function renderStep2(el) {
         <div class="spinner"></div>
         <span>Starting camera…</span>
       </div>
-    </div>
-
-    <div class="checklist">
-      ${crow(4, 0, 'Ring lights are ON', 'Turn on the room\'s ring lights')}
-      ${crow(4, 1, 'Overhead lights are OFF', 'Overhead lights cause harsh shadows and overexposure')}
     </div>
 
     <div class="info-box" style="margin-top:14px">
@@ -1673,23 +1448,23 @@ function renderStep4() {
   return `
   <div>
     <div class="step-title">Step 5 — How Are You Recording?</div>
-    <div class="step-sub">Using a virtual call or external app? Or record right here?</div>
+    <div class="step-sub">Choose where the recording will happen.</div>
 
     <div class="choice-grid">
-      <div class="choice-card${S.mode==='virtual'?' selected':''}" onclick="setMode('virtual')">
-        <div class="choice-icon">🎥</div>
-        <div class="choice-title">Virtual Call or Other App</div>
-        <div class="choice-desc">Zoom, Webex, Camtasia, etc.<br>I'll record somewhere else.</div>
+      <div class="choice-card${S.mode==='descript'?' selected':''}" onclick="setMode('descript')">
+        <div class="choice-icon">🎬</div>
+        <div class="choice-title">Descript Room</div>
+        <div class="choice-desc">Recommended.<br>Open your Descript Room from this app.</div>
       </div>
       <div class="choice-card${S.mode==='local'?' selected':''}" onclick="setMode('local')">
         <div class="choice-icon">⏺</div>
         <div class="choice-title">Record Here</div>
         <div class="choice-desc">Use this app with a built-in teleprompter.</div>
       </div>
-      <div class="choice-card${S.mode==='jitsi'?' selected':''}" onclick="setMode('jitsi')">
-        <div class="choice-icon">🤝</div>
-        <div class="choice-title">Video Call with Remote Guest</div>
-        <div class="choice-desc">Host a live call right in this app via Jitsi Meet.</div>
+      <div class="choice-card${S.mode==='virtual'?' selected':''}" onclick="setMode('virtual')">
+        <div class="choice-icon">🎥</div>
+        <div class="choice-title">Virtual Call or Other App</div>
+        <div class="choice-desc">Riverside, Zoom, Webex, Camtasia, etc.<br>I'll record somewhere else.</div>
       </div>
     </div>
 
@@ -1700,7 +1475,7 @@ function renderStep4() {
 function setMode(m) {
   S.mode = m;
   document.querySelectorAll('.choice-card').forEach((c, i) => {
-    c.classList.toggle('selected', (i===0 && m==='virtual') || (i===1 && m==='local') || (i===2 && m==='jitsi'));
+    c.classList.toggle('selected', (i===0 && m==='descript') || (i===1 && m==='local') || (i===2 && m==='virtual'));
   });
   const msg = document.getElementById('mode-msg');
   if (msg) msg.innerHTML = modeMsgHtml(m);
@@ -1721,22 +1496,85 @@ function modeMsgHtml(m) {
       </div>
     </div>`;
   }
-  if (m === 'jitsi') {
+  if (m === 'descript') {
     return `<div class="info-box">
-      <strong>Room name</strong>
-      <div style="margin-top:8px">
-        <input id="room-name-input" value="${S.jitsiRoom || ''}" placeholder="Room name (required)" required
-               oninput="S.jitsiRoom=this.value.trim(); updateNav();"
-               style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px"/>
-      </div>
-      <div style="margin-top:10px;font-size:12px;color:var(--muted)">
-        A secure guest link (with access token) will be generated and displayed when the call launches.
-      </div>
+      <strong>Next up:</strong> Paste your Descript Room link, then we'll release the camera and mic and open the room for you.
     </div>`;
   }
   return `<div class="info-box">
     <strong>Next up:</strong> Paste your script into the teleprompter, drag the window close to the camera, then hit Record.
   </div>`;
+}
+
+/* =============================================================
+   STEP 6 (descript) — OPEN DESCRIPT ROOM
+   ============================================================= */
+function renderDescriptStep() {
+  return `
+  <div>
+    <div class="step-title">Step 6 — Open Your Descript Room</div>
+    <div class="step-sub">Paste your Descript Room link, then click Open Room.</div>
+
+    <div class="card" style="margin-bottom:14px">
+      <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px">Descript Room Link</label>
+      <input id="descript-room-input" type="url"
+        value="${S.descriptRoom || ''}"
+        placeholder="https://web.descript.com/room/..."
+        style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:14px"
+        oninput="S.descriptRoom=this.value.trim();updateNav();">
+      <div style="font-size:12px;color:var(--muted);margin-top:6px">
+        The full URL to your Descript Room — usually starts with <code>https://web.descript.com/room/</code>
+      </div>
+    </div>
+
+    <div id="descript-status" style="font-size:13px;color:var(--muted);margin-bottom:10px;min-height:18px"></div>
+
+    <div class="info-box">
+      <strong>What happens next:</strong> Clicking Open Room will release your camera and microphone
+      and redirect you to the Descript Room in this tab. Descript will then ask for permission to
+      use your camera and mic — allow it, and you'll be in the session.<br><br>
+      <strong>Tip:</strong> Descript records locally on each participant's device for best quality,
+      so you may be asked to download a small recording at the end.
+    </div>
+  </div>`;
+}
+
+function openDescriptRoom() {
+  const inp = document.getElementById('descript-room-input');
+  const raw = (inp ? inp.value : S.descriptRoom).trim();
+  const status = document.getElementById('descript-status');
+
+  if (!raw) {
+    if (inp) { inp.focus(); inp.style.borderColor = 'var(--danger)'; }
+    return;
+  }
+  let parsed;
+  try { parsed = new URL(raw); }
+  catch(e) {
+    if (status) status.innerHTML = '<span style="color:var(--danger)">⚠ That doesn\'t look like a valid URL. Paste the full Descript Room link.</span>';
+    if (inp) inp.style.borderColor = 'var(--danger)';
+    return;
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    if (status) status.innerHTML = '<span style="color:var(--danger)">⚠ Link must start with https://</span>';
+    if (inp) inp.style.borderColor = 'var(--danger)';
+    return;
+  }
+
+  if (inp) inp.style.borderColor = '';
+  S.descriptRoom = raw;
+
+  const btn = document.getElementById('btn-next');
+  if (status) status.textContent = 'Releasing camera and opening room…';
+  if (btn) btn.disabled = true;
+
+  /* Release camera/mic so Descript can pick them up cleanly */
+  if (_previewEffect) { _previewEffect.stopEffect(); _previewEffect = null; }
+  if (S.stream)       { S.stream.getTracks().forEach(t => t.stop()); S.stream = null; }
+  if (S.audioCtx)     { try { S.audioCtx.close(); } catch(e) {} S.audioCtx = null; S.analyser = null; }
+  if (S.rafId)        { cancelAnimationFrame(S.rafId); S.rafId = null; }
+
+  setTimeout(() => { location.href = raw; }, 400);
 }
 
 /* =============================================================
@@ -1965,12 +1803,8 @@ function renderHomeStep1() {
       </svg>
     </div>
 
-    <div class="checklist">
-      ${hcrow(1, 0, 'Attach a physical mouse', 'Prevents your laptop from shifting when you click — keeps your camera angle steady throughout the recording')}
-    </div>
-
     <div class="info-box">
-      <strong>Why it matters:</strong> Touching the trackpad can nudge your laptop just enough to throw off your framing. A USB or Bluetooth mouse lets you click and control playback without moving your computer.
+      <strong>Grab a physical mouse before you start.</strong> Touching the trackpad can nudge your laptop just enough to throw off your framing. A USB or Bluetooth mouse lets you click and control playback without moving your computer — you'll confirm it's connected on the next step.
     </div>
   </div>`;
 }
@@ -1998,7 +1832,7 @@ function renderHomeStep2() {
   <div>
     <div class="step-title">Step 2 — Prepare Your Space</div>
     <div class="step-sub">Take care of each one before you start. Each tile points to where you'll find it on your ${_isMac ? 'Mac' : 'PC'}.</div>
-    ${prepStageHtml('data-hs', 2, S.homechecks[2])}
+    ${homePrepStageHtml()}
     ${browserNote}
   </div>`;
 }
@@ -2111,8 +1945,6 @@ function renderHomeStep4(el) {
       </div>
     </div>
 
-    ${renderBgSelector(S.bgType)}
-
     <div class="info-box" style="margin-top:14px">
       <strong>Tips for better home lighting:</strong><br>
       • <strong>Face a light source</strong> — sit facing a window or lamp, not with it behind you<br>
@@ -2122,12 +1954,10 @@ function renderHomeStep4(el) {
   </div>`;
 
   initStream();
-  /* Pre-warm the segmentation model in the background so it's ready when needed */
-  VirtualBgEffect._getSegmenter().catch(() => {});
 }
 
 /* =============================================================
-   JITSI MEET (lib-jitsi-meet / JaaS)
+   UTILITIES
    ============================================================= */
 
 function loadScript(src) {
@@ -2311,112 +2141,16 @@ function renderBgSelector(activeId, compact) {
   return header + '<div class="bg-selector">' + opts + '</div>' + slider;
 }
 
-/* ── Directly replaces the video track on all active WebRTC senders.
-   Works around setEffect() not being available / not working in JaaS builds. ── */
-async function replaceVideoSender(newTrack) {
-  const conf = S.call.conf;
-  if (!conf) return false;
-  let replaced = false;
-  /* lib-jitsi-meet stores sessions as jvbJingleSession and p2pJingleSession.
-     The actual RTCPeerConnection is nested: session.peerconnection.peerconnection */
-  const sessions = [conf.jvbJingleSession, conf.p2pJingleSession].filter(Boolean);
-  for (const session of sessions) {
-    const pc = session?.peerconnection?.peerconnection   /* TraceablePeerConnection wrapper */
-            || session?.peerconnection;                  /* direct RTCPeerConnection */
-    if (!pc || typeof pc.getSenders !== 'function') continue;
-    const sender = pc.getSenders().find(s => s.track?.kind === 'video');
-    if (!sender) continue;
-    try { await sender.replaceTrack(newTrack); replaced = true; } catch(e) {}
-  }
-  return replaced;
-}
-
-async function applyCallBgEffect(id) {
-  /* Stop any existing call bg effect first */
-  if (S.call.bgEffect) {
-    S.call.bgEffect.stopEffect();
-    S.call.bgEffect = null;
-  }
-
-  const vt = S.call.localTracks.find(t => t.getType() === 'video' && t.getVideoType?.() !== 'desktop');
-  if (!vt) return;
-
-  /* Restore the original track if we're switching effects */
-  if (S.call.origVideoTrack) {
-    await replaceVideoSender(S.call.origVideoTrack);
-  }
-
-  if (id === 'none') {
-    /* Restore PiP to show the original Jitsi track */
-    const pip = document.getElementById('self-video');
-    if (pip && vt) { try { vt.detach(pip); } catch(e) {} vt.attach(pip); }
-    S.call.origVideoTrack = null;
-    return;
-  }
-
-  /* Get the raw MediaStream from the Jitsi track */
-  const rawStream = (typeof vt.getOriginalStream === 'function' ? vt.getOriginalStream() : null)
-                 || vt.stream
-                 || (vt.track ? new MediaStream([vt.track]) : null);
-  if (!rawStream) { console.warn('Could not get raw stream from Jitsi track'); return; }
-
-  const opt    = BG_OPTIONS.find(o => o.id === id);
-  const effect = new VirtualBgEffect(
-    id === 'blur' ? 'blur' : 'image',
-    opt?.src || null,
-    S.blurRadius
-  );
-
-  try {
-    const canvasStream    = await effect.startEffect(rawStream);
-    const canvasVideoTrack = canvasStream.getVideoTracks()[0];
-    if (!canvasVideoTrack) throw new Error('Effect returned no video track');
-
-    /* Save original track before first replacement so we can restore it */
-    if (!S.call.origVideoTrack) {
-      const senderTrack = await (async () => {
-        const sessions = [S.call.conf?.jvbJingleSession, S.call.conf?.p2pJingleSession].filter(Boolean);
-        for (const sess of sessions) {
-          const pc = sess?.peerconnection?.peerconnection || sess?.peerconnection;
-          if (!pc || typeof pc.getSenders !== 'function') continue;
-          const s = pc.getSenders().find(s => s.track?.kind === 'video');
-          if (s?.track) return s.track;
-        }
-        return vt.track || null;
-      })();
-      S.call.origVideoTrack = senderTrack;
-    }
-
-    /* Replace the track in WebRTC senders so the guest sees the processed video */
-    await replaceVideoSender(canvasVideoTrack);
-
-    /* Update the PiP self-view so the host also sees the processed video */
-    const pip = document.getElementById('self-video');
-    if (pip) {
-      try { vt.detach(pip); } catch(e) {}
-      pip.srcObject = canvasStream;
-    }
-
-    S.call.bgEffect = effect;
-  } catch(e) {
-    console.error('Call bg effect failed:', e);
-    alert('Virtual background failed: ' + e.message);
-  }
-}
 
 function setBlurRadius(r) {
   S.blurRadius = r;
   const lbl = document.getElementById('blur-val');
   if (lbl) lbl.textContent = r + 'px';
-  /* Update running effect in place — no need to restart */
-  if (_previewEffect && _previewEffect.type === 'blur') { _previewEffect.blurRadius = r; return; }
-  /* In-call: update the active call bg effect in place */
-  if (S.call.bgEffect && S.call.bgEffect.type === 'blur') { S.call.bgEffect.blurRadius = r; }
+  if (_previewEffect && _previewEffect.type === 'blur') _previewEffect.blurRadius = r;
 }
 
 async function setBgEffect(id) {
   S.bgType = id;
-  /* Refresh all visible selectors */
   document.querySelectorAll('.bg-opt').forEach(b => {
     b.classList.toggle('bg-active', b.title === BG_OPTIONS.find(o => o.id === id)?.label);
   });
@@ -2424,17 +2158,12 @@ async function setBgEffect(id) {
   const opt = BG_OPTIONS.find(o => o.id === id);
 
   if (id === 'none') {
-    /* Cancel preview effect and restore raw stream */
     if (_previewEffect) { _previewEffect.stopEffect(); _previewEffect = null; }
     const pv = document.getElementById('step2-video') || document.getElementById('step3-video');
     if (pv && S.stream) pv.srcObject = S.stream;
-    /* Remove Jitsi track effect */
-    const vt = S.call.localTracks.find(t => t.getType() === 'video');
-    if (vt && typeof vt.setEffect === 'function') await vt.setEffect(null).catch(() => {});
     return;
   }
 
-  /* Show/hide blur slider */
   const sliderRow = document.getElementById('blur-slider-row');
   if (sliderRow) sliderRow.style.display = id === 'blur' ? 'flex' : 'none';
 
@@ -2444,9 +2173,8 @@ async function setBgEffect(id) {
     S.blurRadius
   );
 
-  /* ── Lighting preview context (not in a live call yet) ── */
   const pv = document.getElementById('step2-video') || document.getElementById('step3-video');
-  if (pv && S.stream && !S.call.conf) {
+  if (pv && S.stream) {
     if (_previewEffect) { _previewEffect.stopEffect(); _previewEffect = null; }
     try {
       const out = await effect.startEffect(S.stream);
@@ -2458,920 +2186,6 @@ async function setBgEffect(id) {
       console.warn('Preview bg effect failed:', e);
       alert('Virtual background failed: ' + e.message);
     }
-    return;
-  }
-
-  /* ── Live call context ── */
-  await applyCallBgEffect(id);
-}
-
-function generateRoom() {
-  return 'studio-' + Math.random().toString(36).slice(2, 8);
-}
-
-function regenerateRoom() {
-  S.jitsiRoom = generateRoom();
-  const input = document.getElementById('room-name-input');
-  if (input) input.value = S.jitsiRoom;
-}
-
-function copyRoomLink(e) {
-  const link = S._guestLink || ('https://8x8.vc/' + JAAS.appId + '/' + S.jitsiRoom);
-  navigator.clipboard.writeText(link).then(() => {
-    const btn = e.target;
-    const orig = btn.textContent;
-    btn.textContent = '✓ Copied!';
-    setTimeout(() => btn.textContent = orig, 2000);
-  });
-}
-
-/* ── JWT helpers ── */
-function b64url(str) {
-  return btoa(str).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-}
-function bytesToB64url(buf) {
-  const arr = new Uint8Array(buf);
-  let s = '';
-  for (let i = 0; i < arr.length; i++) s += String.fromCharCode(arr[i]);
-  return btoa(s).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-}
-
-async function generateJaaSToken(isModerator) {
-  /* ── Proxy mode: server signs the JWT; private key never leaves Vercel ── */
-  if (PROXY.url) {
-    const headers = { 'Content-Type': 'application/json' };
-    if (PROXY.token) headers['x-proxy-token'] = PROXY.token;
-    const res = await fetch(PROXY.url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ isModerator, userName: isModerator ? 'Studio Host' : 'Guest' }),
-    });
-    if (res.status === 401) throw new Error('Invalid proxy token — check ⚙ settings.');
-    if (!res.ok) throw new Error('Proxy error: HTTP ' + res.status);
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    /* Proxy also returns appId; update JAAS.appId if provided so URLs stay consistent */
-    if (data.appId) JAAS.appId = data.appId;
-    return data.token;
-  }
-
-  /* ── No proxy configured and no embedded key — prompt user to set up proxy ── */
-  if (!JAAS.privateKey) {
-    throw new Error('No proxy configured. Click ⚙ in the header to enter your proxy URL and token.');
-  }
-
-  /* ── Local fallback: sign with embedded private key (standalone / dev use) ── */
-  const pem = JAAS.privateKey.replace(/-----.*-----|[\r\n\s]/g, '');
-  const der = Uint8Array.from(atob(pem), c => c.charCodeAt(0));
-  const key = await crypto.subtle.importKey(
-    'pkcs8', der,
-    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    false, ['sign']
-  );
-  const now = Math.floor(Date.now() / 1000);
-  const header  = { alg: 'RS256', kid: JAAS.kid, typ: 'JWT' };
-  const payload = {
-    aud: 'jitsi', iss: 'chat',
-    sub: JAAS.appId, room: '*',
-    exp: now + 86400, nbf: now - 10,  /* 24 h so pre-shared links last all day */
-    context: {
-      user: {
-        moderator: isModerator,
-        name: isModerator ? 'Studio Host' : 'Guest',
-        id: crypto.randomUUID(),
-      },
-    },
-  };
-  const h = b64url(JSON.stringify(header));
-  const p = b64url(JSON.stringify(payload));
-  const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key,
-                                       new TextEncoder().encode(`${h}.${p}`));
-  return `${h}.${p}.${bytesToB64url(sig)}`;
-}
-
-/* ── CALL UI RENDER ── */
-
-function buildTiles() {
-  const tiles = [];
-  tiles.push({ id: 'self', label: 'You (Host)', isSelf: true });
-  /* Local screen share gets its own tile */
-  if (S.call._screenStream) {
-    tiles.push({ id: 'self-screen', label: 'You (Host) — Screen', isSelf: true, isDesktop: true, nativeStream: S.call._screenStream });
-  }
-  for (const [pid, name] of Object.entries(S.call.names)) {
-    const rt = S.call.remoteTracks[pid] || {};
-    tiles.push({ id: pid, label: name || 'Guest', track: rt.desktop || rt.camera || null, isDesktop: !!rt.desktop });
-    if (rt.desktop && rt.camera) {
-      tiles.push({ id: pid + '-cam', label: name || 'Guest', track: rt.camera });
-    }
-  }
-  return tiles;
-}
-
-function attachSelfVideo(el) {
-  if (!el) return;
-  if (S.call.bgEffect && S.call.bgEffect._outStream) {
-    el.srcObject = S.call.bgEffect._outStream;
-  } else {
-    for (const t of S.call.localTracks) {
-      if (t.getType() === 'video') t.attach(el);
-    }
-  }
-}
-
-function attachAudioElements() {
-  for (const [id, tracks] of Object.entries(S.call.remoteTracks)) {
-    if (tracks.audio) {
-      let aud = document.getElementById('aud-' + id);
-      if (!aud) { aud = document.createElement('audio'); aud.id = 'aud-' + id; aud.autoplay = true; document.body.appendChild(aud); }
-      tracks.audio.attach(aud);
-    }
-  }
-}
-
-function setFocus(tileId) {
-  S.call.focusId = tileId;
-  S.call.viewMode = 'focus';
-  renderCallGrid();
-  updateViewBtn();
-}
-
-function toggleViewMode() {
-  S.call.viewMode = S.call.viewMode === 'gallery' ? 'focus' : 'gallery';
-  if (S.call.viewMode === 'focus' && !S.call.focusId) {
-    /* Default focus: first remote participant, or self */
-    const tiles = buildTiles();
-    const remote = tiles.find(t => !t.isSelf);
-    S.call.focusId = remote ? remote.id : 'self';
-  }
-  renderCallGrid();
-  updateViewBtn();
-}
-
-function updateViewBtn() {
-  const btn = document.getElementById('view-btn');
-  if (!btn) return;
-  const isGallery = S.call.viewMode === 'gallery';
-  btn.innerHTML = '<span class="tb-icon">' + (isGallery ? '⊞' : '⊡') + '</span>' + (isGallery ? 'Gallery' : 'Focus');
-}
-
-function renderCallGrid() {
-  const area = document.getElementById('call-area');
-  if (!area) return;
-
-  const tiles = buildTiles();
-
-  if (tiles.length <= 1 && !S.call.localTracks.length) {
-    area.innerHTML = '<div id="main-placeholder">Waiting for guests to join…</div>';
-    return;
-  }
-
-  if (S.call.viewMode === 'focus') {
-    renderFocusView(area, tiles);
-  } else {
-    renderGalleryView(area, tiles);
-  }
-  attachAudioElements();
-}
-
-function renderGalleryView(area, tiles) {
-  const count = tiles.length;
-  const cls = count >= 4 ? 'tiles-4' : count >= 3 ? 'tiles-3' : count >= 2 ? 'tiles-2' : '';
-
-  let html = '<div id="call-gallery" class="' + cls + '">';
-  for (const tile of tiles) {
-    html += '<div class="gallery-tile" onclick="setFocus(\'' + tile.id + '\')">';
-    if (tile.isSelf && !tile.isDesktop) {
-      html += '<video id="self-video" autoplay playsinline muted class="mirror"></video>';
-    } else if (tile.isSelf && tile.isDesktop) {
-      html += '<video id="vid-' + tile.id + '" autoplay playsinline muted></video>';
-    } else if (tile.track) {
-      html += '<video id="vid-' + tile.id + '" autoplay playsinline' + (tile.isDesktop ? '' : ' class="mirror"') + '></video>';
-    } else {
-      html += '<div class="tile-placeholder">Waiting for video…</div>';
-    }
-    html += '<div class="tile-label">' + tile.label + (tile.isDesktop && !tile.isSelf ? ' — Screen' : '') + '</div>';
-    html += '</div>';
-  }
-  html += '</div>';
-  area.innerHTML = html;
-
-  attachSelfVideo(document.getElementById('self-video'));
-  for (const tile of tiles) {
-    if (tile.nativeStream) {
-      const el = document.getElementById('vid-' + tile.id);
-      if (el) el.srcObject = tile.nativeStream;
-    } else if (!tile.isSelf && tile.track) {
-      const el = document.getElementById('vid-' + tile.id);
-      if (el) tile.track.attach(el);
-    }
-  }
-}
-
-function focusTileHtml(tile, vidId) {
-  if (tile.isSelf && !tile.isDesktop) return '<video id="' + vidId + '" autoplay playsinline muted class="mirror"></video>';
-  if (tile.isSelf && tile.isDesktop)  return '<video id="vid-' + tile.id + '" autoplay playsinline muted></video>';
-  if (tile.track)                     return '<video id="vid-' + tile.id + '" autoplay playsinline' + (tile.isDesktop ? '' : ' class="mirror"') + '></video>';
-  return '<div class="tile-placeholder" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">Waiting for video…</div>';
-}
-
-function attachTile(tile, vidId) {
-  if (tile.isSelf && !tile.isDesktop) { attachSelfVideo(document.getElementById(vidId)); return; }
-  if (tile.nativeStream) { const el = document.getElementById('vid-' + tile.id); if (el) el.srcObject = tile.nativeStream; return; }
-  if (tile.track)        { const el = document.getElementById('vid-' + tile.id); if (el) tile.track.attach(el); }
-}
-
-function renderFocusView(area, tiles) {
-  let focused = tiles.find(t => t.id === S.call.focusId);
-  if (!focused) focused = tiles.find(t => !t.isSelf) || tiles[0];
-  const others = tiles.filter(t => t.id !== focused.id);
-
-  let html = '<div id="focus-wrap"><div id="focus-main">';
-  html += focusTileHtml(focused, 'self-video');
-  html += '<div class="tile-label">' + focused.label + '</div></div>';
-
-  if (others.length) {
-    html += '<div id="focus-strip">';
-    for (const tile of others) {
-      html += '<div class="strip-tile" onclick="setFocus(\'' + tile.id + '\')">';
-      html += focusTileHtml(tile, 'self-video-strip');
-      html += '<div class="tile-label">' + tile.label + '</div></div>';
-    }
-    html += '</div>';
-  }
-  html += '</div>';
-  area.innerHTML = html;
-
-  attachTile(focused, 'self-video');
-  for (const tile of others) attachTile(tile, 'self-video-strip');
-}
-
-function renderJitsiStep(el) {
-  const room = S.jitsiRoom;
-
-  /* Stop preview background effect before releasing the stream it feeds on */
-  if (_previewEffect) { _previewEffect.stopEffect(); _previewEffect = null; }
-
-  /* Release preview stream — lib-jitsi-meet will manage camera/mic */
-  if (S.stream)   { S.stream.getTracks().forEach(t => t.stop()); S.stream = null; }
-  if (S.audioCtx) { S.audioCtx.close(); S.audioCtx = null; S.analyser = null; }
-
-  el.innerHTML = `
-  <div style="display:flex;flex-direction:column;height:100%">
-
-    <!-- Guest link bar -->
-    <div class="jitsi-bar" style="gap:6px">
-      <span style="font-size:11px;color:var(--muted);flex-shrink:0">Guest link:</span>
-      <code id="jitsi-link" style="flex:1;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Generating…</code>
-      <button class="btn btn-ghost" onclick="copyRoomLink(event)" style="font-size:11px;padding:4px 10px;flex-shrink:0">📋 Copy</button>
-      <span id="rec-status" style="font-size:12px;color:var(--danger);font-weight:600;flex-shrink:0"></span>
-    </div>
-
-    <!-- Download row (hidden until recording stops) -->
-    <div id="rec-download-row" style="display:none;flex-shrink:0;padding:8px 12px;background:var(--surf);border-bottom:1px solid var(--border)"></div>
-
-    <!-- Virtual background panel (toggled by toolbar button) -->
-    <div id="bg-panel">
-      <span class="bp-label">Virtual BG:</span>
-      ${renderBgSelector(S.bgType, true)}
-    </div>
-
-    <!-- Main call area (grows to fill) -->
-    <div id="call-area" style="flex:1;position:relative;background:#000;overflow:hidden">
-      <div id="main-placeholder" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#444;font-size:15px">Connecting…</div>
-    </div>
-
-    <!-- Toolbar -->
-    <div class="call-toolbar">
-      <button id="mic-btn"    class="tb-btn" onclick="toggleMic()"    title="Mute / Unmute"><span class="tb-icon">🎤</span>Mute</button>
-      <button id="cam-btn"    class="tb-btn" onclick="toggleCam()"    title="Camera on/off"><span class="tb-icon">📷</span>Camera</button>
-      <button id="share-btn"  class="tb-btn" onclick="toggleShare()"  title="Share your screen"><span class="tb-icon">💻</span>Share Screen</button>
-      <button id="bg-btn"     class="tb-btn" onclick="toggleBgPanel()" title="Virtual background"><span class="tb-icon">🖼</span>Background</button>
-      <button id="view-btn"   class="tb-btn" onclick="toggleViewMode()" title="Switch view"><span class="tb-icon">⊞</span>Gallery</button>
-      <div class="spacer"></div>
-      <button id="rec-btn"    class="tb-btn" onclick="toggleCallRec()" title="Record"><span class="tb-icon">⏺</span>Record</button>
-      <div class="spacer"></div>
-      <button class="tb-btn end" onclick="nav(1)" title="End call"><span class="tb-icon">📵</span>End Call</button>
-    </div>
-
-  </div>`;
-
-  launchCall(room);
-}
-
-function buildGuestUrl(room, token) {
-  const config = '#config.disableSimulcast=true'
-    + '&config.resolution=1080'
-    + '&config.startBitrate=8192'
-    + '&config.constraints.video.height.ideal=1080'
-    + '&config.constraints.video.height.min=720'
-    + '&config.constraints.video.width.ideal=1920'
-    + '&config.constraints.video.width.min=1280';
-  return `https://8x8.vc/${JAAS.appId}/${room}?jwt=${token}${config}`;
-}
-
-async function shortenUrl(url, preferredAlias) {
-  /* Build candidates: roomname → roomname-MMDD → roomname-MMDD-HH
-     Never fall back to a random alias — if all fail, caller shows the full URL. */
-  const now  = new Date();
-  const mmdd = (now.getMonth()+1).toString().padStart(2,'0') + now.getDate().toString().padStart(2,'0');
-  const hh   = now.getHours().toString().padStart(2,'0');
-  const base = (preferredAlias || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 20);
-
-  const candidates = base
-    ? [base, `${base}-${mmdd}`, `${base}-${mmdd}${hh}`]
-    : [];
-
-  for (const alias of candidates) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 6000);
-    try {
-      const resp = await fetch(
-        `https://is.gd/create.php?format=json&url=${encodeURIComponent(url)}&shorturl=${encodeURIComponent(alias)}`,
-        { signal: controller.signal }
-      );
-      const data = await resp.json();
-      if (data.shorturl) return data.shorturl;
-      /* alias taken or invalid — try next */
-    } catch(e) {
-      /* timeout or network error — try next */
-    } finally {
-      clearTimeout(timer);
-    }
-  }
-  throw new Error('All aliases taken');
-}
-
-async function launchCall(room) {
-  /* Generate host token only — guests get their own token via guest.html */
-  let hostToken;
-  try {
-    hostToken = await generateJaaSToken(true);
-  } catch(e) {
-    showCallError('Token generation failed', e.message);
-    return;
-  }
-
-  /* Guest link now points to guest.html setup wizard (not raw 8x8.vc URL) */
-  const guestSetupLink = location.origin + '/guest.html?room=' + encodeURIComponent(room);
-  S._guestLink = guestSetupLink;
-
-  const linkEl = document.getElementById('jitsi-link');
-  if (linkEl) { linkEl.textContent = guestSetupLink; linkEl.title = guestSetupLink; }
-
-  /* Load lib-jitsi-meet */
-  try {
-    await loadScript('https://8x8.vc/libs/lib-jitsi-meet.min.js');
-  } catch(e) {
-    showCallError('Could not load JaaS SDK', 'Check your internet connection.');
-    return;
-  }
-
-  joinConference(room, hostToken);
-}
-
-function showCallError(title, detail) {
-  const grid = document.getElementById('call-area') || document.getElementById('call-grid');
-  if (grid) grid.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:center;height:100%">
-      <div style="text-align:center;color:var(--danger)">
-        <div style="font-size:28px;margin-bottom:8px">⚠️</div>
-        <div style="font-weight:600;margin-bottom:6px">${title}</div>
-        <div style="font-size:13px;color:var(--muted)">${detail}</div>
-      </div>
-    </div>`;
-}
-
-function joinConference(room, token) {
-  const JMJ = window.JitsiMeetJS;
-  if (!JMJ) { showCallError('SDK not loaded', ''); return; }
-
-  JMJ.init({
-    disableAudioLevels:    true,
-    disableSimulcast:      true,
-    useIPv6:               false,
-    desktopSharingEnabled: false,  /* we handle screen share ourselves via replaceVideoSender */
-    videoQuality: {
-      maxBitratesVideo: {
-        low:      500000,
-        standard: 2500000,
-        high:     6000000,
-      },
-      minHeightForQualityLvl: { 360: 'standard', 720: 'high', 1080: 'high' },
-    },
-  });
-  JMJ.setLogLevel(JMJ.logLevels.ERROR);
-
-  const options = {
-    hosts: {
-      domain: '8x8.vc',
-      muc:    `conference.${JAAS.appId}.8x8.vc`,
-    },
-    serviceUrl: `wss://8x8.vc/${JAAS.appId}/xmpp-websocket?room=${room}`,
-    clientNode: 'http://jitsi.org/jitsimeet',
-  };
-
-  function setConnStatus(msg) {
-    const el = document.getElementById('main-placeholder');
-    if (el) el.textContent = msg;
-  }
-
-  const conn = new JMJ.JitsiConnection(null, token, options);
-  S.call.conn = conn;
-  setConnStatus('Connecting to server…');
-
-  conn.addEventListener(JMJ.events.connection.CONNECTION_ESTABLISHED, async () => {
-    setConnStatus('Connected — joining conference…');
-    const conf = conn.initJitsiConference(room, {
-      p2p: {
-        enabled:     true,
-        preferH264:  true,
-        useStunTurn: true,
-      },
-      startWithAudioMuted: false,
-      startWithVideoMuted: false,
-    });
-    S.call.conf = conf;
-
-    conf.on(JMJ.events.conference.TRACK_ADDED,        onCallTrackAdded);
-    conf.on(JMJ.events.conference.TRACK_REMOVED,      onCallTrackRemoved);
-    conf.on(JMJ.events.conference.CONFERENCE_JOINED,  onCallJoined);
-    conf.on(JMJ.events.conference.USER_JOINED,        onCallUserJoined);
-    conf.on(JMJ.events.conference.USER_LEFT,          onCallUserLeft);
-    conf.on(JMJ.events.conference.CONFERENCE_FAILED,  (err, ...args) => {
-      console.error('CONFERENCE_FAILED:', err, args);
-      showCallError('Conference failed', String(err) + (args.length ? ' — ' + args.join(', ') : ''));
-    });
-    conf.on(JMJ.events.conference.CONFERENCE_ERROR,   (err, ...args) => {
-      console.error('CONFERENCE_ERROR:', err, args);
-      showCallError('Conference error', String(err));
-    });
-    conf.on(JMJ.events.conference.AUTH_STATUS_CHANGED, (auth, id) => {
-      console.warn('AUTH_STATUS_CHANGED:', auth, id);
-    });
-
-    setConnStatus('Joining room…');
-    conf.join(token);
-
-    /* Safety timeout — if CONFERENCE_JOINED hasn't fired after 15s, surface an error */
-    setTimeout(() => {
-      if (!S.call.localTracks.length && S.call.conf === conf) {
-        setConnStatus('Still trying to join… If this persists, check the browser console (F12) for errors.');
-      }
-    }, 15000);
-  });
-
-  conn.addEventListener(JMJ.events.connection.CONNECTION_FAILED, err => {
-    showCallError('Connection failed', String(err));
-  });
-
-  conn.connect();
-}
-
-async function onCallJoined() {
-  /* Create local tracks using devices selected during setup */
-  let tracks = [];
-  const trackOpts = {
-    devices: ['audio', 'video'],
-    constraints: {
-      video: {
-        width:     { ideal: 1920, max: 1920 },
-        height:    { ideal: 1080, max: 1080 },
-        frameRate: { ideal: 30,   max: 30   },
-      },
-    },
-  };
-  if (S.dev.curVideoId) trackOpts.cameraDeviceId = S.dev.curVideoId;
-  if (S.dev.curAudioId) trackOpts.micDeviceId    = S.dev.curAudioId;
-  try {
-    tracks = await JitsiMeetJS.createLocalTracks(trackOpts);
-  } catch(e) {
-    console.warn('Could not create local tracks with preferred devices:', e);
-    /* Fallback: try without specific device IDs */
-    try {
-      tracks = await JitsiMeetJS.createLocalTracks({ devices: ['audio', 'video'] });
-    } catch(e2) {
-      console.warn('Fallback track creation also failed:', e2);
-      /* Last resort: try audio and video separately */
-      try { const a = await JitsiMeetJS.createLocalTracks({ devices: ['audio'] }); tracks.push(...a); } catch(e3) {}
-      try { const v = await JitsiMeetJS.createLocalTracks({ devices: ['video'] }); tracks.push(...v); } catch(e3) {}
-    }
-  }
-
-  S.call.localTracks = tracks;
-  for (const t of tracks) {
-    try { S.call.conf.addTrack(t); } catch(e) {}
-  }
-
-  /* Tell the SFU/P2P layer we want to send up to 1080p; it will back off to 720p if bandwidth is tight */
-  try { S.call.conf.setSenderVideoConstraint(1080); } catch(e) {}
-
-  renderCallGrid();
-  updateCallControls();
-
-  /* Re-apply the virtual background chosen during setup */
-  if (S.bgType !== 'none') {
-    applyCallBgEffect(S.bgType).catch(e => console.warn('Auto bg effect failed:', e));
-  }
-}
-
-function toggleMic() {
-  const track = S.call.localTracks.find(t => t.getType() === 'audio');
-  if (!track) return;
-  (track.isMuted() ? track.unmute() : track.mute()).then(updateCallControls).catch(() => {});
-}
-
-function toggleCam() {
-  const track = S.call.localTracks.find(t => t.getType() === 'video');
-  if (!track) return;
-  (track.isMuted() ? track.unmute() : track.mute()).then(updateCallControls).catch(() => {});
-}
-
-function updateCallControls() {
-  const audio = S.call.localTracks.find(t => t.getType() === 'audio');
-  const video = S.call.localTracks.find(t => t.getType() === 'video' && t.getVideoType?.() !== 'desktop');
-
-  const micBtn   = document.getElementById('mic-btn');
-  const camBtn   = document.getElementById('cam-btn');
-  const shareBtn = document.getElementById('share-btn');
-  const recBtn   = document.getElementById('rec-btn');
-
-  if (micBtn) {
-    const muted = audio?.isMuted() ?? false;
-    micBtn.classList.toggle('active', muted);
-    micBtn.innerHTML = `<span class="tb-icon">${muted ? '🔇' : '🎤'}</span>${muted ? 'Unmute' : 'Mute'}`;
-  }
-  if (camBtn) {
-    const muted = video?.isMuted() ?? false;
-    camBtn.classList.toggle('active', muted);
-    camBtn.innerHTML = `<span class="tb-icon">${muted ? '🚫' : '📷'}</span>${muted ? 'Cam Off' : 'Camera'}`;
-  }
-  if (shareBtn) {
-    const sharing = !!S.call._screenStream;
-    shareBtn.classList.toggle('active', sharing);
-    shareBtn.innerHTML = `<span class="tb-icon">💻</span>${sharing ? 'Stop Share' : 'Share Screen'}`;
-  }
-  if (recBtn) {
-    recBtn.classList.toggle('rec-on', S.call.recActive);
-    recBtn.innerHTML = `<span class="tb-icon">⏺</span>${S.call.recActive ? 'Stop Rec' : 'Record'}`;
-  }
-}
-
-function toggleBgPanel() {
-  const panel = document.getElementById('bg-panel');
-  if (!panel) return;
-  panel.classList.toggle('open');
-  const btn = document.getElementById('bg-btn');
-  if (btn) btn.classList.toggle('active', panel.classList.contains('open'));
-}
-
-let _shareLock = false;
-async function toggleShare() {
-  if (_shareLock) return;
-  _shareLock = true;
-
-  /* Stop existing share */
-  if (S.call._screenStream) {
-    S.call._screenStream.getTracks().forEach(t => t.stop());
-    S.call._screenStream = null;
-    if (S.call._prShareTrack) {
-      await replaceVideoSender(S.call._prShareTrack);
-      S.call._prShareTrack = null;
-    }
-    updateCallControls();
-    renderCallGrid();
-    _shareLock = false;
-    return;
-  }
-
-  /* Start sharing — use the native getDisplayMedia saved at page load */
-  let stream;
-  try {
-    stream = await window._nativeGDM({
-      video: { displaySurface: 'window' },
-      selfBrowserSurface: 'exclude',
-      monitorTypeSurfaces: 'include',
-    });
-  } catch(e) {
-    _shareLock = false;
-    /* macOS system-level permission denied — show instructions */
-    if (_isMac && e.name === 'NotAllowedError' && String(e.message).toLowerCase().includes('system')) {
-      alert('Chrome needs Screen Recording permission on this Mac.\n\n'
-        + '1. Open System Settings → Privacy & Security → Screen Recording\n'
-        + '2. Remove Chrome from the list (click —)\n'
-        + '3. Re-add Chrome (click +)\n'
-        + '4. Quit Chrome completely and reopen it\n\n'
-        + 'This is a one-time macOS setup.');
-    }
-    return;
-  }
-
-  const screenTrack = stream.getVideoTracks()[0];
-  if (!screenTrack) { stream.getTracks().forEach(t => t.stop()); _shareLock = false; return; }
-
-  /* Detect macOS Screen Recording permission issue — if the track dies
-     within 500ms, the OS blocked it. Show instructions instead of looping. */
-  const shareStart = Date.now();
-  let trackDied = false;
-  await new Promise(r => {
-    const check = () => {
-      if (screenTrack.readyState === 'ended') { trackDied = true; r(); }
-      else if (Date.now() - shareStart > 500) r();
-      else setTimeout(check, 50);
-    };
-    check();
-  });
-  if (trackDied) {
-    stream.getTracks().forEach(t => t.stop());
-    _shareLock = false;
-    if (_isMac) {
-      alert('Can\'t share windows or your screen?\n\n'
-        + 'On Mac, Chrome needs Screen Recording permission.\n\n'
-        + '1. Open System Settings → Privacy & Security → Screen Recording\n'
-        + '2. Remove Chrome from the list (click —)\n'
-        + '3. Re-add Chrome (click +)\n'
-        + '4. Quit Chrome completely and reopen it\n\n'
-        + 'This is a one-time macOS setup.');
-    }
-    return;
-  }
-
-  /* Save current camera sender so we can restore it */
-  if (!S.call._prShareTrack) {
-    const sessions = [S.call.conf?.jvbJingleSession, S.call.conf?.p2pJingleSession].filter(Boolean);
-    for (const sess of sessions) {
-      const pc = sess?.peerconnection?.peerconnection || sess?.peerconnection;
-      if (!pc || typeof pc.getSenders !== 'function') continue;
-      const sender = pc.getSenders().find(s => s.track?.kind === 'video');
-      if (sender?.track) { S.call._prShareTrack = sender.track; break; }
-    }
-  }
-
-  await replaceVideoSender(screenTrack);
-  S.call._screenStream = stream;
-  _shareLock = false;
-
-  /* When the user stops sharing (browser button), clean up — NO re-prompt */
-  screenTrack.addEventListener('ended', () => {
-    if (!S.call._screenStream) return;
-    S.call._screenStream = null;
-    if (S.call._prShareTrack) {
-      replaceVideoSender(S.call._prShareTrack).then(() => { S.call._prShareTrack = null; });
-    }
-    updateCallControls();
-    renderCallGrid();
-  });
-
-  updateCallControls();
-  renderCallGrid();
-}
-
-function onCallTrackAdded(track) {
-  if (track.isLocal()) return;
-  const pid = track.getParticipantId();
-  if (!S.call.remoteTracks[pid]) S.call.remoteTracks[pid] = {};
-
-  if (track.getType() === 'video') {
-    const isDesktop = (track.getVideoType?.() === 'desktop');
-    if (isDesktop) S.call.remoteTracks[pid].desktop = track;
-    else           S.call.remoteTracks[pid].camera  = track;
-    /* Re-request maximum quality now that we have the actual track */
-    requestMaxQuality(pid);
-    renderCallGrid();
-  } else {
-    S.call.remoteTracks[pid].audio = track;
-    let aud = document.getElementById(`aud-${pid}`);
-    if (!aud) {
-      aud = document.createElement('audio');
-      aud.id = `aud-${pid}`; aud.autoplay = true;
-      document.body.appendChild(aud);
-    }
-    track.attach(aud);
-  }
-}
-
-function onCallTrackRemoved(track) {
-  if (track.isLocal()) return;
-  const pid = track.getParticipantId();
-  if (S.call.remoteTracks[pid]) {
-    if (track.getType() === 'video') {
-      const isDesktop = (track.getVideoType?.() === 'desktop');
-      if (isDesktop) delete S.call.remoteTracks[pid].desktop;
-      else           delete S.call.remoteTracks[pid].camera;
-      renderCallGrid(); /* main view falls back to camera when share ends */
-    } else {
-      delete S.call.remoteTracks[pid].audio;
-    }
-  }
-  track.detach();
-  const aud = document.getElementById(`aud-${pid}`);
-  if (aud) aud.remove();
-}
-
-function requestMaxQuality(id) {
-  if (!S.call.conf) return;
-  /* Tell the SFU/P2P layer to treat this person as "on stage" —
-     send us their highest quality layer (up to 1080p). */
-  try {
-    S.call.conf.setReceiverVideoConstraints({
-      lastN:              -1,
-      onStageEndpoints:   [id],
-      selectedEndpoints:  [id],
-      defaultConstraints: { maxHeight: 1080 },
-      constraints:        { [id]: { maxHeight: 1080, minHeight: 720 } },
-    });
-  } catch(e) {}
-  /* Also set the preferred max frame height for the conference as a whole */
-  try { S.call.conf.setReceiverConstraints?.({ lastN: -1, defaultConstraints: { maxHeight: 1080 } }); } catch(e) {}
-}
-
-function onCallUserJoined(id, participant) {
-  S.call.names[id] = participant.getDisplayName() || 'Guest';
-  requestMaxQuality(id);
-  renderCallGrid();
-}
-
-function onCallUserLeft(id) {
-  delete S.call.names[id];
-  delete S.call.remoteTracks[id];
-  const aud = document.getElementById(`aud-${id}`);
-  if (aud) aud.remove();
-  renderCallGrid();
-}
-
-async function leaveConference() {
-  stopCallRec();
-  if (S.call.bgEffect) { S.call.bgEffect.stopEffect(); S.call.bgEffect = null; }
-  S.call.origVideoTrack = null;
-  for (const t of S.call.localTracks) { try { t.dispose(); } catch(e) {} }
-  S.call.localTracks = [];
-  if (S.call.conf) { try { await S.call.conf.leave(); } catch(e) {} S.call.conf = null; }
-  if (S.call.conn) { try { S.call.conn.disconnect(); } catch(e) {} S.call.conn = null; }
-  S.call.remoteTracks = {};
-  S.call.names        = {};
-  document.querySelectorAll('audio[id^="aud-"]').forEach(a => a.remove());
-}
-
-/* =============================================================
-   CALL RECORDING (per-participant)
-   ============================================================= */
-function toggleCallRec() { S.call.recActive ? stopCallRec() : startCallRec(); }
-
-function startCallRec() {
-  S.call.recActive     = true;
-  S.call.recSecs       = 0;
-  S.call.takeNum++;
-  /* Stop any leftover recorders from a previous take but keep blobs/downloads intact */
-  for (const { recorder } of Object.values(S.call.recorders)) {
-    try { if (recorder.state !== 'inactive') recorder.stop(); } catch(e) {}
-  }
-  S.call.recorders     = {};
-  S.call.endWarnShown  = false;
-
-  updateCallControls();
-  const status = document.getElementById('rec-status');
-  const takeLabel = S.call.takeNum > 1 ? ' (Take ' + S.call.takeNum + ')' : '';
-  if (status) status.innerHTML =
-    `<span style="display:flex;align-items:center;gap:5px">
-       <span style="width:7px;height:7px;background:var(--danger);border-radius:50%;animation:blink 1s infinite;flex-shrink:0"></span>
-       <span id="rec-timer">00:00</span><span style="font-size:11px;opacity:.7">${takeLabel}</span>
-     </span>`;
-
-  S.call.recTimer = setInterval(() => {
-    S.call.recSecs++;
-    const t = document.getElementById('rec-timer');
-    if (t) t.textContent = fmtTime(S.call.recSecs);
-  }, 1000);
-
-  const tn = S.call.takeNum;
-
-  /* Local participant */
-  const lv = S.call.localTracks.find(t => t.getType() === 'video');
-  const la = S.call.localTracks.find(t => t.getType() === 'audio');
-  if (lv || la) {
-    const tracks = [];
-    if (lv) tracks.push(...lv.getOriginalStream().getVideoTracks());
-    if (la) tracks.push(...la.getOriginalStream().getAudioTracks());
-    if (tracks.length) startParticipantRec('local-t' + tn, new MediaStream(tracks));
-  }
-
-  /* Remote participants — camera feed */
-  for (const [pid, rt] of Object.entries(S.call.remoteTracks)) {
-    const tracks = [];
-    if (rt.camera)  tracks.push(...rt.camera.getOriginalStream().getVideoTracks());
-    if (rt.audio)   tracks.push(...rt.audio.getOriginalStream().getAudioTracks());
-    if (tracks.length) startParticipantRec(pid + '-t' + tn, new MediaStream(tracks));
-  }
-  /* Remote participants — screen share (recorded separately if active) */
-  for (const [pid, rt] of Object.entries(S.call.remoteTracks)) {
-    if (rt.desktop) {
-      const dTracks = rt.desktop.getOriginalStream().getVideoTracks();
-      if (dTracks.length) startParticipantRec(pid + '-screen-t' + tn, new MediaStream(dTracks));
-    }
-  }
-}
-
-function startParticipantRec(id, stream) {
-  const mime = [
-    'video/mp4;codecs=avc1,mp4a.40.2',
-    'video/mp4',
-    'video/webm;codecs=vp9,opus',
-    'video/webm;codecs=vp8,opus',
-    'video/webm',
-  ].find(m => { try { return MediaRecorder.isTypeSupported(m); } catch(e) { return false; } }) || '';
-
-  const recorder = new MediaRecorder(stream, {
-    ...(mime ? { mimeType: mime } : {}),
-    videoBitsPerSecond: 12_000_000,
-    audioBitsPerSecond:    256_000,
-  });
-  const chunks = [];
-  recorder.ondataavailable = e => { if (e.data?.size > 0) chunks.push(e.data); };
-  recorder.onstop = () => onCallRecStop(id, chunks, mime);
-  recorder.start(100);
-  S.call.recorders[id] = { recorder, chunks, mime };
-}
-
-function stopCallRec() {
-  if (!S.call.recActive) return;
-  clearInterval(S.call.recTimer);
-  S.call.recActive = false;
-  S.call.recTimer  = null;
-  for (const { recorder } of Object.values(S.call.recorders)) {
-    try { if (recorder.state !== 'inactive') recorder.stop(); } catch(e) {}
-  }
-  updateCallControls();
-  const status = document.getElementById('rec-status');
-  if (status) status.innerHTML = '';
-}
-
-function onCallRecStop(id, chunks, mime) {
-  if (!chunks.length) return;
-  const actualMime = chunks[0]?.type || mime || 'video/webm';
-  const blob  = new Blob(chunks, { type: actualMime });
-  const url   = URL.createObjectURL(blob);
-  const mb    = (blob.size / 1048576).toFixed(1);
-  const ext   = actualMime.includes('mp4') ? 'mp4' : 'webm';
-  const ts    = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-
-  /* Parse the take-aware ID: 'local-t2', 'pid-t1', 'pid-screen-t3' */
-  const takeMatch = id.match(/-t(\d+)$/);
-  const take      = takeMatch ? +takeMatch[1] : 1;
-  const baseId    = takeMatch ? id.replace(/-t\d+$/, '') : id;
-  const rawLabel  = baseId === 'local' ? 'host' : (S.call.names[baseId] || baseId).replace(/\s+/g, '-').toLowerCase();
-  const takeTag   = take > 1 ? '-take' + take : '';
-  const dispTake  = take > 1 ? ' <span style="color:var(--accent);font-weight:600">(Take ' + take + ')</span>' : '';
-  const fname     = 'call-' + rawLabel + takeTag + '-' + ts + '.' + ext;
-
-  S.call.recBlobs[id] = { url, ext, name: fname, take };
-  S.call.downloaded[id] = false;
-  S.call.endWarnShown   = false;
-
-  const row = document.getElementById('rec-download-row');
-  if (!row) return;
-  row.style.display = '';
-
-  /* Always create a new item — each take gets its own row */
-  const item = document.createElement('div');
-  item.className = 'dl-item';
-  item.dataset.recId = id;
-  row.appendChild(item);
-
-  const safeId = id.replace(/[^a-zA-Z0-9_-]/g, '_');
-  item.innerHTML =
-    '<span class="dl-badge pending" id="dl-badge-' + safeId + '">⬇ Not downloaded</span>' +
-    '<span style="font-size:12px;flex:1"><strong>' + rawLabel + '</strong>' + dispTake + ' · ' + mb + ' MB · ' + ext.toUpperCase() + '</span>' +
-    '<a href="' + url + '" download="' + fname + '" class="btn btn-success" ' +
-       'style="font-size:12px;padding:5px 10px" onclick="markDownloaded(\'' + id + '\')">' +
-      '⬇ Download' +
-    '</a>';
-
-  updateEndCallBtn();
-}
-
-function markDownloaded(id) {
-  S.call.downloaded[id] = true;
-  const safeId = id.replace(/[^a-zA-Z0-9_-]/g, '_');
-  const badge = document.getElementById('dl-badge-' + safeId);
-  if (badge) { badge.className = 'dl-badge done'; badge.textContent = '✓ Downloaded'; }
-  /* If all files are now downloaded, reset the warning state */
-  const allDone = Object.keys(S.call.recBlobs).every(k => S.call.downloaded[k]);
-  if (allDone) {
-    S.call.endWarnShown = false;
-    updateEndCallBtn();
-    const row = document.getElementById('rec-download-row');
-    if (row) row.classList.remove('warn-pending');
-  }
-}
-
-function updateEndCallBtn() {
-  const btn = document.querySelector('.tb-btn.end');
-  if (!btn) return;
-  const hasPending = Object.keys(S.call.recBlobs).some(k => !S.call.downloaded[k]);
-  if (hasPending && S.call.endWarnShown) {
-    btn.innerHTML = '<span class="tb-icon">⚠️</span>End Anyway';
-  } else {
-    btn.innerHTML = '<span class="tb-icon">📵</span>End Call';
   }
 }
 
@@ -3379,20 +2193,16 @@ function updateEndCallBtn() {
    FINISH
    ============================================================= */
 function finish() {
-  document.body.classList.remove('jitsi-mode');
-  leaveConference();
+  if (_previewEffect) { _previewEffect.stopEffect(); _previewEffect = null; }
   if (S.stream)   { S.stream.getTracks().forEach(t => t.stop()); S.stream = null; }
   if (S.audioCtx) { S.audioCtx.close(); S.audioCtx = null; }
   if (S.rafId)    { cancelAnimationFrame(S.rafId); S.rafId = null; }
 
-  const isJitsi = S.mode === 'jitsi';
   document.getElementById('content').innerHTML = `
     <div class="completion">
-      <div class="big-icon">${isJitsi ? '👋' : '🎬'}</div>
+      <div class="big-icon">🎬</div>
       <h2>Great work!</h2>
-      <p>${isJitsi
-        ? 'Your call has ended. Thanks for using the studio!'
-        : 'Your recording is complete. Download your file if you haven\'t already — then you\'re done.'}</p>
+      <p>Your recording is complete. Download your file if you haven't already — then you're done.</p>
       <button class="btn btn-ghost" onclick="location.reload()" style="margin-top:24px">Start Over</button>
     </div>`;
 
@@ -3403,15 +2213,15 @@ function finish() {
 /* =============================================================
    BOOT
    ============================================================= */
-/* ?skip=1&room=NAME jumps directly to the Jitsi call */
+/* ?skip=1&url=DESCRIPT_URL jumps to the Descript open-room step */
 (function checkSkip() {
   const params = new URLSearchParams(location.search);
   if (params.get('skip') === '1') {
-    const room = params.get('room') || '';
+    const url = params.get('url') || '';
     S.location = 'studio';
-    S.mode = 'jitsi';
-    if (room) S.jitsiRoom = room.trim().replace(/\s+/g, '-').toLowerCase();
-    S.step = 6; /* jump straight to call step */
+    S.mode = 'descript';
+    if (url) S.descriptRoom = url.trim();
+    S.step = 6;
   }
 })();
 render();

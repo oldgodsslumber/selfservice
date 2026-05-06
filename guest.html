@@ -277,108 +277,6 @@
     .completion h2 { font-size: 26px; font-weight: 700; margin-bottom: 10px; }
     .completion p  { color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 360px; margin: 0 auto; }
 
-    /* ── JITSI FULL-PAGE TAKEOVER ── */
-    body.jitsi-mode header,
-    body.jitsi-mode footer { display: none !important; }
-    body.jitsi-mode main   { padding: 0; }
-    body.jitsi-mode .content { max-width: none; width: 100%; height: 100%;
-                               display: flex; flex-direction: column; }
-    .jitsi-bar {
-      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
-      padding: 7px 12px;
-      background: rgba(15,17,23,0.97);
-      border-bottom: 1px solid var(--border);
-    }
-    .jitsi-bar code {
-      flex: 1; font-size: 11px; color: var(--muted);
-      background: var(--surf2); padding: 5px 9px;
-      border-radius: 6px; border: 1px solid var(--border);
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
-    }
-
-    /* ── CALL LAYOUT ── */
-    #call-area {
-      flex: 1; position: relative; background: #000; overflow: hidden;
-      display: flex; align-items: center; justify-content: center;
-    }
-    #call-gallery {
-      display: grid; gap: 6px; padding: 6px;
-      width: 100%; height: 100%; grid-template-columns: 1fr;
-    }
-    #call-gallery.tiles-2 { grid-template-columns: 1fr 1fr; }
-    #call-gallery.tiles-3 { grid-template-columns: 1fr 1fr; }
-    #call-gallery.tiles-4 { grid-template-columns: 1fr 1fr; }
-    .gallery-tile {
-      position: relative; background: #111; border-radius: 8px; overflow: hidden;
-      display: flex; align-items: center; justify-content: center; cursor: pointer;
-    }
-    .gallery-tile video { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .gallery-tile video.mirror { transform: scaleX(-1); }
-    .gallery-tile .tile-label {
-      position: absolute; bottom: 8px; left: 10px;
-      background: rgba(0,0,0,0.6); color: #fff;
-      font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px; pointer-events: none;
-    }
-    .gallery-tile .tile-placeholder { color: #555; font-size: 14px; text-align: center; padding: 20px; }
-    /* Focus mode */
-    #focus-wrap { display: flex; flex-direction: column; width: 100%; height: 100%; }
-    #focus-main { flex: 1; position: relative; background: #000; overflow: hidden; }
-    #focus-main video { width: 100%; height: 100%; object-fit: contain; display: block; }
-    #focus-main video.mirror { transform: scaleX(-1); }
-    #focus-main .tile-label {
-      position: absolute; bottom: 12px; left: 12px;
-      background: rgba(0,0,0,0.6); color: #fff;
-      font-size: 13px; font-weight: 600; padding: 4px 12px; border-radius: 20px; pointer-events: none;
-    }
-    #focus-strip {
-      display: flex; gap: 4px; padding: 4px;
-      background: #0a0a0a; flex-shrink: 0; overflow-x: auto; height: 100px;
-    }
-    .strip-tile {
-      position: relative; flex-shrink: 0; width: 140px; height: 100%;
-      background: #111; border-radius: 6px; overflow: hidden; cursor: pointer;
-      border: 2px solid transparent; transition: border-color .15s;
-    }
-    .strip-tile:hover { border-color: var(--accent); }
-    .strip-tile.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-    .strip-tile video { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .strip-tile video.mirror { transform: scaleX(-1); }
-    .strip-tile .tile-label {
-      position: absolute; bottom: 3px; left: 5px;
-      background: rgba(0,0,0,0.6); color: #fff;
-      font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 10px; pointer-events: none;
-    }
-    #main-placeholder {
-      position: absolute; inset: 0;
-      display: flex; align-items: center; justify-content: center;
-      color: #444; font-size: 15px;
-    }
-    /* Toolbar */
-    .call-toolbar {
-      display: flex; align-items: center; justify-content: center;
-      gap: 10px; flex-shrink: 0; padding: 10px 14px;
-      background: rgba(15,17,23,0.97); border-top: 1px solid var(--border);
-    }
-    .call-toolbar .spacer { flex: 1; }
-    .tb-btn {
-      display: flex; flex-direction: column; align-items: center; gap: 3px;
-      background: rgba(255,255,255,0.08); border: none; border-radius: 10px;
-      color: #fff; cursor: pointer; padding: 8px 14px; min-width: 64px;
-      font-size: 11px; font-weight: 500; transition: background .15s;
-    }
-    .tb-btn:hover { background: rgba(255,255,255,0.16); }
-    .tb-btn .tb-icon { font-size: 20px; line-height: 1; }
-    .tb-btn.active  { background: var(--danger); }
-    .tb-btn.end     { background: #c0392b; }
-    .tb-btn.end:hover { background: #e74c3c; }
-    /* Background panel in call */
-    #bg-panel {
-      flex-shrink: 0; padding: 8px 12px;
-      background: var(--surf); border-top: 1px solid var(--border);
-      display: none;
-    }
-    #bg-panel.open { display: block; }
-
     /* ── RESPONSIVE ── */
     @media (max-width: 560px) {
       .step-title { font-size: 19px; }
@@ -390,7 +288,7 @@
 <body>
 
 <header>
-  <h1>🎥 Guest Setup</h1>
+  <h1>🎬 Guest Setup</h1>
   <div class="step-bar" id="step-bar"></div>
   <span style="font-size:10px;color:#333;cursor:default;margin-left:auto;flex-shrink:0" onclick="S.step=3;render();">v2.1.4</span>
 </header>
@@ -406,51 +304,21 @@
 
 <script>
 /* =============================================================
-   PROXY SETTINGS  (same pattern as host app)
-   ============================================================= */
-const PROXY = { url: '', token: '' };
-(function loadProxy() {
-  PROXY.url   = localStorage.getItem('ss_proxy_url')   || '';
-  PROXY.token = localStorage.getItem('ss_proxy_token') || '';
-  if (!PROXY.url && location.protocol.startsWith('http')) PROXY.url = '/api/jaas-token';
-})();
-
-/* =============================================================
-   JAAS  (appId only — private key lives in Vercel or host app)
-   ============================================================= */
-const JAAS = {
-  appId: 'vpaas-magic-cookie-005ad6f5ab934d24a6836927b161c62d',
-  kid:   'vpaas-magic-cookie-005ad6f5ab934d24a6836927b161c62d/a1d586',
-  privateKey: '',
-};
-
-/* =============================================================
    STATE
    ============================================================= */
-/* Parse ?room= from URL */
-const _urlRoom = new URLSearchParams(location.search).get('room') || '';
+/* Parse ?url= from URL (the Descript Room link) */
+const _urlRoom = new URLSearchParams(location.search).get('url') || '';
 const _isMac = /Mac/i.test(navigator.platform);
 
 const S = {
   step: 0, STEPS: 4,
-  /* step-0 prep order: [tabs, Outlook, Webex, phoneDND, VPN] */
-  checks: [false, false, false, false, false],
+  /* step-0 prep order: [tabs, Outlook, Webex, phoneDND, VPN, mouse] */
+  checks: [false, false, false, false, false, false],
   stream:   null,
   audioCtx: null, analyser: null, rafId: null,
   dev: { allAudio: [], allVideo: [], curAudioId: null, curVideoId: null },
   brightness: null, bgType: 'none', blurRadius: 16,
   room: _urlRoom,
-  inCall: false,
-  call: {
-    conn: null, conf: null,
-    localTracks: [],
-    remoteTracks: {},
-    names: {},
-    bgEffect: null,
-    origVideoTrack: null,
-    viewMode: 'gallery',
-    focusId:  null,
-  },
 };
 
 /* =============================================================
@@ -598,7 +466,7 @@ function updateNav() {
   const next = document.getElementById('btn-next');
   back.style.visibility = S.step === 0 ? 'hidden' : 'visible';
   next.className = S.step === 3 ? 'btn btn-success' : 'btn btn-primary';
-  next.textContent = S.step === 3 ? 'Join Room →' : 'Next →';
+  next.textContent = S.step === 3 ? 'Open Room →' : 'Next →';
   if (S.step === 0) {
     next.disabled = !S.checks.every(Boolean);
   } else {
@@ -667,6 +535,7 @@ function prepStageHtml() {
     ${prepChip(2, '💬', 'Quit Webex',               '↓ dock / taskbar',     'pp-bot-mid')}
     ${prepChip(3, '📱', 'Phone on Do Not Disturb',  'on your phone',        'pp-mid-right')}
     ${prepChip(4, '🛡️', 'Disconnect from VPN',      vpnArrow,                vpnPos)}
+    ${prepChip(5, '🖱️', 'Attach a physical mouse',  'USB or Bluetooth',     'pp-mid-left')}
   </div>`;
 }
 
@@ -696,8 +565,8 @@ function renderStep0() {
     ${prepStageHtml()}
     ${browserNote}
     <div class="info-box" style="margin-top:18px">
-      <strong>You've been invited to a virtual recording session.</strong><br>
-      This quick setup takes about 2 minutes and ensures you look and sound great for your host.
+      <strong>You've been invited to a Descript recording session.</strong><br>
+      This quick setup takes about 2 minutes and ensures you look and sound great before you open your Descript Room.
     </div>
   </div>`;
 }
@@ -924,7 +793,7 @@ function rafAudio() {
 function renderStep2(el) {
   el.innerHTML = `
   <div>
-    <div class="step-title">Step 3 — Lighting &amp; Background</div>
+    <div class="step-title">Step 3 — Camera Position &amp; Lighting</div>
     <div class="step-sub">Fit yourself inside the silhouette, then check your lighting.</div>
 
     <div class="vid-wrap">
@@ -947,8 +816,6 @@ function renderStep2(el) {
       </div>
     </div>
 
-    ${renderBgSelector(S.bgType)}
-
     <div class="info-box" style="margin-top:14px">
       <strong>Tips for better home lighting:</strong><br>
       • <strong>Face a light source</strong> — sit facing a window or lamp, not with it behind you<br>
@@ -958,7 +825,6 @@ function renderStep2(el) {
   </div>`;
 
   attachStream('guest-video');
-  VirtualBgEffect._getSegmenter().catch(() => {});
 }
 
 function checkBrightness() {
@@ -1101,7 +967,6 @@ function setBlurRadius(r) {
   const lbl = document.getElementById('blur-val');
   if (lbl) lbl.textContent = r + 'px';
   if (_previewEffect && _previewEffect.type === 'blur') _previewEffect.blurRadius = r;
-  if (S.call.bgEffect && S.call.bgEffect.type === 'blur') S.call.bgEffect.blurRadius = r;
 }
 
 async function setBgEffect(id) {
@@ -1117,18 +982,10 @@ async function setBgEffect(id) {
     if (_previewEffect) { _previewEffect.stopEffect(); _previewEffect = null; }
     const pv = document.getElementById('guest-video');
     if (pv && S.stream) pv.srcObject = S.stream;
-    /* In-call: remove call bg effect */
-    if (S.call.conf) { await applyCallBgEffect('none'); return; }
     return;
   }
 
-  /* ── Live call context ── */
-  if (S.call.conf) {
-    await applyCallBgEffect(id);
-    return;
-  }
-
-  /* ── Lighting preview context ── */
+  /* ── Lighting preview context only — Descript handles its own backgrounds ── */
   const effect = new VirtualBgEffect(
     id === 'blur' ? 'blur' : 'image',
     opt?.src || null,
@@ -1151,700 +1008,93 @@ async function setBgEffect(id) {
 }
 
 /* =============================================================
-   STEP 3 — JOIN ROOM
+   STEP 3 — OPEN DESCRIPT ROOM
    ============================================================= */
 function renderStep3() {
   return `
   <div>
-    <div class="step-title">Step 4 — Join the Room</div>
-    <div class="step-sub">Enter the room name your host sent you, then click Join Room.</div>
+    <div class="step-title">Step 4 — Open Your Descript Room</div>
+    <div class="step-sub">Paste the Descript Room link your host shared with you, then click Open Room.</div>
 
     <div class="card" style="margin-bottom:14px">
-      <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px">Room Name</label>
-      <input id="room-input" type="text"
+      <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px">Descript Room Link</label>
+      <input id="room-input" type="url"
         value="${S.room}"
-        placeholder="e.g. marketing"
-        style="width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:15px"
+        placeholder="https://web.descript.com/room/..."
+        style="width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:14px"
         oninput="S.room=this.value.trim()">
       <div style="font-size:12px;color:var(--muted);margin-top:6px">
-        Type exactly what your host gave you — it's not case-sensitive.
+        The full URL to your Descript Room — usually starts with <code>https://web.descript.com/room/</code>
       </div>
     </div>
 
     <div id="join-status" style="font-size:13px;color:var(--muted);margin-bottom:10px;min-height:18px"></div>
 
     <div class="info-box">
-      <strong>What happens next:</strong> Clicking Join Room will open the virtual meeting in this tab.
-      Your camera and microphone will be available — you can mute or turn off video once you're in.<br><br>
-      <strong>Seeing a "Waiting for the host" screen?</strong> That's normal — the meeting room holds guests
-      until your host joins. Just stay on the page and you'll be let in automatically.
+      <strong>What happens next:</strong> Clicking Open Room will release your camera and microphone
+      and redirect you to the Descript Room in this tab. Descript will then ask for permission to
+      use your camera and mic — allow it, and you'll be in the session.<br><br>
+      <strong>Tip:</strong> Descript records locally on each participant's device for best quality,
+      so you may be asked to download a small recording at the end.
     </div>
   </div>`;
 }
 
 /* =============================================================
-   JWT  (proxy only — client never signs)
+   OPEN DESCRIPT ROOM — release camera/mic and redirect
    ============================================================= */
+function joinRoom() {
+  const inp = document.getElementById('room-input');
+  const raw = (inp ? inp.value : S.room).trim();
 
-async function generateGuestToken() {
-  /* Always use the proxy — guest requests don't require a token.
-     Falls back to PROXY.url from localStorage if set, otherwise same-origin /api/jaas-token. */
-  const proxyUrl = (PROXY.url || '').trim() || '/api/jaas-token';
-  const res = await fetch(proxyUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(PROXY.token ? { 'x-proxy-token': PROXY.token } : {}),
-    },
-    body: JSON.stringify({ isModerator: false, userName: 'Guest' }),
-  });
-  if (!res.ok) {
-    let msg = 'HTTP ' + res.status;
-    try { const d = await res.json(); if (d.error) msg = d.error; } catch(e) {}
-    throw new Error('Could not connect to room service: ' + msg);
-  }
-  const data = await res.json();
-  if (data.error) throw new Error(data.error);
-  if (data.appId) JAAS.appId = data.appId;
-  return data.token;
-}
-
-/* =============================================================
-   JOIN — in-page Jitsi call (not a redirect)
-   ============================================================= */
-async function joinRoom() {
-  const inp  = document.getElementById('room-input');
-  const room = (inp ? inp.value : S.room).trim().replace(/\s+/g, '-').toLowerCase();
-  if (!room) {
+  if (!raw) {
     if (inp) { inp.focus(); inp.style.borderColor = 'var(--danger)'; }
     return;
   }
+
+  /* Validate URL — must be an http(s) URL, preferably a Descript link */
+  let parsed;
+  try { parsed = new URL(raw); }
+  catch(e) {
+    const status = document.getElementById('join-status');
+    if (status) status.innerHTML = '<span style="color:var(--danger)">⚠ That doesn\'t look like a valid URL. Paste the full link your host sent you.</span>';
+    if (inp) inp.style.borderColor = 'var(--danger)';
+    return;
+  }
+
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    const status = document.getElementById('join-status');
+    if (status) status.innerHTML = '<span style="color:var(--danger)">⚠ Link must start with https://</span>';
+    if (inp) inp.style.borderColor = 'var(--danger)';
+    return;
+  }
+
   if (inp) inp.style.borderColor = '';
-  S.room = room;
+  S.room = raw;
 
   const status = document.getElementById('join-status');
   const btn    = document.getElementById('btn-next');
-  if (status) status.textContent = 'Generating token…';
+  if (status) status.textContent = 'Releasing camera and opening room…';
   if (btn) btn.disabled = true;
 
-  try {
-    const token = await generateGuestToken();
-
-    /* Stop preview bg effect before releasing the stream it feeds on */
-    if (_previewEffect) { _previewEffect.stopEffect(); _previewEffect = null; }
-    /* Release preview stream — lib-jitsi-meet will manage camera/mic */
-    if (S.stream)   { S.stream.getTracks().forEach(t => t.stop()); S.stream = null; }
-    if (S.audioCtx) { S.audioCtx.close(); S.audioCtx = null; S.analyser = null; }
-    cancelAnimationFrame(S.rafId);
-
-    /* Enter jitsi mode */
-    S.inCall = true;
-    document.body.classList.add('jitsi-mode');
-    renderCallUI();
-    await launchCall(room, token);
-
-  } catch(e) {
-    if (status) status.innerHTML = '<span style="color:var(--danger)">⚠ ' + e.message + '</span>';
-    if (btn) btn.disabled = false;
-  }
-}
-
-/* =============================================================
-   CALL UI
-   ============================================================= */
-function renderCallUI() {
-  const el = document.getElementById('content');
-  el.innerHTML = `
-  <div style="display:flex;flex-direction:column;height:100%">
-    <div class="jitsi-bar" style="gap:6px">
-      <span style="font-size:11px;color:var(--muted);flex-shrink:0">Room:</span>
-      <code style="flex:1;font-size:11px">${S.room}</code>
-    </div>
-
-    <div id="bg-panel">
-      <span style="font-size:11px;color:var(--muted);margin-right:6px">Virtual BG:</span>
-      ${renderBgSelector(S.bgType)}
-    </div>
-
-    <div id="call-area">
-      <div id="main-placeholder">Connecting…</div>
-    </div>
-
-    <div class="call-toolbar">
-      <button id="mic-btn" class="tb-btn" onclick="toggleMic()" title="Mute / Unmute"><span class="tb-icon">🎤</span>Mute</button>
-      <button id="cam-btn" class="tb-btn" onclick="toggleCam()" title="Camera on/off"><span class="tb-icon">📷</span>Camera</button>
-      <button id="share-btn" class="tb-btn" onclick="toggleShare()" title="Share your screen"><span class="tb-icon">💻</span>Share Screen</button>
-      <button id="bg-btn"  class="tb-btn" onclick="toggleBgPanel()" title="Virtual background"><span class="tb-icon">🖼</span>Background</button>
-      <button id="view-btn" class="tb-btn" onclick="toggleViewMode()" title="Switch view"><span class="tb-icon">⊞</span>Gallery</button>
-      <div class="spacer"></div>
-      <button class="tb-btn end" onclick="leaveCall()" title="Leave call"><span class="tb-icon">📵</span>Leave</button>
-    </div>
-  </div>`;
-}
-
-async function launchCall(room, token) {
-  try {
-    await loadScript('https://8x8.vc/libs/lib-jitsi-meet.min.js');
-  } catch(e) {
-    showCallError('Could not load JaaS SDK', 'Check your internet connection.');
-    return;
-  }
-  joinConference(room, token);
-}
-
-function showCallError(title, detail) {
-  const area = document.getElementById('call-area');
-  if (area) area.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:center;height:100%">
-      <div style="text-align:center;color:var(--danger)">
-        <div style="font-size:28px;margin-bottom:8px">⚠️</div>
-        <div style="font-weight:600;margin-bottom:6px">${title}</div>
-        <div style="font-size:13px;color:var(--muted)">${detail}</div>
-      </div>
-    </div>`;
-}
-
-function setConnStatus(msg) {
-  const el = document.getElementById('main-placeholder');
-  if (el) el.textContent = msg;
-}
-
-function joinConference(room, token) {
-  const JMJ = window.JitsiMeetJS;
-  if (!JMJ) { showCallError('SDK not loaded', ''); return; }
-
-  JMJ.init({
-    disableAudioLevels:    true,
-    disableSimulcast:      true,
-    useIPv6:               false,
-    desktopSharingEnabled: false,
-    videoQuality: {
-      maxBitratesVideo: { low: 500000, standard: 2500000, high: 6000000 },
-      minHeightForQualityLvl: { 360: 'standard', 720: 'high', 1080: 'high' },
-    },
-  });
-  JMJ.setLogLevel(JMJ.logLevels.ERROR);
-
-  const options = {
-    hosts: {
-      domain: '8x8.vc',
-      muc:    `conference.${JAAS.appId}.8x8.vc`,
-    },
-    serviceUrl: `wss://8x8.vc/${JAAS.appId}/xmpp-websocket?room=${room}`,
-    clientNode: 'http://jitsi.org/jitsimeet',
-  };
-
-  const conn = new JMJ.JitsiConnection(null, token, options);
-  S.call.conn = conn;
-  setConnStatus('Connecting to server…');
-
-  conn.addEventListener(JMJ.events.connection.CONNECTION_ESTABLISHED, async () => {
-    setConnStatus('Connected — joining conference…');
-    const conf = conn.initJitsiConference(room, {
-      p2p: { enabled: true, preferH264: true, useStunTurn: true },
-      startWithAudioMuted: false,
-      startWithVideoMuted: false,
-    });
-    S.call.conf = conf;
-
-    conf.on(JMJ.events.conference.TRACK_ADDED,        onCallTrackAdded);
-    conf.on(JMJ.events.conference.TRACK_REMOVED,      onCallTrackRemoved);
-    conf.on(JMJ.events.conference.CONFERENCE_JOINED,  onCallJoined);
-    conf.on(JMJ.events.conference.USER_JOINED,        onCallUserJoined);
-    conf.on(JMJ.events.conference.USER_LEFT,          onCallUserLeft);
-    conf.on(JMJ.events.conference.CONFERENCE_FAILED,  err => showCallError('Conference failed', String(err)));
-    conf.on(JMJ.events.conference.CONFERENCE_ERROR,   err => showCallError('Conference error',  String(err)));
-
-    setConnStatus('Joining room…');
-    conf.join();
-  });
-
-  conn.addEventListener(JMJ.events.connection.CONNECTION_FAILED, err => {
-    showCallError('Connection failed', String(err));
-  });
-
-  conn.connect();
-}
-
-async function onCallJoined() {
-  let tracks = [];
-  const trackOpts = {
-    devices: ['audio', 'video'],
-    constraints: {
-      video: {
-        width:     { ideal: 1920, max: 1920 },
-        height:    { ideal: 1080, max: 1080 },
-        frameRate: { ideal: 30,   max: 30   },
-      },
-    },
-  };
-  if (S.dev.curVideoId) trackOpts.cameraDeviceId = S.dev.curVideoId;
-  if (S.dev.curAudioId) trackOpts.micDeviceId    = S.dev.curAudioId;
-  try {
-    tracks = await JitsiMeetJS.createLocalTracks(trackOpts);
-  } catch(e) {
-    console.warn('Could not create local tracks with preferred devices:', e);
-    /* Fallback: try without specific device IDs */
-    try {
-      tracks = await JitsiMeetJS.createLocalTracks({ devices: ['audio', 'video'] });
-    } catch(e2) {
-      console.warn('Fallback track creation also failed:', e2);
-      /* Last resort: try audio and video separately */
-      try { const a = await JitsiMeetJS.createLocalTracks({ devices: ['audio'] }); tracks.push(...a); } catch(e3) {}
-      try { const v = await JitsiMeetJS.createLocalTracks({ devices: ['video'] }); tracks.push(...v); } catch(e3) {}
-    }
-  }
-
-  S.call.localTracks = tracks;
-  for (const t of tracks) {
-    try { S.call.conf.addTrack(t); } catch(e) {}
-  }
-  try { S.call.conf.setSenderVideoConstraint(1080); } catch(e) {}
-
-  renderCallGrid();
-  updateCallControls();
-
-  /* Re-apply the virtual background chosen during setup */
-  if (S.bgType !== 'none') {
-    applyCallBgEffect(S.bgType).catch(e => console.warn('Auto bg effect failed:', e));
-  }
-}
-
-function onCallTrackAdded(track) {
-  if (track.isLocal()) return;
-  const pid = track.getParticipantId();
-  if (!S.call.remoteTracks[pid]) S.call.remoteTracks[pid] = {};
-
-  if (track.getType() === 'video') {
-    const isDesktop = (track.getVideoType?.() === 'desktop');
-    if (isDesktop) S.call.remoteTracks[pid].desktop = track;
-    else           S.call.remoteTracks[pid].camera  = track;
-    requestMaxQuality(pid);
-    renderCallGrid();
-  } else {
-    S.call.remoteTracks[pid].audio = track;
-    let aud = document.getElementById(`aud-${pid}`);
-    if (!aud) {
-      aud = document.createElement('audio');
-      aud.id = `aud-${pid}`; aud.autoplay = true;
-      document.body.appendChild(aud);
-    }
-    track.attach(aud);
-  }
-}
-
-function onCallTrackRemoved(track) {
-  if (track.isLocal()) return;
-  const pid = track.getParticipantId();
-  if (S.call.remoteTracks[pid]) {
-    if (track.getType() === 'video') {
-      const isDesktop = (track.getVideoType?.() === 'desktop');
-      if (isDesktop) delete S.call.remoteTracks[pid].desktop;
-      else           delete S.call.remoteTracks[pid].camera;
-      renderCallGrid();
-    } else {
-      delete S.call.remoteTracks[pid].audio;
-    }
-  }
-  track.detach();
-  const aud = document.getElementById(`aud-${pid}`);
-  if (aud) aud.remove();
-}
-
-function requestMaxQuality(id) {
-  if (!S.call.conf) return;
-  try {
-    S.call.conf.setReceiverVideoConstraints({
-      lastN: -1,
-      onStageEndpoints: [id], selectedEndpoints: [id],
-      defaultConstraints: { maxHeight: 1080 },
-      constraints: { [id]: { maxHeight: 1080, minHeight: 720 } },
-    });
-  } catch(e) {}
-  try { S.call.conf.setReceiverConstraints?.({ lastN: -1, defaultConstraints: { maxHeight: 1080 } }); } catch(e) {}
-}
-
-function onCallUserJoined(id, participant) {
-  S.call.names[id] = participant.getDisplayName() || 'Host';
-  requestMaxQuality(id);
-  renderCallGrid();
-}
-
-function onCallUserLeft(id) {
-  delete S.call.names[id];
-  delete S.call.remoteTracks[id];
-  const aud = document.getElementById(`aud-${id}`);
-  if (aud) aud.remove();
-  renderCallGrid();
-}
-
-function buildTiles() {
-  const tiles = [];
-  tiles.push({ id: 'self', label: 'You', isSelf: true });
-  if (S.call._screenStream) {
-    tiles.push({ id: 'self-screen', label: 'You — Screen', isSelf: true, isDesktop: true, nativeStream: S.call._screenStream });
-  }
-  for (const [pid, name] of Object.entries(S.call.names)) {
-    const rt = S.call.remoteTracks[pid] || {};
-    tiles.push({ id: pid, label: name || 'Host', track: rt.desktop || rt.camera || null, isDesktop: !!rt.desktop });
-    if (rt.desktop && rt.camera) {
-      tiles.push({ id: pid + '-cam', label: name || 'Host', track: rt.camera });
-    }
-  }
-  return tiles;
-}
-
-function attachSelfVideo(el) {
-  if (!el) return;
-  if (S.call.bgEffect && S.call.bgEffect._outStream) {
-    el.srcObject = S.call.bgEffect._outStream;
-  } else {
-    for (const t of S.call.localTracks) {
-      if (t.getType() === 'video') t.attach(el);
-    }
-  }
-}
-
-function attachAudioElements() {
-  for (const [id, tracks] of Object.entries(S.call.remoteTracks)) {
-    if (tracks.audio) {
-      let aud = document.getElementById('aud-' + id);
-      if (!aud) { aud = document.createElement('audio'); aud.id = 'aud-' + id; aud.autoplay = true; document.body.appendChild(aud); }
-      tracks.audio.attach(aud);
-    }
-  }
-}
-
-function setFocus(tileId) {
-  S.call.focusId = tileId;
-  S.call.viewMode = 'focus';
-  renderCallGrid();
-  updateViewBtn();
-}
-
-function toggleViewMode() {
-  S.call.viewMode = S.call.viewMode === 'gallery' ? 'focus' : 'gallery';
-  if (S.call.viewMode === 'focus' && !S.call.focusId) {
-    const tiles = buildTiles();
-    const remote = tiles.find(t => !t.isSelf);
-    S.call.focusId = remote ? remote.id : 'self';
-  }
-  renderCallGrid();
-  updateViewBtn();
-}
-
-function updateViewBtn() {
-  const btn = document.getElementById('view-btn');
-  if (!btn) return;
-  const isGallery = S.call.viewMode === 'gallery';
-  btn.innerHTML = '<span class="tb-icon">' + (isGallery ? '⊞' : '⊡') + '</span>' + (isGallery ? 'Gallery' : 'Focus');
-}
-
-function renderCallGrid() {
-  const area = document.getElementById('call-area');
-  if (!area) return;
-  const tiles = buildTiles();
-
-  if (tiles.length <= 1 && !S.call.localTracks.length) {
-    area.innerHTML = '<div id="main-placeholder">Waiting for host to join…</div>';
-    return;
-  }
-
-  if (S.call.viewMode === 'focus') renderFocusView(area, tiles);
-  else renderGalleryView(area, tiles);
-  attachAudioElements();
-}
-
-function focusTileHtml(tile, vidId) {
-  if (tile.isSelf && !tile.isDesktop) return '<video id="' + vidId + '" autoplay playsinline muted class="mirror"></video>';
-  if (tile.isSelf && tile.isDesktop)  return '<video id="vid-' + tile.id + '" autoplay playsinline muted></video>';
-  if (tile.track)                     return '<video id="vid-' + tile.id + '" autoplay playsinline' + (tile.isDesktop ? '' : ' class="mirror"') + '></video>';
-  return '<div class="tile-placeholder">Waiting for video…</div>';
-}
-
-function attachTile(tile, vidId) {
-  if (tile.isSelf && !tile.isDesktop) { attachSelfVideo(document.getElementById(vidId)); return; }
-  if (tile.nativeStream) { const el = document.getElementById('vid-' + tile.id); if (el) el.srcObject = tile.nativeStream; return; }
-  if (tile.track)        { const el = document.getElementById('vid-' + tile.id); if (el) tile.track.attach(el); }
-}
-
-function renderGalleryView(area, tiles) {
-  const count = tiles.length;
-  const cls = count >= 4 ? 'tiles-4' : count >= 3 ? 'tiles-3' : count >= 2 ? 'tiles-2' : '';
-  let html = '<div id="call-gallery" class="' + cls + '">';
-  for (const tile of tiles) {
-    html += '<div class="gallery-tile" onclick="setFocus(\'' + tile.id + '\')">';
-    html += focusTileHtml(tile, 'self-video');
-    html += '<div class="tile-label">' + tile.label + '</div></div>';
-  }
-  html += '</div>';
-  area.innerHTML = html;
-  attachSelfVideo(document.getElementById('self-video'));
-  for (const tile of tiles) {
-    if (tile.nativeStream) { const el = document.getElementById('vid-' + tile.id); if (el) el.srcObject = tile.nativeStream; }
-    else if (!tile.isSelf && tile.track) { const el = document.getElementById('vid-' + tile.id); if (el) tile.track.attach(el); }
-  }
-}
-
-function renderFocusView(area, tiles) {
-  let focused = tiles.find(t => t.id === S.call.focusId);
-  if (!focused) focused = tiles.find(t => !t.isSelf) || tiles[0];
-  const others = tiles.filter(t => t.id !== focused.id);
-
-  let html = '<div id="focus-wrap"><div id="focus-main">';
-  html += focusTileHtml(focused, 'self-video');
-  html += '<div class="tile-label">' + focused.label + '</div></div>';
-  if (others.length) {
-    html += '<div id="focus-strip">';
-    for (const tile of others) {
-      html += '<div class="strip-tile" onclick="setFocus(\'' + tile.id + '\')">';
-      html += focusTileHtml(tile, 'self-video-strip');
-      html += '<div class="tile-label">' + tile.label + '</div></div>';
-    }
-    html += '</div>';
-  }
-  html += '</div>';
-  area.innerHTML = html;
-  attachTile(focused, 'self-video');
-  for (const tile of others) attachTile(tile, 'self-video-strip');
-}
-
-/* ── Controls ── */
-function toggleMic() {
-  const track = S.call.localTracks.find(t => t.getType() === 'audio');
-  if (!track) return;
-  (track.isMuted() ? track.unmute() : track.mute()).then(updateCallControls).catch(() => {});
-}
-
-function toggleCam() {
-  const track = S.call.localTracks.find(t => t.getType() === 'video');
-  if (!track) return;
-  (track.isMuted() ? track.unmute() : track.mute()).then(updateCallControls).catch(() => {});
-}
-
-function updateCallControls() {
-  const audio = S.call.localTracks.find(t => t.getType() === 'audio');
-  const video = S.call.localTracks.find(t => t.getType() === 'video' && t.getVideoType?.() !== 'desktop');
-  const micBtn   = document.getElementById('mic-btn');
-  const camBtn   = document.getElementById('cam-btn');
-  const shareBtn = document.getElementById('share-btn');
-  if (micBtn) {
-    const muted = audio?.isMuted() ?? false;
-    micBtn.classList.toggle('active', muted);
-    micBtn.innerHTML = `<span class="tb-icon">${muted ? '🔇' : '🎤'}</span>${muted ? 'Unmute' : 'Mute'}`;
-  }
-  if (camBtn) {
-    const muted = video?.isMuted() ?? false;
-    camBtn.classList.toggle('active', muted);
-    camBtn.innerHTML = `<span class="tb-icon">${muted ? '🚫' : '📷'}</span>${muted ? 'Cam Off' : 'Camera'}`;
-  }
-  if (shareBtn) {
-    const sharing = !!S.call._screenStream;
-    shareBtn.classList.toggle('active', sharing);
-    shareBtn.innerHTML = `<span class="tb-icon">💻</span>${sharing ? 'Stop Share' : 'Share Screen'}`;
-  }
-}
-
-let _shareLock = false;
-async function toggleShare() {
-  if (_shareLock) return;
-  _shareLock = true;
-
-  if (S.call._screenStream) {
-    S.call._screenStream.getTracks().forEach(t => t.stop());
-    S.call._screenStream = null;
-    if (S.call._prShareTrack) {
-      await replaceVideoSender(S.call._prShareTrack);
-      S.call._prShareTrack = null;
-    }
-    updateCallControls();
-    renderCallGrid();
-    _shareLock = false;
-    return;
-  }
-
-  let stream;
-  try {
-    stream = await window._nativeGDM({
-      video: { displaySurface: 'window' },
-      selfBrowserSurface: 'exclude',
-      monitorTypeSurfaces: 'include',
-    });
-  } catch(e) {
-    _shareLock = false;
-    if (_isMac && e.name === 'NotAllowedError' && String(e.message).toLowerCase().includes('system')) {
-      alert('Chrome needs Screen Recording permission on this Mac.\n\n'
-        + '1. Open System Settings → Privacy & Security → Screen Recording\n'
-        + '2. Remove Chrome from the list (click —)\n'
-        + '3. Re-add Chrome (click +)\n'
-        + '4. Quit Chrome completely and reopen it\n\n'
-        + 'This is a one-time macOS setup.');
-    }
-    return;
-  }
-
-  const screenTrack = stream.getVideoTracks()[0];
-  if (!screenTrack) { stream.getTracks().forEach(t => t.stop()); _shareLock = false; return; }
-
-  /* Detect macOS Screen Recording permission issue */
-  const shareStart = Date.now();
-  let trackDied = false;
-  await new Promise(r => {
-    const check = () => {
-      if (screenTrack.readyState === 'ended') { trackDied = true; r(); }
-      else if (Date.now() - shareStart > 500) r();
-      else setTimeout(check, 50);
-    };
-    check();
-  });
-  if (trackDied) {
-    stream.getTracks().forEach(t => t.stop());
-    _shareLock = false;
-    if (_isMac) {
-      alert('Can\'t share windows or your screen?\n\n'
-        + 'On Mac, Chrome needs Screen Recording permission.\n\n'
-        + '1. Open System Settings → Privacy & Security → Screen Recording\n'
-        + '2. Remove Chrome from the list (click —)\n'
-        + '3. Re-add Chrome (click +)\n'
-        + '4. Quit Chrome completely and reopen it\n\n'
-        + 'This is a one-time macOS setup.');
-    }
-    return;
-  }
-
-  if (!S.call._prShareTrack) {
-    const sessions = [S.call.conf?.jvbJingleSession, S.call.conf?.p2pJingleSession].filter(Boolean);
-    for (const sess of sessions) {
-      const pc = sess?.peerconnection?.peerconnection || sess?.peerconnection;
-      if (!pc || typeof pc.getSenders !== 'function') continue;
-      const sender = pc.getSenders().find(s => s.track?.kind === 'video');
-      if (sender?.track) { S.call._prShareTrack = sender.track; break; }
-    }
-  }
-
-  await replaceVideoSender(screenTrack);
-  S.call._screenStream = stream;
-  _shareLock = false;
-
-  screenTrack.addEventListener('ended', () => {
-    if (!S.call._screenStream) return;
-    S.call._screenStream = null;
-    if (S.call._prShareTrack) {
-      replaceVideoSender(S.call._prShareTrack).then(() => { S.call._prShareTrack = null; });
-    }
-    updateCallControls();
-    renderCallGrid();
-  });
-
-  updateCallControls();
-  renderCallGrid();
-}
-
-function toggleBgPanel() {
-  const panel = document.getElementById('bg-panel');
-  if (!panel) return;
-  panel.classList.toggle('open');
-  const btn = document.getElementById('bg-btn');
-  if (btn) btn.classList.toggle('active', panel.classList.contains('open'));
-}
-
-/* ── Virtual background in call ── */
-async function replaceVideoSender(newTrack) {
-  const conf = S.call.conf;
-  if (!conf) return false;
-  let replaced = false;
-  const sessions = [conf.jvbJingleSession, conf.p2pJingleSession].filter(Boolean);
-  for (const session of sessions) {
-    const pc = session?.peerconnection?.peerconnection || session?.peerconnection;
-    if (!pc || typeof pc.getSenders !== 'function') continue;
-    const sender = pc.getSenders().find(s => s.track?.kind === 'video');
-    if (!sender) continue;
-    try { await sender.replaceTrack(newTrack); replaced = true; } catch(e) {}
-  }
-  return replaced;
-}
-
-async function applyCallBgEffect(id) {
-  if (S.call.bgEffect) { S.call.bgEffect.stopEffect(); S.call.bgEffect = null; }
-
-  const vt = S.call.localTracks.find(t => t.getType() === 'video');
-  if (!vt) return;
-
-  if (S.call.origVideoTrack) await replaceVideoSender(S.call.origVideoTrack);
-
-  if (id === 'none') {
-    const pip = document.getElementById('self-video');
-    if (pip && vt) { try { vt.detach(pip); } catch(e) {} vt.attach(pip); }
-    S.call.origVideoTrack = null;
-    return;
-  }
-
-  const rawStream = (typeof vt.getOriginalStream === 'function' ? vt.getOriginalStream() : null)
-                 || vt.stream || (vt.track ? new MediaStream([vt.track]) : null);
-  if (!rawStream) return;
-
-  const opt    = BG_OPTIONS.find(o => o.id === id);
-  const effect = new VirtualBgEffect(id === 'blur' ? 'blur' : 'image', opt?.src || null, S.blurRadius);
-
-  try {
-    const canvasStream     = await effect.startEffect(rawStream);
-    const canvasVideoTrack = canvasStream.getVideoTracks()[0];
-    if (!canvasVideoTrack) throw new Error('Effect returned no video track');
-
-    if (!S.call.origVideoTrack) {
-      const sessions = [S.call.conf?.jvbJingleSession, S.call.conf?.p2pJingleSession].filter(Boolean);
-      for (const sess of sessions) {
-        const pc = sess?.peerconnection?.peerconnection || sess?.peerconnection;
-        if (!pc || typeof pc.getSenders !== 'function') continue;
-        const s = pc.getSenders().find(s => s.track?.kind === 'video');
-        if (s?.track) { S.call.origVideoTrack = s.track; break; }
-      }
-      if (!S.call.origVideoTrack) S.call.origVideoTrack = vt.track || null;
-    }
-
-    await replaceVideoSender(canvasVideoTrack);
-    const pip = document.getElementById('self-video');
-    if (pip) { try { vt.detach(pip); } catch(e) {} pip.srcObject = canvasStream; }
-    S.call.bgEffect = effect;
-  } catch(e) {
-    console.error('Call bg effect failed:', e);
-  }
-}
-
-/* ── Leave ── */
-async function leaveCall() {
-  if (S.call.bgEffect) { S.call.bgEffect.stopEffect(); S.call.bgEffect = null; }
-  S.call.origVideoTrack = null;
-  for (const t of S.call.localTracks) { try { t.dispose(); } catch(e) {} }
-  S.call.localTracks = [];
-  if (S.call.conf) { try { await S.call.conf.leave(); } catch(e) {} S.call.conf = null; }
-  if (S.call.conn) { try { S.call.conn.disconnect(); } catch(e) {} S.call.conn = null; }
-  S.call.remoteTracks = {};
-  S.call.names = {};
-  document.querySelectorAll('audio[id^="aud-"]').forEach(a => a.remove());
-
-  S.inCall = false;
-  document.body.classList.remove('jitsi-mode');
-
-  /* Show a completion screen */
-  const el = document.getElementById('content');
-  el.innerHTML = `
-    <div class="completion">
-      <div class="big-icon">👋</div>
-      <h2>You've left the call</h2>
-      <p>Thanks for joining! You can close this tab now.</p>
-      <button class="btn btn-primary" onclick="location.reload()" style="margin-top:20px">↺ Rejoin</button>
-    </div>`;
+  /* Release camera/mic so Descript can pick them up cleanly */
+  if (_previewEffect) { _previewEffect.stopEffect(); _previewEffect = null; }
+  if (S.stream)       { S.stream.getTracks().forEach(t => t.stop()); S.stream = null; }
+  if (S.audioCtx)     { try { S.audioCtx.close(); } catch(e) {} S.audioCtx = null; S.analyser = null; }
+  cancelAnimationFrame(S.rafId);
+
+  /* Give the browser a beat to fully release the devices, then navigate */
+  setTimeout(() => { location.href = raw; }, 400);
 }
 
 /* =============================================================
    BOOT
    ============================================================= */
-/* ?skip=1&room=NAME jumps directly into the call */
+/* ?skip=1&url=<descript-url> jumps directly to the open-room step */
 (function checkSkip() {
   const params = new URLSearchParams(location.search);
   if (params.get('skip') === '1' && S.room) {
-    S.step = 3; /* show join room step, then auto-join */
+    S.step = 3; /* show open room step, then auto-redirect */
     setTimeout(() => joinRoom(), 300);
   }
 })();
