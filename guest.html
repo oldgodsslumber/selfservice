@@ -290,7 +290,7 @@
 <header>
   <h1>🎬 Guest Setup</h1>
   <div class="step-bar" id="step-bar"></div>
-  <span style="font-size:10px;color:#333;cursor:default;margin-left:auto;flex-shrink:0" onclick="S.step=3;render();">v2.1.4</span>
+  <span style="font-size:10px;color:#333;cursor:default;margin-left:auto;flex-shrink:0" onclick="S.step=2;render();">v2.1.4</span>
 </header>
 
 <main>
@@ -311,7 +311,7 @@ const _urlRoom = new URLSearchParams(location.search).get('url') || '';
 const _isMac = /Mac/i.test(navigator.platform);
 
 const S = {
-  step: 0, STEPS: 4,
+  step: 0, STEPS: 3,
   /* step-0 prep order: [tabs, Outlook, Webex, phoneDND, VPN, mouse] */
   checks: [false, false, false, false, false, false],
   stream:   null,
@@ -456,7 +456,7 @@ function renderBar() {
    NAVIGATION
    ============================================================= */
 function nav(dir) {
-  if (dir === 1 && S.step === 3) { joinRoom(); return; }
+  if (dir === 1 && S.step === 2) { joinRoom(); return; }
   S.step = Math.max(0, Math.min(S.STEPS - 1, S.step + dir));
   render();
 }
@@ -465,10 +465,12 @@ function updateNav() {
   const back = document.getElementById('btn-back');
   const next = document.getElementById('btn-next');
   back.style.visibility = S.step === 0 ? 'hidden' : 'visible';
-  next.className = S.step === 3 ? 'btn btn-success' : 'btn btn-primary';
-  next.textContent = S.step === 3 ? 'Open Room →' : 'Next →';
+  next.className = S.step === 2 ? 'btn btn-success' : 'btn btn-primary';
+  next.textContent = S.step === 2 ? 'Open Room →' : 'Next →';
   if (S.step === 0) {
     next.disabled = !S.checks.every(Boolean);
+  } else if (S.step === 2) {
+    next.disabled = !S.room;
   } else {
     next.disabled = false;
   }
@@ -484,7 +486,6 @@ function render() {
   if      (S.step === 0) { el.innerHTML = renderStep0(); bindChecks(el); }
   else if (S.step === 1) { renderStep1(el); }
   else if (S.step === 2) { renderStep2(el); }
-  else if (S.step === 3) { el.innerHTML = renderStep3(); }
 }
 
 /* =============================================================
@@ -793,8 +794,8 @@ function rafAudio() {
 function renderStep2(el) {
   el.innerHTML = `
   <div>
-    <div class="step-title">Step 3 — Camera Position &amp; Lighting</div>
-    <div class="step-sub">Fit yourself inside the silhouette, then check your lighting.</div>
+    <div class="step-title">Step 3 — Lighting &amp; Open Room</div>
+    <div class="step-sub">Fit yourself inside the silhouette, check your lighting, then open the room.</div>
 
     <div class="vid-wrap">
       <video id="guest-video" autoplay playsinline muted></video>
@@ -821,6 +822,26 @@ function renderStep2(el) {
       • <strong>Face a light source</strong> — sit facing a window or lamp, not with it behind you<br>
       • <strong>Too dark?</strong> Bring in a desk lamp or ring light and point it at your face<br>
       • <strong>Too bright?</strong> Draw a sheer curtain or move the lamp further back
+    </div>
+
+    <div class="sec-label" style="margin-top:18px">Descript Room Link</div>
+    <div class="card" style="margin-bottom:14px">
+      <input id="room-input" type="url"
+        value="${S.room}"
+        placeholder="https://web.descript.com/room/..."
+        style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:14px"
+        oninput="S.room=this.value.trim();updateNav();">
+      <div style="font-size:12px;color:var(--muted);margin-top:6px">
+        Paste the link your host shared with you — usually starts with <code>https://web.descript.com/room/</code>
+      </div>
+    </div>
+
+    <div id="join-status" style="font-size:13px;color:var(--muted);margin-bottom:10px;min-height:18px"></div>
+
+    <div class="info-box">
+      <strong>What happens next:</strong> Clicking Open Room will release your camera and microphone
+      and redirect you to the Descript Room in this tab. Descript will then ask for permission to
+      use your camera and mic — allow it, and you'll be in the session.
     </div>
   </div>`;
 
@@ -1008,39 +1029,6 @@ async function setBgEffect(id) {
 }
 
 /* =============================================================
-   STEP 3 — OPEN DESCRIPT ROOM
-   ============================================================= */
-function renderStep3() {
-  return `
-  <div>
-    <div class="step-title">Step 4 — Open Your Descript Room</div>
-    <div class="step-sub">Paste the Descript Room link your host shared with you, then click Open Room.</div>
-
-    <div class="card" style="margin-bottom:14px">
-      <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px">Descript Room Link</label>
-      <input id="room-input" type="url"
-        value="${S.room}"
-        placeholder="https://web.descript.com/room/..."
-        style="width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:14px"
-        oninput="S.room=this.value.trim()">
-      <div style="font-size:12px;color:var(--muted);margin-top:6px">
-        The full URL to your Descript Room — usually starts with <code>https://web.descript.com/room/</code>
-      </div>
-    </div>
-
-    <div id="join-status" style="font-size:13px;color:var(--muted);margin-bottom:10px;min-height:18px"></div>
-
-    <div class="info-box">
-      <strong>What happens next:</strong> Clicking Open Room will release your camera and microphone
-      and redirect you to the Descript Room in this tab. Descript will then ask for permission to
-      use your camera and mic — allow it, and you'll be in the session.<br><br>
-      <strong>Tip:</strong> Descript records locally on each participant's device for best quality,
-      so you may be asked to download a small recording at the end.
-    </div>
-  </div>`;
-}
-
-/* =============================================================
    OPEN DESCRIPT ROOM — release camera/mic and redirect
    ============================================================= */
 function joinRoom() {
@@ -1094,7 +1082,7 @@ function joinRoom() {
 (function checkSkip() {
   const params = new URLSearchParams(location.search);
   if (params.get('skip') === '1' && S.room) {
-    S.step = 3; /* show open room step, then auto-redirect */
+    S.step = 2; /* land on the lighting/open-room step, then auto-redirect */
     setTimeout(() => joinRoom(), 300);
   }
 })();
