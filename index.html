@@ -430,7 +430,6 @@ const _isMac = /Mac/i.test(navigator.platform);
 
 const S = {
   step: 0,
-  STEPS: 7,
 
   location: null,          /* null | 'studio' | 'home' */
 
@@ -439,8 +438,8 @@ const S = {
   checks: { 1:[false], 2:[false,false,false,false,false,false,false], 4:[] },
 
   /* checklist booleans indexed by step — home
-     step 2 prep order: [tabs, Outlook, Webex, phoneDND, VPN, mouse] */
-  homechecks: { 2:[false,false,false,false,false,false] },
+     step 1 prep order: [tabs, Outlook, Webex, phoneDND, VPN] */
+  homechecks: { 1:[false,false,false,false,false] },
 
   /* camera / audio */
   stream:   null,
@@ -482,7 +481,7 @@ const S = {
 function renderBar() {
   const bar = document.getElementById('step-bar');
   bar.innerHTML = '';
-  for (let i = 0; i < S.STEPS; i++) {
+  for (let i = 0; i < totalSteps(); i++) {
     if (i > 0) {
       const c = document.createElement('div');
       c.className = 'connector' + (i <= S.step ? ' done' : '');
@@ -498,14 +497,18 @@ function renderBar() {
 /* =============================================================
    NAVIGATION
    ============================================================= */
+function totalSteps() { return S.location === 'home' ? 6 : 7; }
+function lastStep()   { return totalSteps() - 1; }
+function modeStep()   { return lastStep() - 1; }
+
 function nav(dir) {
-  if (dir === 1 && S.step === 6) {
+  if (dir === 1 && S.step === lastStep()) {
     if (S.mode === 'descript') { openDescriptRoom(); return; }
     finish();
     return;
   }
-  if (dir === 1 && S.step === 5 && S.mode !== 'local' && S.mode !== 'descript') return;
-  S.step = Math.max(0, Math.min(S.STEPS - 1, S.step + dir));
+  if (dir === 1 && S.step === modeStep() && S.mode !== 'local' && S.mode !== 'descript') return;
+  S.step = Math.max(0, Math.min(totalSteps() - 1, S.step + dir));
   render();
 }
 
@@ -515,7 +518,7 @@ function updateNav() {
 
   back.style.visibility = S.step === 0 ? 'hidden' : 'visible';
 
-  if (S.step === 5) {
+  if (S.step === modeStep()) {
     next.style.visibility = (S.mode === 'local' || S.mode === 'descript') ? 'visible' : 'hidden';
     next.textContent = 'Continue →';
     next.className = 'btn btn-primary';
@@ -524,8 +527,8 @@ function updateNav() {
   }
 
   next.style.visibility = 'visible';
-  next.className = S.step === 6 ? 'btn btn-success' : 'btn btn-primary';
-  if (S.step === 6) {
+  next.className = S.step === lastStep() ? 'btn btn-success' : 'btn btn-primary';
+  if (S.step === lastStep()) {
     next.textContent = S.mode === 'descript' ? 'Open Room →' : 'Finish ✓';
   } else {
     next.textContent = 'Next →';
@@ -538,18 +541,17 @@ function updateNav() {
   }
 
   if (S.location === 'home') {
+    /* home: 0=location, 1=prep, 2=equipment, 3=camera, 4=mode, 5=record/descript */
     switch (S.step) {
-      case 0: next.disabled = !S.location; break;
-      case 1: next.disabled = false; break;                         /* intro page — no block */
-      case 2: next.disabled = !S.homechecks[2]?.every(Boolean); break;
-      case 3: next.disabled = false; break;                         /* equipment — no hard block */
-      case 4: next.disabled = false; break;                         /* lighting — no hard block */
-      case 6: next.disabled = (S.mode === 'descript' && !S.descriptRoom); break;
+      case 1: next.disabled = !S.homechecks[1]?.every(Boolean); break;  /* prep chips */
+      case 2: next.disabled = false; break;                              /* equipment — no hard block */
+      case 3: next.disabled = false; break;                              /* lighting — no hard block */
+      case 5: next.disabled = (S.mode === 'descript' && !S.descriptRoom); break;
       default: next.disabled = false;
     }
   } else {
+    /* studio: 0=location, 1=dock, 2=prep, 3=equipment, 4=camera, 5=mode, 6=record/descript */
     switch (S.step) {
-      case 0: next.disabled = !S.location; break;                   /* location must be chosen */
       case 1: next.disabled = !S.checks[1][0]; break;
       case 2: next.disabled = !S.checks[2].every(Boolean); break;
       case 3: next.disabled = false; break;                         /* equipment check — no hard block */
@@ -569,19 +571,23 @@ function render() {
   const el = document.getElementById('content');
 
   if      (S.step === 0) { el.innerHTML = renderLocation(); }
-  else if (S.step === 1 && S.location === 'studio') { el.innerHTML = renderStep0(); bindChecks(el); }
-  else if (S.step === 2 && S.location === 'studio') { el.innerHTML = renderStep1(); bindChecks(el); }
-  else if (S.step === 3 && S.location === 'studio') { renderStep3(el); }  /* equipment check */
-  else if (S.step === 4 && S.location === 'studio') { renderStep2(el); }  /* camera framing */
-  else if (S.step === 5 && S.location === 'studio') { el.innerHTML = renderStep4(); }
-  else if (S.step === 6 && S.mode === 'descript')   { el.innerHTML = renderDescriptStep(); }
-  else if (S.step === 6 && S.location === 'studio') { el.innerHTML = renderStep5(); setTimeout(() => attachStream('rec-video'), 60); }
-  else if (S.step === 1 && S.location === 'home') { el.innerHTML = renderHomeStep1(); bindHomeChecks(el); }
-  else if (S.step === 2 && S.location === 'home') { el.innerHTML = renderHomeStep2(); bindHomeChecks(el); }
-  else if (S.step === 3 && S.location === 'home') { renderHomeStep3(el); }
-  else if (S.step === 4 && S.location === 'home') { renderHomeStep4(el); }
-  else if (S.step === 5 && S.location === 'home') { el.innerHTML = renderStep4(); }
-  else if (S.step === 6 && S.location === 'home')   { el.innerHTML = renderStep5(); setTimeout(() => attachStream('rec-video'), 60); }
+  else if (S.location === 'studio') {
+    if      (S.step === 1) { el.innerHTML = renderStep0(); bindChecks(el); }
+    else if (S.step === 2) { el.innerHTML = renderStep1(); bindChecks(el); }
+    else if (S.step === 3) { renderStep3(el); }
+    else if (S.step === 4) { renderStep2(el); }
+    else if (S.step === 5) { el.innerHTML = renderStep4(); }
+    else if (S.step === 6 && S.mode === 'descript') { el.innerHTML = renderDescriptStep(); }
+    else if (S.step === 6) { el.innerHTML = renderStep5(); setTimeout(() => attachStream('rec-video'), 60); }
+  }
+  else if (S.location === 'home') {
+    if      (S.step === 1) { el.innerHTML = renderHomeStep2(); bindHomeChecks(el); }
+    else if (S.step === 2) { renderHomeStep3(el); }
+    else if (S.step === 3) { renderHomeStep4(el); }
+    else if (S.step === 4) { el.innerHTML = renderStep4(); }
+    else if (S.step === 5 && S.mode === 'descript') { el.innerHTML = renderDescriptStep(); }
+    else if (S.step === 5) { el.innerHTML = renderStep5(); setTimeout(() => attachStream('rec-video'), 60); }
+  }
 }
 
 /* =============================================================
@@ -668,7 +674,7 @@ function studioPrepStageHtml() {
 }
 
 function homePrepStageHtml() {
-  const arr = S.homechecks[2];
+  const arr = S.homechecks[1];
   const vpnPos   = _isMac ? 'pp-top-right' : 'pp-bot-right';
   const vpnArrow = _isMac
     ? '↗ menu bar, top-right'
@@ -677,12 +683,11 @@ function homePrepStageHtml() {
   return `
   <div class="prep-stage">
     <div class="prep-stage-hint">Let's prepare your space!</div>
-    ${prepChip('data-hs', 2, 0, '📑',  'Close extra browser tabs', '↑ top of this window', 'pp-top-left',  arr[0])}
-    ${prepChip('data-hs', 2, 1, '📧',  'Quit Outlook',             '↓ dock / taskbar',     'pp-bot-left',  arr[1])}
-    ${prepChip('data-hs', 2, 2, '💬',  'Quit Webex',               '↓ dock / taskbar',     'pp-bot-mid',   arr[2])}
-    ${prepChip('data-hs', 2, 3, '📱',  'Phone on Do Not Disturb',  'on your phone',        'pp-mid-right', arr[3])}
-    ${prepChip('data-hs', 2, 4, '🛡️', 'Disconnect from VPN',      vpnArrow,               vpnPos,         arr[4])}
-    ${prepChip('data-hs', 2, 5, '🖱️', 'Attach a physical mouse',  'USB or Bluetooth',     'pp-mid-left',  arr[5])}
+    ${prepChip('data-hs', 1, 0, '📑',  'Close extra browser tabs', '↑ top of this window', 'pp-top-left',  arr[0])}
+    ${prepChip('data-hs', 1, 1, '📧',  'Quit Outlook',             '↓ dock / taskbar',     'pp-bot-left',  arr[1])}
+    ${prepChip('data-hs', 1, 2, '💬',  'Quit Webex',               '↓ dock / taskbar',     'pp-bot-mid',   arr[2])}
+    ${prepChip('data-hs', 1, 3, '📱',  'Phone on Do Not Disturb',  'on your phone',        'pp-mid-right', arr[3])}
+    ${prepChip('data-hs', 1, 4, '🛡️', 'Disconnect from VPN',      vpnArrow,               vpnPos,         arr[4])}
   </div>`;
 }
 
@@ -1213,7 +1218,7 @@ function renderStep3(el, devicesReady = false) {
     initStream().then(() => {
       const container = document.getElementById('content');
       if (container && S.step === 3 && S.location === 'studio') renderStep3(container, true);
-      if (container && S.step === 3 && S.location === 'home')   renderHomeStep3(container, true);
+      if (container && S.step === 2 && S.location === 'home')   renderHomeStep3(container, true);
     });
   }
   updateNav();
@@ -1447,7 +1452,7 @@ function brightHtml(cls, icon, title, sub) {
 function renderStep4() {
   return `
   <div>
-    <div class="step-title">Step 5 — How Are You Recording?</div>
+    <div class="step-title">Step ${S.step} — How Are You Recording?</div>
     <div class="step-sub">Choose where the recording will happen.</div>
 
     <div class="choice-grid">
@@ -1512,7 +1517,7 @@ function modeMsgHtml(m) {
 function renderDescriptStep() {
   return `
   <div>
-    <div class="step-title">Step 6 — Open Your Descript Room</div>
+    <div class="step-title">Step ${S.step} — Open Your Descript Room</div>
     <div class="step-sub">Paste your Descript Room link, then click Open Room.</div>
 
     <div class="card" style="margin-bottom:14px">
@@ -1583,7 +1588,7 @@ function openDescriptRoom() {
 function renderStep5() {
   return `
   <div>
-    <div class="step-title">Step 6 — Record Your Video</div>
+    <div class="step-title">Step ${S.step} — Record Your Video</div>
     <div class="step-sub">Load your script, open the teleprompter near the camera, then press record.</div>
 
     <div class="vid-wrap">
@@ -1777,38 +1782,6 @@ function fmtTime(s) {
 /* =============================================================
    HOME STEPS
    ============================================================= */
-function renderHomeStep1() {
-  return `
-  <div>
-    <div class="step-title">Step 1 — Set Up Your Space</div>
-    <div class="step-sub">A few quick things before you get started.</div>
-
-    <div class="hero-area">
-      <svg width="160" height="90" viewBox="0 0 160 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <!-- Laptop body -->
-        <rect x="4" y="12" width="90" height="58" rx="5" fill="#252930" stroke="#4f8ef7" stroke-width="1.5"/>
-        <rect x="10" y="18" width="78" height="44" rx="2" fill="#1c1f26"/>
-        <rect x="1" y="70" width="96" height="8" rx="4" fill="#2d3748"/>
-        <!-- Mouse body -->
-        <rect x="112" y="30" width="36" height="52" rx="18" fill="#252930" stroke="#4f8ef7" stroke-width="1.5"/>
-        <!-- Mouse split line -->
-        <line x1="130" y1="30" x2="130" y2="58" stroke="#4f8ef7" stroke-width="1" opacity="0.6"/>
-        <!-- Mouse scroll wheel -->
-        <rect x="126" y="40" width="8" height="14" rx="4" fill="#4f8ef7" opacity="0.7"/>
-        <!-- Cable -->
-        <path d="M130 30 Q130 18 115 14 Q100 10 96 38" stroke="#4f8ef7" stroke-width="2" fill="none" stroke-dasharray="4 3" opacity="0.7"/>
-        <!-- Arrow pointing to mouse -->
-        <path d="M96 55 L108 45" stroke="#22c55e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-        <path d="M106 42 L108 45 L105 47" stroke="#22c55e" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </div>
-
-    <div class="info-box">
-      <strong>Grab a physical mouse before you start.</strong> Touching the trackpad can nudge your laptop just enough to throw off your framing. A USB or Bluetooth mouse lets you click and control playback without moving your computer — you'll confirm it's connected on the next step.
-    </div>
-  </div>`;
-}
-
 function detectBrowser() {
   const ua = navigator.userAgent;
   if (/Firefox\//i.test(ua)) return 'Firefox';
@@ -1830,7 +1803,7 @@ function renderHomeStep2() {
 
   return `
   <div>
-    <div class="step-title">Step 2 — Prepare Your Space</div>
+    <div class="step-title">Step 1 — Prepare Your Space</div>
     <div class="step-sub">Take care of each one before you start. Each tile points to where you'll find it on your ${_isMac ? 'Mac' : 'PC'}.</div>
     ${homePrepStageHtml()}
     ${browserNote}
@@ -1843,7 +1816,7 @@ function renderHomeStep3(el, devicesReady = false) {
 
   el.innerHTML = `
   <div>
-    <div class="step-title">Step 3 — Check Your Equipment</div>
+    <div class="step-title">Step 2 — Check Your Equipment</div>
     <div class="step-sub">Select your camera and microphone, then confirm they're working.</div>
 
     <!-- DEVICE PICKERS -->
@@ -1901,7 +1874,7 @@ function renderHomeStep3(el, devicesReady = false) {
   } else {
     initStream().then(() => {
       const container = document.getElementById('content');
-      if (container && S.step === 3 && S.location === 'home') renderHomeStep3(container, true);
+      if (container && S.step === 2 && S.location === 'home') renderHomeStep3(container, true);
     });
   }
   updateNav();
@@ -1920,7 +1893,7 @@ async function homeDeviceSwitch() {
 function renderHomeStep4(el) {
   el.innerHTML = `
   <div>
-    <div class="step-title">Step 4 — Camera Position &amp; Lighting</div>
+    <div class="step-title">Step 3 — Camera Position &amp; Lighting</div>
     <div class="step-sub">Fit yourself inside the silhouette, then check your lighting.</div>
 
     <div class="vid-wrap">
