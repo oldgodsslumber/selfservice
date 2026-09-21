@@ -28,11 +28,13 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
   /* ── Token check ──
-     If PROXY_TOKEN is set in env, it must match the x-proxy-token header.
-     If PROXY_TOKEN is not set, all requests are allowed (open proxy). */
+     PROXY_TOKEN is required: without it anyone on the internet could mint
+     24h moderator JWTs for every room in the tenant. Fail closed. */
   const expected = process.env.PROXY_TOKEN || '';
   const received = req.headers['x-proxy-token'] || '';
-  if (expected && received !== expected)
+  if (!expected)
+    return res.status(500).json({ error: 'Proxy not configured — set PROXY_TOKEN in Vercel.' });
+  if (received !== expected)
     return res.status(401).json({ error: 'Invalid proxy token.' });
 
   /* ── Config check ── */
@@ -64,7 +66,7 @@ module.exports = async function handler(req, res) {
   const payload = {
     aud: 'jitsi', iss: 'chat',
     sub: appId, room: '*',
-    exp: now + 86400, nbf: now - 10,
+    exp: now + 7200, nbf: now - 10,  /* 2h — plenty for a session, limits replay */
     context: {
       user: {
         moderator: isModerator ? true : false,

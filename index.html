@@ -120,7 +120,10 @@
     /* ── PREP STAGE (scattered confirmation chips) ── */
     .prep-stage {
       position: relative;
-      min-height: clamp(540px, 70vh, 660px);
+      /* Shrinks with the viewport so chips stay on-screen; 430px floor keeps
+         the absolutely-positioned right-column chips from colliding. */
+      min-height: clamp(430px, calc(100vh - 320px), 660px);
+      min-height: clamp(430px, calc(100dvh - 320px), 660px);
       max-width: 100%;
       margin: 14px auto 4px;
     }
@@ -132,6 +135,13 @@
       opacity: 0.65; max-width: 200px;
       font-weight: 500;
     }
+    .prep-hint-count {
+      margin-top: 7px;
+      font-size: 12.5px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .prep-hint-count.all-done { color: var(--success); }
     .prep-chip {
       position: absolute;
       width: clamp(190px, 33%, 230px);
@@ -189,8 +199,15 @@
       }
     }
 
-    @media (max-width: 620px) {
-      .prep-stage { min-height: 0; }
+    /* Stack the chips into a plain list whenever the scattered stage can't fit:
+       narrow screens, OR short viewports (zoomed browsers, small laptop windows). */
+    @media (max-width: 620px), (max-height: 640px) {
+      .prep-stage {
+        min-height: 0;
+        width: auto;
+        margin-left: 0;
+        transform: none;
+      }
       .prep-stage-hint { display: none; }
       .prep-chip {
         position: static; width: 100%;
@@ -403,7 +420,7 @@
     }
   </style>
   <!-- Save native getDisplayMedia before ANY script can monkey-patch it -->
-  <script>window._nativeGDM = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);</script>
+  <script>if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) window._nativeGDM = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);</script>
 </head>
 <body>
 
@@ -419,7 +436,10 @@
 
 <footer>
   <button class="btn btn-ghost" id="btn-back" onclick="nav(-1)">← Back</button>
-  <button class="btn btn-primary" id="btn-next" onclick="nav(1)">Next →</button>
+  <div style="display:flex;align-items:center;gap:14px;min-width:0">
+    <span id="foot-status" style="font-size:13px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
+    <button class="btn btn-primary" id="btn-next" onclick="nav(1)">Next →</button>
+  </div>
 </footer>
 
 <script>
@@ -427,6 +447,23 @@
    STATE
    ============================================================= */
 const _isMac = /Mac/i.test(navigator.platform);
+
+/* HTML-escape for values interpolated into innerHTML templates */
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+/* Only https Descript links are accepted from URL params / generated guest links */
+function sanitizeRoomUrl(raw) {
+  try {
+    const u = new URL(String(raw).trim());
+    if (u.protocol !== 'https:') return null;
+    if (u.hostname !== 'descript.com' && !u.hostname.endsWith('.descript.com')) return null;
+    return u.href;
+  } catch(e) { return null; }
+}
 
 const S = {
   step: 0,
@@ -489,7 +526,9 @@ function renderBar() {
     }
     const p = document.createElement('div');
     p.className = 'pip' + (i === S.step ? ' active' : i < S.step ? ' done' : '');
-    p.textContent = i < S.step ? '✓' : String(i);
+    /* Step titles are 1-based with the location screen as "step 0" — show a
+       home glyph there instead of a literal 0 */
+    p.textContent = i < S.step ? '✓' : (i === 0 ? '⌂' : String(i));
     bar.appendChild(p);
   }
 }
@@ -513,6 +552,9 @@ function nav(dir) {
   }
   if (dir === 1 && S.step === modeStep() && S.mode !== 'local' && S.mode !== 'descript') return;
   S.step = Math.max(0, Math.min(totalSteps() - 1, S.step + dir));
+  /* Landing back on the location screen releases the camera/mic so other
+     apps can use them; the stream re-inits when the user advances again. */
+  if (S.step === 0) stopAllMedia();
   render();
 }
 
@@ -522,7 +564,11 @@ function updateNav() {
 
   back.style.visibility = S.step === 0 ? 'hidden' : 'visible';
 
-  if (S.step === modeStep()) {
+  updatePrepProgress();
+
+  /* In descript mode the mode-picker IS the last step, so modeStep() (one
+     before last) is actually the camera step — treat it as a normal step. */
+  if (S.step === modeStep() && S.mode !== 'descript') {
     next.style.visibility = (S.mode === 'local' || S.mode === 'descript') ? 'visible' : 'hidden';
     next.textContent = 'Continue →';
     next.className = 'btn btn-primary';
@@ -569,6 +615,38 @@ function updateNav() {
   }
 }
 
+/* ── prep-checklist progress (footer counter + stage hint) ── */
+function prepChecklistArr() {
+  if (S.location === 'home'   && S.step === 1) return S.homechecks[1];
+  if (S.location === 'studio' && S.step === 2) return S.checks[2];
+  return null;
+}
+
+function updatePrepProgress() {
+  const status = document.getElementById('foot-status');
+  const arr = prepChecklistArr();
+
+  if (!arr) { if (status) status.textContent = ''; return; }
+
+  const done = arr.filter(Boolean).length, total = arr.length;
+  if (status) {
+    status.textContent = done === total ? 'All set ✓' : `${done} of ${total} confirmed`;
+    status.style.color = done === total ? 'var(--success)' : 'var(--muted)';
+  }
+  const hint = document.querySelector('.prep-hint-count');
+  if (hint) {
+    hint.textContent = `${done} of ${total} done`;
+    hint.classList.toggle('all-done', done === total);
+  }
+}
+
+function prepHintHtml(arr) {
+  const done = arr.filter(Boolean).length, total = arr.length;
+  return `<div class="prep-stage-hint">Let's prepare your space!
+    <div class="prep-hint-count${done===total?' all-done':''}">${done} of ${total} done</div>
+  </div>`;
+}
+
 /* =============================================================
    RENDER DISPATCH
    ============================================================= */
@@ -584,14 +662,14 @@ function render() {
     else if (S.step === 3) { renderStep3(el); }
     else if (S.step === 4) { renderStep2(el); }
     else if (S.step === 5) { el.innerHTML = renderStep4(); }
-    else if (S.step === 6) { el.innerHTML = renderStep5(); setTimeout(() => attachStream('rec-video'), 60); }
+    else if (S.step === 6) { el.innerHTML = renderStep5(); if (!S.recActive && S.blob) showDownloadCard(); setTimeout(() => attachStream('rec-video'), 60); }
   }
   else if (S.location === 'home') {
     if      (S.step === 1) { el.innerHTML = renderHomeStep2(); bindHomeChecks(el); }
     else if (S.step === 2) { renderHomeStep3(el); }
     else if (S.step === 3) { renderHomeStep4(el); }
     else if (S.step === 4) { el.innerHTML = renderStep4(); }
-    else if (S.step === 5) { el.innerHTML = renderStep5(); setTimeout(() => attachStream('rec-video'), 60); }
+    else if (S.step === 5) { el.innerHTML = renderStep5(); if (!S.recActive && S.blob) showDownloadCard(); setTimeout(() => attachStream('rec-video'), 60); }
   }
 }
 
@@ -667,7 +745,7 @@ function studioPrepStageHtml() {
 
   return `
   <div class="prep-stage">
-    <div class="prep-stage-hint">Let's prepare your space!</div>
+    ${prepHintHtml(arr)}
     ${prepChip('data-s', 2, 0, '📑',  'Close extra browser tabs', '↑ top of this window', 'pp-top-left',  arr[0])}
     ${prepChip('data-s', 2, 1, '📧',  'Quit Outlook',             '↓ dock / taskbar',     'pp-bot-left',  arr[1])}
     ${prepChip('data-s', 2, 2, '💬',  'Quit Webex',               '↓ dock / taskbar',     'pp-bot-mid',   arr[2])}
@@ -687,7 +765,7 @@ function homePrepStageHtml() {
 
   return `
   <div class="prep-stage">
-    <div class="prep-stage-hint">Let's prepare your space!</div>
+    ${prepHintHtml(arr)}
     ${prepChip('data-hs', 1, 0, '📑',  'Close extra browser tabs', '↑ top of this window', 'pp-top-left',  arr[0])}
     ${prepChip('data-hs', 1, 1, '📧',  'Quit Outlook',             '↓ dock / taskbar',     'pp-bot-left',  arr[1])}
     ${prepChip('data-hs', 1, 2, '💬',  'Quit Webex',               '↓ dock / taskbar',     'pp-bot-mid',   arr[2])}
@@ -729,7 +807,7 @@ function renderLocation() {
         <input id="plan-room-input" type="url" placeholder="https://web.descript.com/room/..."
                style="flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px"
                oninput="document.getElementById('plan-result').style.display='none'"
-               value="${S.descriptRoom || ''}"/>
+               value="${esc(S.descriptRoom || '')}"/>
         <button class="btn btn-primary" onclick="generatePlanLink()" style="flex-shrink:0;font-size:13px;padding:7px 14px">Generate</button>
       </div>
       <div style="font-size:12px;color:var(--muted);margin-top:6px">Paste the Descript Room link your guest will join — they'll skip the URL-entry step.</div>
@@ -752,8 +830,20 @@ function toggleLinkPlanner() {
   const opening = p.style.display === 'none';
   p.style.display = opening ? '' : 'none';
   if (card) card.classList.toggle('selected', opening);
-  /* Deselect location cards when planner opens */
-  if (opening) { S.location = 'plan'; updateNav(); }
+  if (opening) {
+    /* Remember the real location so closing the planner restores it */
+    S._prevLocation = S.location === 'plan' ? S._prevLocation : S.location;
+    S.location = 'plan';
+    document.querySelectorAll('.choice-card').forEach(c => {
+      if (c !== card) c.classList.remove('selected');
+    });
+  } else {
+    S.location = S._prevLocation || null;
+    document.querySelectorAll('.choice-card').forEach((c, i) => {
+      c.classList.toggle('selected', (i === 0 && S.location === 'studio') || (i === 1 && S.location === 'home'));
+    });
+  }
+  updateNav();
 }
 
 async function generatePlanLink() {
@@ -764,16 +854,15 @@ async function generatePlanLink() {
 
   const raw = input.value.trim();
   if (!raw) { status.textContent = 'Please paste your Descript Room link.'; return; }
-  let parsed;
-  try { parsed = new URL(raw); }
-  catch(e) { status.textContent = 'That doesn\'t look like a valid URL.'; return; }
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    status.textContent = 'Link must start with https://';
+  const clean = sanitizeRoomUrl(raw);
+  if (!clean) {
+    status.textContent = 'That doesn\'t look like a Descript Room link — it should start with https://web.descript.com/';
     return;
   }
-  S.descriptRoom = raw;
+  S.descriptRoom = clean;
 
-  const finalLink = location.origin + '/guest.html?url=' + encodeURIComponent(raw);
+  /* Resolve relative to this page so subpath hosting and file:// both work */
+  const finalLink = new URL('guest.html?url=' + encodeURIComponent(clean), location.href).href;
   S._guestLink = finalLink;
   const display = document.getElementById('plan-link-display');
   if (display) display.textContent = finalLink;
@@ -961,6 +1050,7 @@ async function initStream() {
     return;
   }
 
+  let videoStream = null, audioStream = null;
   try {
     /* Step 1: acquire video and audio independently so a failing virtual
        camera doesn't block the microphone (and vice versa). */
@@ -979,14 +1069,14 @@ async function initStream() {
 
     /* Get video track — try 1080p first, fall back to 720p, then any */
     if (ld) { const sp = ld.querySelector('span'); if (sp) sp.textContent = 'Starting camera…'; }
-    const videoStream =
+    videoStream =
       await tryGetTrack({ video: { width:{ideal:1920}, height:{ideal:1080}, frameRate:{ideal:30} }, audio: false }) ||
       await tryGetTrack({ video: { width:{ideal:1280}, height:{ideal:720},  frameRate:{ideal:30} }, audio: false }) ||
       await tryGetTrack({ video: true, audio: false });
 
     /* Get audio track */
     if (ld) { const sp = ld.querySelector('span'); if (sp) sp.textContent = 'Starting microphone…'; }
-    const audioStream = await tryGetTrack({ video: false, audio: true });
+    audioStream = await tryGetTrack({ video: false, audio: true });
 
     /* Need at least one to proceed */
     if (!videoStream && !audioStream) throw new Error('Could not access camera or microphone.');
@@ -1021,6 +1111,9 @@ async function initStream() {
 
   } catch (err) {
     console.error(err);
+    /* Release any half-acquired tracks so the camera light doesn't stay on */
+    if (videoStream) videoStream.getTracks().forEach(t => t.stop());
+    if (audioStream) audioStream.getTracks().forEach(t => t.stop());
     const ld = document.getElementById('cam-loading');
     if (!ld) return;
 
@@ -1088,6 +1181,8 @@ function getRecordingStream() {
 function startAudioMon() {
   if (!S.stream || S.audioCtx) return;
   try {
+    /* Cancel any previous meter loop so device switches don't stack chains */
+    if (S.rafId) { cancelAnimationFrame(S.rafId); S.rafId = null; }
     S.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const src = S.audioCtx.createMediaStreamSource(S.stream);
     S.analyser = S.audioCtx.createAnalyser();
@@ -1098,8 +1193,8 @@ function startAudioMon() {
 }
 
 function rafAudio() {
+  if (!S.analyser) { S.rafId = null; return; }
   S.rafId = requestAnimationFrame(rafAudio);
-  if (!S.analyser) return;
   const buf = new Uint8Array(S.analyser.frequencyBinCount);
   S.analyser.getByteFrequencyData(buf);
   const avg = buf.reduce((a, b) => a + b, 0) / buf.length;
@@ -1301,6 +1396,12 @@ function checkBrightness() {
     ? _previewEffect._video
     : (document.getElementById('step3-video') || document.getElementById('step2-video'));
   if (!rawSrc || !S.stream) return;
+  /* An un-started video paints black and reads as "too dark" — wait for frames */
+  if (rawSrc.readyState < 2 || !rawSrc.videoWidth) {
+    const out = document.getElementById('bright-out');
+    if (out) out.innerHTML = '<span style="font-size:13px;color:var(--muted)">Camera is still starting — give it a second and try again.</span>';
+    return;
+  }
 
   /* W must be divisible by 3 for clean column boundaries — sample at 720p */
   const W = 1281, H = 720;
@@ -1428,7 +1529,9 @@ function checkBrightness() {
   }
 
   S.brightnessVal = M;
-  S.brightness    = cls === 'error' ? (rM < 0 ? 'dark' : 'bright') : 'good';
+  /* Persist the full result so re-renders show the real verdict, not a
+     downgraded "looks great" for warn/info states */
+  S.brightness = { cls, icon, title, sub };
 
   const out = document.getElementById('bright-out');
   if (out) out.innerHTML = brightHtml(cls, icon, title, sub);
@@ -1436,14 +1539,19 @@ function checkBrightness() {
 }
 
 function brightHtml(cls, icon, title, sub) {
-  /* Legacy single-arg calls (e.g. re-render from saved S.brightness) */
+  /* Single-arg calls: re-render from saved S.brightness (object form),
+     or legacy string states from older cached sessions */
   if (arguments.length === 1) {
-    const MAP = {
-      good:   ['good',  '✅', 'Lighting looks great!',    'Well-lit and not overexposed.'],
-      dark:   ['error', '🌑', 'Your face is too dark',    'Bring a light source closer and point it at your face.'],
-      bright: ['error', '🌟', 'Your face is overexposed', 'Reduce light intensity or move the source further back.'],
-    };
-    [cls, icon, title, sub] = MAP[cls] || MAP.good;
+    if (cls && typeof cls === 'object') {
+      ({ cls, icon, title, sub } = cls);
+    } else {
+      const MAP = {
+        good:   ['good',  '✅', 'Lighting looks great!',    'Well-lit and not overexposed.'],
+        dark:   ['error', '🌑', 'Your face is too dark',    'Bring a light source closer and point it at your face.'],
+        bright: ['error', '🌟', 'Your face is overexposed', 'Reduce light intensity or move the source further back.'],
+      };
+      [cls, icon, title, sub] = MAP[cls] || MAP.good;
+    }
   }
   return '<div class="bright-result ' + cls + '">'
        + '<span class="bright-icon">' + icon + '</span>'
@@ -1513,7 +1621,7 @@ function modeMsgHtml(m) {
     <div class="card" style="margin-bottom:14px">
       <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px">Descript Room Link</label>
       <input id="descript-room-input" type="url"
-        value="${S.descriptRoom || ''}"
+        value="${esc(S.descriptRoom || '')}"
         placeholder="https://web.descript.com/room/..."
         style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:14px"
         oninput="S.descriptRoom=this.value.trim();updateNav();">
@@ -1551,7 +1659,7 @@ function openDescriptRoom() {
     if (inp) inp.style.borderColor = 'var(--danger)';
     return;
   }
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+  if (parsed.protocol !== 'https:') {
     if (status) status.innerHTML = '<span style="color:var(--danger)">⚠ Link must start with https://</span>';
     if (inp) inp.style.borderColor = 'var(--danger)';
     return;
@@ -1577,6 +1685,9 @@ function openDescriptRoom() {
    STEP 6 — RECORD + TELEPROMPTER
    ============================================================= */
 function renderStep5() {
+  /* Reflect an in-flight recording so navigating away and back doesn't
+     desync the UI (button showing "Start" while actually recording). */
+  const rec = S.recActive;
   return `
   <div>
     <div class="step-title">Step ${S.step} — Record Your Video</div>
@@ -1584,7 +1695,7 @@ function renderStep5() {
 
     <div class="vid-wrap">
       <video id="rec-video" autoplay playsinline muted></video>
-      <div class="rec-badge" id="rec-badge" style="display:none">
+      <div class="rec-badge" id="rec-badge" style="display:${rec ? 'flex' : 'none'}">
         <div class="rec-dot"></div> REC
       </div>
     </div>
@@ -1595,10 +1706,10 @@ function renderStep5() {
 
     <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center">
       <button class="btn btn-ghost" onclick="openPrompter()">📺 Open Teleprompter</button>
-      <button class="btn btn-primary" id="btn-rec" onclick="toggleRec()">⏺ Start Recording</button>
+      <button class="btn ${rec ? 'btn-danger' : 'btn-primary'}" id="btn-rec" onclick="toggleRec()">${rec ? '⏹ Stop Recording' : '⏺ Start Recording'}</button>
     </div>
 
-    <div id="rec-status" style="margin-top:13px"></div>
+    <div id="rec-status" style="margin-top:13px">${rec ? recStatusRecordingHtml() : ''}</div>
 
     <div class="info-box" style="margin-top:6px">
       <strong>Tip:</strong> After opening the teleprompter, drag that window so it sits just below or beside your camera lens — this keeps your eyes close to the lens while you read your script.
@@ -1721,21 +1832,25 @@ function startRec() {
     if (t) t.textContent = fmtTime(S.recSecs);
   }, 1000);
 
-  document.getElementById('rec-status').innerHTML =
-    `<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+  document.getElementById('rec-status').innerHTML = recStatusRecordingHtml();
+}
+
+function recStatusRecordingHtml() {
+  return `<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:8px;color:var(--danger);font-weight:600;font-size:14px">
         <div class="rec-dot" style="background:var(--danger)"></div>
-        Recording — <span id="rec-timer">00:00</span>
+        Recording — <span id="rec-timer">${fmtTime(S.recSecs)}</span>
       </div>
       <button class="btn btn-ghost" style="font-size:12px;padding:4px 10px" onclick="openPrompter()">📺 Teleprompter</button>
     </div>`;
 }
 
 function stopRec() {
-  if (S.recorder?.state !== 'inactive') S.recorder.stop();
+  if (S.recorder && S.recorder.state !== 'inactive') S.recorder.stop();
   S.recActive = false;
-  clearInterval(S.recTimer);
-  document.getElementById('rec-badge').style.display = 'none';
+  clearInterval(S.recTimer); S.recTimer = null;
+  const badge = document.getElementById('rec-badge');
+  if (badge) badge.style.display = 'none';
   const btn = document.getElementById('btn-rec');
   if (btn) { btn.textContent = '⏺ Start Recording'; btn.className = 'btn btn-primary'; }
 }
@@ -1743,27 +1858,40 @@ function stopRec() {
 function onRecStop() {
   const mime = S.chunks[0]?.type || 'video/webm';
   S.blob = new Blob(S.chunks, { type: mime });
-  const url = URL.createObjectURL(S.blob);
+  if (S._blobUrl) URL.revokeObjectURL(S._blobUrl);
+  S._blobUrl  = URL.createObjectURL(S.blob);
+  S._blobSecs = S.recSecs;
+  showDownloadCard();
+}
+
+/* Renders the download card into the record step's status area, or into the
+   completion screen's slot if the user already clicked Finish. */
+function showDownloadCard() {
+  const inFlow = document.getElementById('rec-status');
+  const el = inFlow || document.getElementById('completion-dl');
+  if (!el || !S.blob || !S._blobUrl) return;
   const mb  = (S.blob.size / 1048576).toFixed(1);
   const ts  = new Date().toISOString().slice(0,19).replace(/:/g,'-');
-  const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+  const ext = (S.blob.type || '').includes('mp4') ? 'mp4' : 'webm';
 
-  document.getElementById('rec-status').innerHTML = `
+  el.innerHTML = `
     <div style="background:var(--surf);border:1px solid var(--success);
                 border-radius:10px;padding:14px 16px;
-                display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                display:flex;align-items:center;gap:12px;flex-wrap:wrap;text-align:left">
       <div style="flex:1">
         <div style="font-weight:700;color:var(--success)">✅ Recording complete — ${mb} MB</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">Duration: ${fmtTime(S.recSecs)}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Duration: ${fmtTime(S._blobSecs || 0)}</div>
       </div>
-      <a href="${url}" download="recording-${ts}.${ext}" class="btn btn-success">⬇ Download</a>
-      <button class="btn btn-ghost" onclick="resetRec()" style="font-size:13px">⏺ Record Again</button>
+      <a href="${S._blobUrl}" download="recording-${ts}.${ext}" class="btn btn-success">⬇ Download</a>
+      ${inFlow ? '<button class="btn btn-ghost" onclick="resetRec()" style="font-size:13px">⏺ Record Again</button>' : ''}
     </div>`;
 }
 
 function resetRec() {
+  if (S._blobUrl) { URL.revokeObjectURL(S._blobUrl); S._blobUrl = null; }
   S.blob = null; S.chunks = [];
-  document.getElementById('rec-status').innerHTML = '';
+  const el = document.getElementById('rec-status');
+  if (el) el.innerHTML = '';
 }
 
 function fmtTime(s) {
@@ -2156,22 +2284,34 @@ async function setBgEffect(id) {
 /* =============================================================
    FINISH
    ============================================================= */
-function finish() {
-  if (_previewEffect) { _previewEffect.stopEffect(); _previewEffect = null; }
+/* Stop every live media resource: active recording, preview effect, camera/mic
+   tracks, audio meter. Safe to call from any step. */
+function stopAllMedia() {
+  if (S.recActive) stopRec();               /* flushes MediaRecorder → onRecStop */
+  if (S.recTimer)  { clearInterval(S.recTimer); S.recTimer = null; }
+  if (_previewEffect) { try { _previewEffect.stopEffect(); } catch(e) {} _previewEffect = null; }
   if (S.stream)   { S.stream.getTracks().forEach(t => t.stop()); S.stream = null; }
-  if (S.audioCtx) { S.audioCtx.close(); S.audioCtx = null; }
+  if (S.audioCtx) { try { S.audioCtx.close(); } catch(e) {} S.audioCtx = null; S.analyser = null; }
   if (S.rafId)    { cancelAnimationFrame(S.rafId); S.rafId = null; }
+}
+
+function finish() {
+  stopAllMedia();
 
   document.getElementById('content').innerHTML = `
     <div class="completion">
       <div class="big-icon">🎬</div>
       <h2>Great work!</h2>
       <p>Your recording is complete. Download your file if you haven't already — then you're done.</p>
+      <div id="completion-dl" style="max-width:480px;margin:20px auto 0"></div>
       <button class="btn btn-ghost" onclick="location.reload()" style="margin-top:24px">Start Over</button>
     </div>`;
 
   document.querySelector('footer').style.display = 'none';
   renderBar();
+  /* A finished blob stays downloadable here; a recording that was still
+     running is flushed by stopAllMedia and lands here via onRecStop. */
+  showDownloadCard();
 }
 
 /* =============================================================
@@ -2181,10 +2321,13 @@ function finish() {
 (function checkSkip() {
   const params = new URLSearchParams(location.search);
   if (params.get('skip') === '1') {
-    const url = params.get('url') || '';
+    /* Only accept validated https Descript links from the query string —
+       anything else is dropped so a crafted link can't inject markup or
+       redirect the user somewhere unexpected. */
+    const url = sanitizeRoomUrl(params.get('url') || '');
     S.location = 'studio';
     S.mode = 'descript';
-    if (url) S.descriptRoom = url.trim();
+    if (url) S.descriptRoom = url;
     S.step = lastStep();  /* mode-picker step is the last step in descript mode */
   }
 })();

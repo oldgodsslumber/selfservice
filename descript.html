@@ -385,7 +385,7 @@
       .pip        { width: 22px; height: 22px; font-size: 10px; }
     }
   </style>
-  <script>window._nativeGDM = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);</script>
+  <script>if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) window._nativeGDM = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);</script>
 </head>
 <body>
 
@@ -408,8 +408,26 @@
 /* =============================================================
    STATE
    ============================================================= */
-/* Parse ?url= from URL (the Descript Room link) */
-const _urlRoom = new URLSearchParams(location.search).get('url') || '';
+/* HTML-escape for values interpolated into innerHTML templates */
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+/* Only https Descript links are accepted from the query string */
+function sanitizeRoomUrl(raw) {
+  try {
+    const u = new URL(String(raw).trim());
+    if (u.protocol !== 'https:') return null;
+    if (u.hostname !== 'descript.com' && !u.hostname.endsWith('.descript.com')) return null;
+    return u.href;
+  } catch(e) { return null; }
+}
+
+/* Parse ?url= from URL (the Descript Room link) — validated so a crafted
+   link can't inject markup or auto-redirect somewhere unexpected */
+const _urlRoom = sanitizeRoomUrl(new URLSearchParams(location.search).get('url') || '') || '';
 const _isMac = /Mac/i.test(navigator.platform);
 
 const S = {
@@ -707,6 +725,7 @@ async function initStream(el) {
     startAudioMon();
     return;
   }
+  let videoStream = null, audioStream = null;
   try {
     async function tryGetTrack(constraints, retries = 2) {
       for (let i = 0; i <= retries; i++) {
@@ -720,13 +739,13 @@ async function initStream(el) {
     const ld = document.getElementById('cam-loading');
     if (ld) { const sp = ld.querySelector('span'); if (sp) sp.textContent = 'Starting camera…'; }
 
-    const videoStream =
+    videoStream =
       await tryGetTrack({ video: { width:{ideal:1920}, height:{ideal:1080}, frameRate:{ideal:30} }, audio: false }) ||
       await tryGetTrack({ video: { width:{ideal:1280}, height:{ideal:720},  frameRate:{ideal:30} }, audio: false }) ||
       await tryGetTrack({ video: true, audio: false });
 
     if (ld) { const sp = ld.querySelector('span'); if (sp) sp.textContent = 'Starting microphone…'; }
-    const audioStream = await tryGetTrack({ video: false, audio: true });
+    audioStream = await tryGetTrack({ video: false, audio: true });
 
     if (!videoStream && !audioStream) throw new Error('Could not access camera or microphone.');
 
@@ -750,6 +769,9 @@ async function initStream(el) {
     startAudioMon();
 
   } catch(err) {
+    /* Release any half-acquired tracks so the camera light doesn't stay on */
+    if (videoStream) videoStream.getTracks().forEach(t => t.stop());
+    if (audioStream) audioStream.getTracks().forEach(t => t.stop());
     const ld = document.getElementById('cam-loading');
     if (!ld) return;
     let msg = 'Could not access camera or microphone.';
@@ -868,6 +890,8 @@ async function switchDevices(vid, aud) {
 function startAudioMon() {
   if (!S.stream || S.audioCtx) return;
   try {
+    /* Cancel any previous meter loop so device switches don't stack chains */
+    if (S.rafId) { cancelAnimationFrame(S.rafId); S.rafId = null; }
     S.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const src = S.audioCtx.createMediaStreamSource(S.stream);
     S.analyser = S.audioCtx.createAnalyser();
@@ -878,8 +902,8 @@ function startAudioMon() {
 }
 
 function rafAudio() {
+  if (!S.analyser) { S.rafId = null; return; }
   S.rafId = requestAnimationFrame(rafAudio);
-  if (!S.analyser) return;
   const buf = new Uint8Array(S.analyser.frequencyBinCount);
   S.analyser.getByteFrequencyData(buf);
   const avg = buf.reduce((a, b) => a + b, 0) / buf.length;
@@ -934,6 +958,12 @@ function checkBrightness() {
     ? _previewEffect._video
     : document.getElementById('guest-video');
   if (!rawSrc || !S.stream) return;
+  /* An un-started video paints black and reads as "too dark" — wait for frames */
+  if (rawSrc.readyState < 2 || !rawSrc.videoWidth) {
+    const out = document.getElementById('bright-out');
+    if (out) out.innerHTML = '<span style="font-size:13px;color:var(--muted)">Camera is still starting — give it a second and try again.</span>';
+    return;
+  }
 
   const W = 1281, H = 720;
   const c = document.createElement('canvas');
@@ -1121,7 +1151,7 @@ function renderStep3() {
     <div class="card" style="margin-bottom:14px">
       <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px">Descript Room Link</label>
       <input id="room-input" type="url"
-        value="${S.room}"
+        value="${esc(S.room)}"
         placeholder="https://web.descript.com/room/..."
         style="width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:14px"
         oninput="S.room=this.value.trim()">
@@ -1164,7 +1194,7 @@ function joinRoom() {
     return;
   }
 
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+  if (parsed.protocol !== 'https:') {
     const status = document.getElementById('join-status');
     if (status) status.innerHTML = '<span style="color:var(--danger)">⚠ Link must start with https://</span>';
     if (inp) inp.style.borderColor = 'var(--danger)';
