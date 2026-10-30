@@ -761,6 +761,59 @@ footer {
   .script-panel .script-ta { flex: none; height: 220px; resize: vertical; }
 }
 
+/* ── RING LIGHT ──
+   The frame is the body's border, so the app shrinks inside it instead of
+   being covered; border-image lets the left and right edges differ. */
+body.ringlight-on {
+  border: var(--ring-w) solid var(--ring-l);
+  border-image: linear-gradient(90deg, var(--ring-l), var(--ring-r)) 1;
+}
+.ring-ctl .ring-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.ring-title { display: inline-flex; align-items: center; gap: 8px; font-weight: 650; font-size: 14px; }
+.ring-title .ico { color: var(--warn); font-size: 16px; }
+.ring-rows { display: flex; flex-direction: column; gap: 10px; transition: opacity .15s; }
+.ring-ctl.off .ring-rows { opacity: 0.4; pointer-events: none; }
+.ring-row { display: grid; grid-template-columns: 84px minmax(0, 1fr) 84px; align-items: center; gap: 10px; }
+.ring-lbl { font-size: 12.5px; color: var(--muted); }
+.ring-row input[type=range] { width: 100%; accent-color: var(--accent); }
+.ring-row .temp-range { accent-color: #f2b03d; }
+.ring-val { font-size: 12px; color: var(--text); display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; white-space: nowrap; }
+.ring-swatch { width: 10px; height: 10px; border-radius: 50%; display: inline-block; box-shadow: 0 0 0 1px rgba(255,255,255,0.25); }
+.ring-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.ring-ctl .field-hint { margin-top: 10px; }
+/* record screen: controls pop up over the video, above the Ring light button */
+.rec-devs { position: relative; }
+.ring-pop {
+  position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 5;
+  width: min(100%, 400px); box-shadow: var(--shadow-2);
+}
+.ring-pop[hidden] { display: none; }
+.rec-devs .ring-btn { margin-left: auto; }
+.rec-devs .ring-btn.on { background: var(--warn-tint); border-color: var(--warn-line); color: var(--warn); }
+
+/* on/off switch */
+.switch { position: relative; width: 38px; height: 22px; flex-shrink: 0; cursor: pointer; }
+.switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.switch span {
+  position: absolute; inset: 0; border-radius: 999px;
+  background: var(--surf3); border: 1px solid var(--border-strong);
+  transition: background .15s, border-color .15s; pointer-events: none;
+}
+.switch span::after {
+  content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
+  border-radius: 50%; background: var(--muted); transition: transform .2s var(--ease), background .15s;
+}
+.switch input:checked + span { background: var(--success); border-color: var(--success); }
+.switch input:checked + span::after { transform: translateX(16px); background: #fff; }
+.switch input:focus-visible + span { box-shadow: var(--ring); }
+
+/* Home lighting step: video left, coach + ring light right */
+.wide-step .content { max-width: 1120px; }
+.light-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
+.light-side { display: flex; flex-direction: column; gap: 14px; }
+.light-tips ul { margin: 6px 0 0 18px; line-height: 1.7; }
+@media (max-width: 900px) { .light-grid { grid-template-columns: 1fr; } }
+
 /* ── COMPLETION ── */
 .completion { text-align: center; padding: 44px 20px; }
 .completion .big-icon {

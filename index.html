@@ -7,8 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&display=swap">
-  <link rel="stylesheet" href="app.css?v=20261030a">
-  <script src="icons.js?v=20261030a"></script>
+  <link rel="stylesheet" href="app.css?v=20261030b">
+  <script src="icons.js?v=20261030b"></script>
   <!-- Save native getDisplayMedia before ANY script can monkey-patch it -->
   <script>if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) window._nativeGDM = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);</script>
 </head>
@@ -102,6 +102,9 @@ const S = {
   script:     '',        /* teleprompter text — loaded from localStorage at boot */
   scriptOpen: false,     /* script editor panel open on the record screen */
   prompt: { playing: false, speed: 4, size: 32, pos: 0 },
+
+  ring: null,            /* ring-light settings — loaded from localStorage at boot */
+  ringPanel: false,      /* ring-light controls open on the record screen */
 };
 
 
@@ -248,6 +251,7 @@ function render() {
   if (!isRecScreen()) { setPromptPlaying(false); cancelCountdown(); }
   /* The record screen drops the step bar + footer and widens the page */
   document.body.classList.toggle('rec-screen', isRecScreen());
+  document.body.classList.toggle('wide-step', S.location === 'home' && S.step === 3);
   document.body.classList.remove('steps-done');
 
   renderBar();
@@ -276,6 +280,7 @@ function render() {
     /* The record screen shows its own compact "setup done" note */
     if (S._resumed && !isRecScreen()) el.insertAdjacentHTML('afterbegin', resumeBannerHtml());
   }
+  applyRing();
 }
 
 /* =============================================================
@@ -1505,6 +1510,8 @@ function renderStep5() {
           <label class="dev-pick" title="Camera">${icon('video')}<select id="rec-sel-video" onchange="recDeviceSwitch()"></select></label>
           <label class="dev-pick" title="Microphone">${icon('mic')}<select id="rec-sel-audio" onchange="recDeviceSwitch()"></select></label>
           <span class="tag level-tag" id="level-tag"></span>
+          ${home ? `<button class="btn btn-ghost btn-sm ring-btn${S.ringPanel ? ' on' : ''}" id="ring-btn" onclick="toggleRingPanel()">${icon('circle-dashed')}Ring light</button>
+            <div class="card ring-pop" id="ring-pop"${S.ringPanel ? '' : ' hidden'}>${ringControlsHtml()}</div>` : ''}
         </div>
 
         <div id="rec-status" class="rec-status"></div>
@@ -1966,40 +1973,176 @@ function renderHomeStep4(el) {
   el.innerHTML = `
   <div>
     <div class="step-title">Step 3 — Camera Position &amp; Lighting</div>
-    <div class="step-sub">Fit yourself inside the silhouette, then check your lighting.</div>
+    <div class="step-sub">Fit yourself inside the silhouette, then use the ring light to light your face.</div>
 
-    <div class="vid-wrap">
-      <video id="step2-video" autoplay playsinline muted></video>
-      <div class="vid-overlay">
-        <img src="guideline.png" class="guide-img" alt="">
-      </div>
-      <div class="cam-loading" id="cam-loading">
-        <div class="spinner"></div>
-        <span>Starting camera…</span>
-      </div>
-    </div>
+    <div class="light-grid">
+      <div>
+        <div class="vid-wrap">
+          <video id="step2-video" autoplay playsinline muted></video>
+          <div class="vid-overlay">
+            <img src="guideline.png" class="guide-img" alt="">
+          </div>
+          <div class="cam-loading" id="cam-loading">
+            <div class="spinner"></div>
+            <span>Starting camera…</span>
+          </div>
+        </div>
 
-    <!-- LIGHTING -->
-    <div class="sec-label">Lighting Check</div>
-    <div class="card">
-      <div class="bright-row">
-        <button class="btn btn-ghost btn-sm" onclick="checkBrightness()">${icon('sun')}Analyze Lighting</button>
-        <div id="bright-out" class="bright-out">
-          ${S.brightness ? brightHtml(S.brightness) : '<span class="placeholder-text">Click to analyze your current lighting</span>'}
+        <div class="info-box light-tips">
+          <strong>Set up for good light</strong>
+          <ul>
+            <li><strong>Screen brightness all the way up</strong> — the ring light is your screen.</li>
+            <li><strong>Camera at eye level</strong> — raise the laptop on a few books if you need to.</li>
+            <li><strong>About an arm's length</strong> from the screen; closer is brighter.</li>
+            <li><strong>Face your main light.</strong> A window in front of you is great; one behind you isn't.</li>
+            <li><strong>Ceiling light off</strong> if it shadows your eyes.</li>
+          </ul>
         </div>
       </div>
-    </div>
 
-    <div class="info-box">
-      <strong>Tips for better home lighting:</strong><br>
-      • <strong>Face a light source</strong> — sit facing a window or lamp, not with it behind you<br>
-      • <strong>Too dark?</strong> Bring in a desk lamp or ring light and point it at your face<br>
-      • <strong>Too bright?</strong> Draw a sheer curtain or move the lamp further back
+      <div class="light-side">
+        <div class="card">
+          <div class="panel-title">Lighting check</div>
+          <div class="bright-row">
+            <button class="btn btn-ghost btn-sm" onclick="checkBrightness()">${icon('sun')}Analyze Lighting</button>
+            <div id="bright-out" class="bright-out">
+              ${S.brightness ? brightHtml(S.brightness) : '<span class="placeholder-text">Click to analyze your current lighting</span>'}
+            </div>
+          </div>
+        </div>
+        <div class="card">${ringControlsHtml()}</div>
+      </div>
     </div>
   </div>`;
 
   initStream();
 }
+
+/* =============================================================
+   RING LIGHT (home only) — the screen itself lights your face. A glowing
+   frame around the window: brightness = thickness + intensity, temp =
+   2700 K (warm) → 6500 K (daylight), balance boosts one side to fill the
+   darker half of the face. Settings are a per-browser convenience.
+   ============================================================= */
+const RING_KEY = 'selfservice.ringlight';
+const RING_DEFAULTS = { on: true, level: 85, temp: 75, balance: 0 };   /* 75 ≈ 5,550 K soft white */
+
+function loadRing() {
+  try { return Object.assign({}, RING_DEFAULTS, JSON.parse(localStorage.getItem(RING_KEY) || '{}')); }
+  catch(e) { return Object.assign({}, RING_DEFAULTS); }
+}
+function saveRing() { try { localStorage.setItem(RING_KEY, JSON.stringify(S.ring)); } catch(e) {} }
+
+/* Home lighting step + home record screen */
+function ringScreen() { return S.location === 'home' && (S.step === 3 || isRecScreen()); }
+
+function ringKelvin() { return Math.round((2700 + S.ring.temp / 100 * 3800) / 50) * 50; }
+
+/* Black-body colour approximation (Tanner Helland) */
+function kelvinRGB(k) {
+  const t = k / 100;
+  let r, g, b;
+  if (t <= 66) {
+    r = 255;
+    g = 99.4708025861 * Math.log(t) - 161.1195681661;
+    b = t <= 19 ? 0 : 138.5177312231 * Math.log(t - 10) - 305.0447927307;
+  } else {
+    r = 329.698727446 * Math.pow(t - 60, -0.1332047592);
+    g = 288.1221695283 * Math.pow(t - 60, -0.0755148492);
+    b = 255;
+  }
+  const c = v => Math.max(0, Math.min(255, Math.round(v)));
+  return [c(r), c(g), c(b)];
+}
+
+function ringSideGains() {
+  const bal = S.ring.balance / 100;            /* -1 = all left … +1 = all right */
+  return [bal > 0 ? 1 - bal * 0.75 : 1, bal < 0 ? 1 + bal * 0.75 : 1];
+}
+
+function applyRing() {
+  const b = document.body;
+  const show = ringScreen() && S.ring.on;
+  b.classList.toggle('ringlight-on', show);
+  if (!show) { ['--ring-w', '--ring-l', '--ring-r'].forEach(v => b.style.removeProperty(v)); return; }
+  const lv = S.ring.level / 100;
+  const rgb = kelvinRGB(ringKelvin());
+  const base = 0.5 + 0.5 * lv;
+  const col = g => 'rgb(' + rgb.map(v => Math.round(v * base * g)).join(',') + ')';
+  const [gL, gR] = ringSideGains();
+  b.style.setProperty('--ring-w', (3 + 11 * lv).toFixed(2) + 'vmin');
+  b.style.setProperty('--ring-l', col(gL));
+  b.style.setProperty('--ring-r', col(gR));
+}
+
+function balanceLabel() {
+  const v = S.ring.balance;
+  return v === 0 ? 'Even' : (v < 0 ? 'Left' : 'Right') + ' +' + Math.abs(v) + '%';
+}
+
+function ringControlsHtml() {
+  const r = S.ring;
+  const swatch = 'rgb(' + kelvinRGB(ringKelvin()).join(',') + ')';
+  return `
+  <div class="ring-ctl${r.on ? '' : ' off'}">
+    <div class="ring-head">
+      <span class="ring-title">${icon('circle-dashed')}Ring light</span>
+      <label class="switch" title="Ring light on/off">
+        <input type="checkbox" ${r.on ? 'checked' : ''} onchange="setRing('on', this.checked)"><span></span>
+      </label>
+    </div>
+    <div class="ring-rows">
+      <label class="ring-row"><span class="ring-lbl">Brightness</span>
+        <input type="range" min="0" max="100" value="${r.level}" oninput="setRing('level', +this.value)">
+        <span class="ring-val tnum" data-ring="level">${r.level}%</span></label>
+      <label class="ring-row"><span class="ring-lbl">Warmth</span>
+        <input type="range" class="temp-range" min="0" max="100" value="${r.temp}" oninput="setRing('temp', +this.value)">
+        <span class="ring-val tnum" data-ring="temp"><i class="ring-swatch" style="background:${swatch}"></i>${ringKelvin().toLocaleString()} K</span></label>
+      <label class="ring-row"><span class="ring-lbl">Left · Right</span>
+        <input type="range" min="-100" max="100" step="5" value="${r.balance}" oninput="setRing('balance', +this.value)" ondblclick="setRing('balance', 0); this.value = 0">
+        <span class="ring-val tnum" data-ring="balance">${balanceLabel()}</span></label>
+    </div>
+    <div class="ring-actions">
+      <button class="btn btn-ghost btn-xs fs-btn" onclick="toggleFullscreen()">${fsLabel()}</button>
+    </div>
+    <div class="field-hint">Turn your screen brightness all the way up — the ring light <em>is</em> your screen.</div>
+  </div>`;
+}
+
+function setRing(key, val) {
+  S.ring[key] = val;
+  saveRing();
+  applyRing();
+  document.querySelectorAll('.ring-ctl').forEach(c => c.classList.toggle('off', !S.ring.on));
+  document.querySelectorAll('[data-ring="level"]').forEach(e => e.textContent = S.ring.level + '%');
+  document.querySelectorAll('[data-ring="temp"]').forEach(e =>
+    e.innerHTML = `<i class="ring-swatch" style="background:rgb(${kelvinRGB(ringKelvin()).join(',')})"></i>${ringKelvin().toLocaleString()} K`);
+  document.querySelectorAll('[data-ring="balance"]').forEach(e => e.textContent = balanceLabel());
+  /* keep every copy of the controls in step (sliders set from code) */
+  if (key !== 'on') document.querySelectorAll(`.ring-ctl input[oninput*="'${key}'"]`).forEach(i => { if (+i.value !== val) i.value = val; });
+  else document.querySelectorAll('.ring-ctl input[type=checkbox]').forEach(i => i.checked = val);
+  /* the video column depends on the frame thickness */
+  if (isRecScreen()) requestAnimationFrame(() => { S.prompt.pos = Math.min(S.prompt.pos, promptMax()); applyPromptPos(); });
+}
+
+function toggleRingPanel() {
+  S.ringPanel = !S.ringPanel;
+  const p = document.getElementById('ring-pop');
+  if (p) p.hidden = !S.ringPanel;
+  document.getElementById('ring-btn')?.classList.toggle('on', S.ringPanel);
+}
+
+/* Full screen = a bigger, brighter ring */
+function fsLabel() {
+  return document.fullscreenElement ? icon('minimize') + 'Exit full screen' : icon('maximize') + 'Full screen';
+}
+function toggleFullscreen() {
+  if (document.fullscreenElement) document.exitFullscreen?.();
+  else document.documentElement.requestFullscreen?.().catch(() => {});
+}
+document.addEventListener('fullscreenchange', () => {
+  document.querySelectorAll('.fs-btn').forEach(b => b.innerHTML = fsLabel());
+});
 
 /* =============================================================
    UTILITIES
@@ -2264,6 +2407,7 @@ function finish() {
   document.querySelector('footer').style.display = 'none';
   document.body.classList.remove('rec-screen');
   document.body.classList.add('steps-done');
+  document.body.classList.remove('ringlight-on', 'wide-step');
   /* A finished blob stays downloadable here; a recording that was still
      running is flushed by stopAllMedia and lands here via onRecStop. */
   showDownloadCard();
@@ -2300,6 +2444,7 @@ function finish() {
   S.step = (S.mode === 'local' || S.mode === 'descript') ? lastStep() : pickerStep();
 })();
 S.script = loadScriptText();
+S.ring   = loadRing();
 render();
 </script>
 </body>
