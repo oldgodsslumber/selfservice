@@ -596,6 +596,18 @@ footer {
 .choice-desc  { font-size: 13px; color: var(--muted); line-height: 1.45; }
 .mode-msg { margin-top: 18px; }
 
+/* Home screen: Studio / Home are the big choice; planning a call is secondary */
+.loc-step .content { max-width: 920px; }
+.loc-grid { margin-top: 30px; gap: 18px; }
+.loc-card { padding: 46px 28px 42px; min-height: 290px; justify-content: center; gap: 12px; }
+.loc-card .choice-icon { width: 84px; height: 84px; border-radius: 22px; font-size: 40px; margin-bottom: 8px; }
+.loc-card .choice-title { font-size: 23px; font-weight: 700; letter-spacing: -0.015em; }
+.loc-card .choice-desc { font-size: 14.5px; max-width: 320px; }
+.plan-row { display: flex; justify-content: center; margin-top: 22px; }
+.plan-btn { color: var(--muted); }
+.plan-btn.selected { color: var(--accent); border-color: var(--accent-line); background: var(--accent-tint); }
+@media (max-width: 560px) { .loc-card { min-height: 0; padding: 30px 20px; } }
+
 /* ── INFO BOX ── */
 .info-box {
   background: var(--accent-tint);
@@ -659,6 +671,7 @@ footer {
   width: min(100%, calc((100dvh - var(--rec-chrome) - 2 * var(--ring-w, 0px)) * 16 / 9));
 }
 .rec-vid { margin-bottom: 10px; }
+.rec-controls { margin-bottom: 10px; }
 .rec-vid .rec-badge { top: auto; bottom: 12px; }
 
 .rec-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
@@ -669,7 +682,11 @@ footer {
 .btn-icon { padding-left: 8px; padding-right: 8px; }
 .btn-rec { min-width: 172px; }
 
-.rec-devs { gap: 8px; }
+.rec-devs { gap: 8px; flex-wrap: nowrap; }
+/* narrow video: the device names shorten before anything wraps */
+.rec-devs .dev-pick { flex: 0 1 auto; }
+.rec-devs .dev-pick select { width: 100%; text-overflow: ellipsis; }
+.rec-devs .level-tag, .rec-devs .ring-btn { flex-shrink: 0; white-space: nowrap; }
 .dev-pick {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 0 4px 0 10px; height: 34px;
@@ -885,9 +902,69 @@ body.ringlight-on {
 
 /* Home lighting step: video left, coach + ring light right */
 .wide-step .content { max-width: 1120px; }
+/* room for two lines on every step, so the camera preview never moves */
+.wide-step .step-sub { max-width: 760px; min-height: 3.1em; }
 .light-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
 .light-side { display: flex; flex-direction: column; gap: 14px; }
 .light-tips ul { margin: 6px 0 0 18px; line-height: 1.7; }
+.light-grid .vid-wrap + .info-box { margin-top: 14px; }
+
+/* Equipment step: full-width pickers + the mic test */
+.dev-pick.dev-wide { display: flex; max-width: none; width: 100%; }
+.dev-pick.dev-wide select { flex: 1; min-width: 0; }
+.mic-meter { margin: 12px 0 14px; }
+.mic-test-btn { width: 100%; justify-content: center; }
+.mic-rec { padding: 10px 12px; border-radius: var(--radius-sm); background: var(--danger-tint); border: 1px solid var(--danger-line); }
+.mic-rec-head { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.mic-prog { height: 4px; border-radius: 4px; background: rgba(255,255,255,0.1); margin-top: 9px; overflow: hidden; }
+.mic-prog i { display: block; height: 100%; width: 0; background: var(--danger); transition: width .1s linear; }
+.mic-heard { font-size: 13px; margin-bottom: 8px; }
+.mic-audio { width: 100%; height: 36px; }
+.mic-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+/* Mode step: compact rows in the side panel */
+.mode-list { display: flex; flex-direction: column; gap: 8px; }
+.mode-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  padding: 11px 12px; border-radius: var(--radius-sm); cursor: pointer;
+  background: var(--surf2); border: 1px solid var(--border); color: var(--text); font: inherit;
+  transition: border-color .15s, background .15s, box-shadow .15s;
+}
+.mode-row:hover { border-color: var(--border-strong); }
+.mode-row.selected { border-color: var(--accent); background: var(--accent-tint); box-shadow: var(--ring); }
+.mode-ico {
+  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+  background: var(--surf3);
+}
+.mode-row.selected .mode-ico { background: var(--accent); color: var(--on-accent); }
+.mode-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.mode-name { font-weight: 650; font-size: 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mode-desc { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+.light-side #mode-msg:empty { display: none; }
+
+/* ── RING LIGHT WINDOW ──
+   Home + Descript / another app: the whole window glows, cells and all;
+   the other app's window sits on top in the middle */
+.ring-stage header, .ring-stage footer { display: none; }
+body.ring-stage.ring-lit { background: var(--ring-img); }
+.ring-stage main { align-items: center; }
+.stage { width: 100%; display: flex; justify-content: center; }
+.stage-card { width: min(440px, 100%); box-shadow: var(--shadow-2); }
+.stage-card[hidden], .stage-pill[hidden] { display: none; }
+.stage-head { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+.stage-title { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; }
+.stage-title .ico { color: var(--warn); }
+.stage-sub { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin-top: 6px; }
+.stage-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.stage-actions + .field-hint { margin: 8px 0 16px; }
+.stage-actions + .field-hint:empty { margin: 0 0 14px; }
+.stage-foot { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
+.stage-pill {
+  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+  background: rgba(12,14,20,0.85); color: var(--text); border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-2);
+}
 @media (max-width: 900px) { .light-grid { grid-template-columns: 1fr; } }
 
 /* ── COMPLETION ── */

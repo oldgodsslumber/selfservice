@@ -7,8 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&display=swap">
-  <link rel="stylesheet" href="app.css?v=20261030d">
-  <script src="icons.js?v=20261030d"></script>
+  <link rel="stylesheet" href="app.css?v=20261030e">
+  <script src="icons.js?v=20261030e"></script>
   <!-- Save native getDisplayMedia before ANY script can monkey-patch it -->
   <script>if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) window._nativeGDM = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);</script>
 </head>
@@ -133,20 +133,27 @@ function renderBar() {
    NAVIGATION
    ============================================================= */
 function totalSteps() {
-  const base = S.location === 'home' ? 6 : 7;
-  /* Descript mode collapses the URL-entry into the mode-picker step */
-  return S.mode === 'descript' ? base - 1 : base;
+  /* Home: the bar never changes — the last step is the record screen, or
+     this window as a ring light behind Descript / another app */
+  if (S.location === 'home') return 6;
+  /* Studio: Descript mode collapses the URL-entry into the mode-picker step */
+  return S.mode === 'descript' ? 6 : 7;
 }
 function lastStep()   { return totalSteps() - 1; }
 function modeStep()   { return lastStep() - 1; }
 
 function nav(dir) {
   if (dir === 1 && S.step === lastStep()) {
-    if (S.mode === 'descript') { openDescriptRoom(); return; }
+    if (S.mode === 'descript' && S.location !== 'home') { openDescriptRoom(); return; }
     finish();
     return;
   }
-  if (dir === 1 && S.step === modeStep() && S.mode !== 'local' && S.mode !== 'descript') return;
+  if (dir === 1 && S.step === modeStep()) {
+    if (S.location === 'home') {
+      if (!S.mode) return;
+      if (S.mode !== 'local' && !leaveForApp()) return;
+    } else if (S.mode !== 'local' && S.mode !== 'descript') return;
+  }
   S.step = Math.max(0, Math.min(totalSteps() - 1, S.step + dir));
   /* Landing back on the location screen releases the camera/mic so other
      apps can use them; the stream re-inits when the user advances again. */
@@ -161,6 +168,15 @@ function updateNav() {
   back.style.visibility = S.step === 0 ? 'hidden' : 'visible';
 
   updatePrepProgress();
+
+  if (S.location === 'home' && S.step === modeStep()) {
+    const room = S.mode === 'descript';
+    next.style.visibility = S.mode ? 'visible' : 'hidden';
+    next.innerHTML = (room ? 'Open Room' : 'Continue') + icon('arrow-right');
+    next.className = room ? 'btn btn-success' : 'btn btn-primary';
+    next.disabled = room && !roomUrlOk(S.descriptRoom);
+    return;
+  }
 
   /* In descript mode the mode-picker IS the last step, so modeStep() (one
      before last) is actually the camera step — treat it as a normal step. */
@@ -206,7 +222,7 @@ function updateNav() {
   }
 
   /* Descript mode: mode-picker is the last step; require a URL before Open Room */
-  if (S.step === lastStep() && S.mode === 'descript') {
+  if (S.step === lastStep() && S.mode === 'descript' && S.location !== 'home') {
     next.disabled = !S.descriptRoom;
   }
 }
@@ -250,8 +266,12 @@ function render() {
   /* Leaving the record screen stops the teleprompter and any countdown */
   if (!isRecScreen()) { setPromptPlaying(false); cancelCountdown(); }
   /* The record screen drops the step bar + footer and widens the page */
+  const stage = isRingStage();
   document.body.classList.toggle('rec-screen', isRecScreen());
-  document.body.classList.toggle('wide-step', S.location === 'home' && S.step === 3);
+  document.body.classList.toggle('ring-stage', stage);
+  /* Home steps 2–4 share one frame: camera left, the step's panel right */
+  document.body.classList.toggle('wide-step', S.location === 'home' && S.step >= 2 && S.step <= 4);
+  document.body.classList.toggle('loc-step', S.step === 0);
   document.body.classList.remove('steps-done');
 
   renderBar();
@@ -271,14 +291,17 @@ function render() {
     if      (S.step === 1) { el.innerHTML = renderHomeStep2(); bindHomeChecks(el); }
     else if (S.step === 2) { renderHomeStep3(el); }
     else if (S.step === 3) { renderHomeStep4(el); }
-    else if (S.step === 4) { el.innerHTML = renderStep4(); }
-    else if (S.step === 5) { el.innerHTML = renderStep5(); bindRecScreen(); }
+    else if (S.step === 4) { renderHomeMode(el); }
+    else if (S.step === 5) {
+      if (stage) el.innerHTML = renderRingStage();
+      else { el.innerHTML = renderStep5(); bindRecScreen(); }
+    }
   }
 
   if (pastSetup()) {
     savePass();
-    /* The record screen shows its own compact "setup done" note */
-    if (S._resumed && !isRecScreen()) el.insertAdjacentHTML('afterbegin', resumeBannerHtml());
+    /* The record screen and ring light show their own compact "setup done" note */
+    if (S._resumed && !isRecScreen() && !stage) el.insertAdjacentHTML('afterbegin', resumeBannerHtml());
   }
   applyRing();
 }
@@ -501,22 +524,23 @@ function renderLocation() {
     <div class="step-title">Where are you recording?</div>
     <div class="step-sub">Choose your recording location to get the right setup guide.</div>
 
-    <div class="choice-grid spaced">
-      <div class="choice-card${S.location==='studio'?' selected':''}" onclick="setLocation('studio')">
+    <div class="choice-grid loc-grid">
+      <div class="choice-card loc-card${S.location==='studio'?' selected':''}" onclick="setLocation('studio')">
         <div class="choice-icon">${icon('building-2')}</div>
-        <div class="choice-title">Self-Service Studio</div>
-        <div class="choice-desc">Recording in the dedicated studio room with the Nexigo camera and Rode microphone.</div>
+        <div class="choice-title">In the Studio</div>
+        <div class="choice-desc">The self-service studio room, with the Nexigo camera and Rode microphone.</div>
       </div>
-      <div class="choice-card${S.location==='home'?' selected':''}" onclick="setLocation('home')">
+      <div class="choice-card loc-card${S.location==='home'?' selected':''}" onclick="setLocation('home')">
         <div class="choice-icon">${icon('house')}</div>
-        <div class="choice-title">Recording at Home</div>
-        <div class="choice-desc">Using your own setup — webcam, headset, or home microphone.</div>
+        <div class="choice-title">At Home</div>
+        <div class="choice-desc">Your own webcam and mic. Your screen becomes your ring light.</div>
       </div>
-      <div class="choice-card${S.location==='plan'?' selected':''}" onclick="toggleLinkPlanner()" id="planner-card">
-        <div class="choice-icon">${icon('calendar-plus')}</div>
-        <div class="choice-title">Plan a Remote Call</div>
-        <div class="choice-desc">Generate a guest link in advance without going through setup.</div>
-      </div>
+    </div>
+
+    <div class="plan-row">
+      <button type="button" class="btn btn-ghost btn-sm plan-btn${S.location==='plan'?' selected':''}" onclick="toggleLinkPlanner()" id="planner-card">
+        ${icon('calendar-plus')}Planning a remote call? Make a guest link
+      </button>
     </div>
 
     <div id="link-planner" class="panel" style="display:none">
@@ -933,6 +957,7 @@ function rafAudio() {
   const rms = 20 * Math.log10(Math.sqrt(sum / buf.length) || 1e-6);
   const pk  = 20 * Math.log10(peak || 1e-6);
   const now = performance.now();
+  if (S.micTest?.state === 'rec') S.micTest.max = Math.max(S.micTest.max, rms);
 
   METER.level = rms > METER.level ? rms : Math.max(rms, METER.level - 0.8);
   if (pk >= METER.peak || now - METER.peakAt > 1200) { METER.peak = pk; METER.peakAt = now; }
@@ -1333,17 +1358,17 @@ function renderStep4() {
     <div class="step-sub">Choose where the recording will happen.</div>
 
     <div class="choice-grid">
-      <div class="choice-card${S.mode==='descript'?' selected':''}" onclick="setMode('descript')">
+      <div class="choice-card${S.mode==='descript'?' selected':''}" data-mode="descript" onclick="setMode('descript')">
         <div class="choice-icon">${icon('clapperboard')}</div>
         <div class="choice-title">Descript Room</div>
         <div class="choice-desc">Recommended.<br>Open your Descript Room from this app.</div>
       </div>
-      <div class="choice-card${S.mode==='local'?' selected':''}" onclick="setMode('local')">
+      <div class="choice-card${S.mode==='local'?' selected':''}" data-mode="local" onclick="setMode('local')">
         <div class="choice-icon">${icon('circle-dot')}</div>
         <div class="choice-title">Record Here</div>
         <div class="choice-desc">Use this app with a built-in teleprompter.</div>
       </div>
-      <div class="choice-card${S.mode==='virtual'?' selected':''}" onclick="setMode('virtual')">
+      <div class="choice-card${S.mode==='virtual'?' selected':''}" data-mode="virtual" onclick="setMode('virtual')">
         <div class="choice-icon">${icon('video')}</div>
         <div class="choice-title">Virtual Call or Other App</div>
         <div class="choice-desc">Riverside, Zoom, Webex, Camtasia, etc.<br>I'll record somewhere else.</div>
@@ -1356,11 +1381,9 @@ function renderStep4() {
 
 function setMode(m) {
   S.mode = m;
-  document.querySelectorAll('.choice-card').forEach((c, i) => {
-    c.classList.toggle('selected', (i===0 && m==='descript') || (i===1 && m==='local') || (i===2 && m==='virtual'));
-  });
+  document.querySelectorAll('[data-mode]').forEach(c => c.classList.toggle('selected', c.dataset.mode === m));
   const msg = document.getElementById('mode-msg');
-  if (msg) msg.innerHTML = modeMsgHtml(m);
+  if (msg) msg.innerHTML = S.location === 'home' ? homeModeMsgHtml(m) : modeMsgHtml(m);
   /* totalSteps depends on mode (descript collapses URL into this step) — redraw bar */
   renderBar();
   updateNav();
@@ -1475,6 +1498,20 @@ function renderStep5() {
 
     <div class="rec-body${S.scriptOpen ? ' script-open' : ''}" id="rec-body">
       <div class="rec-main">
+        <div class="rec-bar rec-controls">
+          <div class="pc">
+            <button class="btn btn-ghost btn-sm" id="pc-play" onclick="togglePrompt()">${promptPlayLabel()}</button>
+            <label class="pc-speed">Speed
+              <input type="range" min="1" max="10" value="${S.prompt.speed}" oninput="setPromptSpeed(+this.value)">
+            </label>
+            <button class="btn btn-ghost btn-sm btn-icon" onclick="sizePrompt(-4)" title="Smaller text">${icon('a-arrow-down')}</button>
+            <button class="btn btn-ghost btn-sm btn-icon" onclick="sizePrompt(4)" title="Bigger text">${icon('a-arrow-up')}</button>
+            <button class="btn btn-ghost btn-sm btn-icon" onclick="resetPrompt()" title="Back to the top">${icon('rotate-ccw')}</button>
+            <button class="btn btn-ghost btn-sm" id="pc-script" onclick="toggleScriptPanel()">${icon('pencil')}Script</button>
+          </div>
+          <button class="btn ${rec ? 'btn-danger' : 'btn-primary'} btn-rec" id="btn-rec" onclick="toggleRec()">${recBtnLabel(rec)}</button>
+        </div>
+
         <div class="vid-wrap rec-vid">
           <video id="rec-video" autoplay playsinline muted></video>
           <div id="prompter-slot">${prompterHtml()}</div>
@@ -1491,20 +1528,6 @@ function renderStep5() {
             <div class="spinner"></div>
             <span>Starting camera…</span>
           </div>
-        </div>
-
-        <div class="rec-bar">
-          <div class="pc">
-            <button class="btn btn-ghost btn-sm" id="pc-play" onclick="togglePrompt()">${promptPlayLabel()}</button>
-            <label class="pc-speed">Speed
-              <input type="range" min="1" max="10" value="${S.prompt.speed}" oninput="setPromptSpeed(+this.value)">
-            </label>
-            <button class="btn btn-ghost btn-sm btn-icon" onclick="sizePrompt(-4)" title="Smaller text">${icon('a-arrow-down')}</button>
-            <button class="btn btn-ghost btn-sm btn-icon" onclick="sizePrompt(4)" title="Bigger text">${icon('a-arrow-up')}</button>
-            <button class="btn btn-ghost btn-sm btn-icon" onclick="resetPrompt()" title="Back to the top">${icon('rotate-ccw')}</button>
-            <button class="btn btn-ghost btn-sm" id="pc-script" onclick="toggleScriptPanel()">${icon('pencil')}Script</button>
-          </div>
-          <button class="btn ${rec ? 'btn-danger' : 'btn-primary'} btn-rec" id="btn-rec" onclick="toggleRec()">${recBtnLabel(rec)}</button>
         </div>
 
         <div class="rec-bar rec-devs">
@@ -1896,64 +1919,48 @@ function renderHomeStep2() {
   </div>`;
 }
 
-function renderHomeStep3(el, devicesReady = false) {
-  const curVidLabel = S.dev.allVideo.find(d => d.deviceId === S.dev.curVideoId)?.label || 'Default camera';
-  const curAudLabel = S.dev.allAudio.find(d => d.deviceId === S.dev.curAudioId)?.label || 'Default microphone';
-
-  el.innerHTML = `
+/* Home steps 2–4: the same frame every time — camera preview left (same
+   size, same place), the step's own panel right */
+function homeFrameHtml(title, sub, videoId, side, below = '', overlay = '') {
+  return `
   <div>
-    <div class="step-title">Step 2 — Check Your Equipment</div>
-    <div class="step-sub">Select your camera and microphone, then confirm they're working.</div>
-
-    <!-- DEVICE PICKERS -->
-    <div class="sec-label">Camera</div>
-    <div class="card card-tight">
-      <div class="row">
-        <span class="dev-active-lbl">Active:</span>
-        <span class="dev-value">${curVidLabel}</span>
-        ${S.dev.allVideo.length > 0 ? `
-        <select class="dev-sel" id="home-sel-video" onchange="homeDeviceSwitch()">
-          ${S.dev.allVideo.map(d => `<option value="${d.deviceId}"${d.deviceId===S.dev.curVideoId?' selected':''}>${d.label||d.deviceId.slice(0,12)}</option>`).join('')}
-        </select>` : ''}
-      </div>
-    </div>
-
-    <div class="sec-label">Microphone</div>
-    <div class="card card-tight">
-      <div class="row">
-        <span class="dev-active-lbl">Active:</span>
-        <span class="dev-value">${curAudLabel}</span>
-        ${S.dev.allAudio.length > 0 ? `
-        <select class="dev-sel" id="home-sel-audio" onchange="homeDeviceSwitch()">
-          ${S.dev.allAudio.map(d => `<option value="${d.deviceId}"${d.deviceId===S.dev.curAudioId?' selected':''}>${d.label||d.deviceId.slice(0,12)}</option>`).join('')}
-        </select>` : ''}
-      </div>
-    </div>
-
-    <!-- AUDIO TEST -->
-    <div class="sec-label">Microphone Test — Speak Now</div>
-    <div class="card">
-      <div class="meter-track">
-        <div class="meter-fill" id="audio-fill"></div>
-        <div class="meter-lbl">${icon('mic')}Say something to test your mic…</div>
-      </div>
-      <div class="field-hint">
-        The bar should react when you speak.
-      </div>
-    </div>
-
-    <!-- CAMERA PREVIEW -->
-    <div class="sec-label">Camera Preview</div>
-    <div class="card">
-      <div class="vid-wrap">
-        <video id="step3-video" autoplay playsinline muted></video>
-        <div class="cam-loading" id="cam-loading">
-          <div class="spinner"></div>
-          <span>Starting camera…</span>
+    <div class="step-title">${title}</div>
+    <div class="step-sub">${sub}</div>
+    <div class="light-grid">
+      <div>
+        <div class="vid-wrap">
+          <video id="${videoId}" autoplay playsinline muted></video>
+          ${overlay}
+          <div class="cam-loading" id="cam-loading">
+            <div class="spinner"></div>
+            <span>Starting camera…</span>
+          </div>
         </div>
+        ${below}
       </div>
+      <div class="light-side">${side}</div>
     </div>
   </div>`;
+}
+
+function renderHomeStep3(el, devicesReady = false) {
+  const locked = S.micTest?.state === 'rec';
+  el.innerHTML = homeFrameHtml('Step 2 — Check Your Equipment',
+    'Pick your camera and microphone, then record a quick test to hear how you sound.',
+    'step3-video', `
+    <div class="card">
+      <div class="panel-title">Camera</div>
+      <label class="dev-pick dev-wide" title="Camera">${icon('video')}<select id="home-sel-video" onchange="homeDeviceSwitch()"${locked ? ' disabled' : ''}>${devOptions(S.dev.allVideo, S.dev.curVideoId)}</select></label>
+    </div>
+    <div class="card" id="mic-card">
+      <div class="panel-title">Microphone</div>
+      <label class="dev-pick dev-wide" title="Microphone">${icon('mic')}<select id="home-sel-audio" onchange="homeDeviceSwitch()"${locked ? ' disabled' : ''}>${devOptions(S.dev.allAudio, S.dev.curAudioId)}</select></label>
+      <div class="meter-track mic-meter">
+        <div class="meter-fill" id="audio-fill"></div>
+        <div class="meter-lbl">${icon('mic')}Live level</div>
+      </div>
+      <div id="mic-test">${micTestHtml()}</div>
+    </div>`);
 
   if (devicesReady) {
     attachStream('step3-video');
@@ -1972,30 +1979,115 @@ async function homeDeviceSwitch() {
   const vid = vs?.value || S.dev.curVideoId;
   const aud = as?.value || S.dev.curAudioId;
   await applyDeviceSwitch(vid, aud);
+  /* a mic test only counts for the mic it was recorded on */
+  if (S.micTest && S.micTest.devId !== S.dev.curAudioId) stopMicTest();
   /* re-render home step 3 instead of studio step 3 */
   renderHomeStep3(document.getElementById('content'), true);
 }
 
+/* ── Mic test: record a few seconds, play it straight back, and name the
+   mic it came from — so nobody records a whole take on the wrong one ── */
+const MIC_TEST_SECS = 5;
+
+function micLabel(id = S.dev.curAudioId) {
+  return S.dev.allAudio.find(d => d.deviceId === id)?.label || 'your microphone';
+}
+
+function micTestHtml() {
+  const t = S.micTest;
+  if (!t || t.devId !== S.dev.curAudioId) {
+    return `<button class="btn btn-primary btn-sm mic-test-btn" id="mic-test-btn" onclick="startMicTest()"${S.stream?.getAudioTracks().length ? '' : ' disabled'}>${icon('circle-dot')}Record a ${MIC_TEST_SECS}-second test</button>
+      <div class="field-hint">Say a sentence or two — you'll hear it played straight back.</div>`;
+  }
+  const name = `<strong>${esc(micLabel(t.devId))}</strong>`;
+  if (t.state === 'rec') return `
+    <div class="mic-rec">
+      <div class="mic-rec-head"><span class="rec-dot red"></span><span>Recording from ${name} — talk now</span></div>
+      <div class="mic-prog"><i id="mic-prog"></i></div>
+    </div>`;
+  if (t.silent) return brightHtml('error', 'mic', `We didn't hear anything from ${name}`,
+      'It may be the wrong microphone, or it\'s muted. Pick another one above, then test again.')
+    + `<div class="mic-actions">
+         <button class="btn btn-ghost btn-sm" onclick="pickAnotherMic()">${icon('mic')}Pick another mic</button>
+         <button class="btn btn-ghost btn-sm" onclick="startMicTest()">${icon('rotate-ccw')}Test again</button>
+       </div>`;
+  if (t.state === 'ok') return brightHtml('good', 'circle-check', `Mic confirmed — ${name}`, 'This is the microphone your recording will use.')
+    + `<div class="mic-actions"><button class="btn btn-ghost btn-xs" onclick="startMicTest()">${icon('rotate-ccw')}Test again</button></div>`;
+  return `
+    <div class="mic-heard">Recorded from ${name}. Did that sound clear?</div>
+    <audio class="mic-audio" id="mic-audio" controls autoplay src="${t.url}"></audio>
+    <div class="mic-actions">
+      <button class="btn btn-success btn-sm" onclick="confirmMic()">${icon('check')}Sounds good</button>
+      <button class="btn btn-ghost btn-sm" onclick="pickAnotherMic()">${icon('mic')}Try another mic</button>
+    </div>`;
+}
+
+function drawMicTest() {
+  const box = document.getElementById('mic-test');
+  if (box) box.innerHTML = micTestHtml();
+  /* no switching devices mid-test */
+  ['home-sel-audio', 'home-sel-video'].forEach(id => {
+    const s = document.getElementById(id);
+    if (s) s.disabled = S.micTest?.state === 'rec';
+  });
+}
+
+function startMicTest() {
+  const track = S.stream?.getAudioTracks()[0];
+  if (!track) return;
+  stopMicTest();
+  const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
+    .find(m => { try { return MediaRecorder.isTypeSupported(m); } catch(e) { return false; } }) || '';
+  const chunks = [];
+  let rec;
+  try { rec = new MediaRecorder(new MediaStream([track]), mime ? { mimeType: mime } : {}); }
+  catch(e) { rec = new MediaRecorder(new MediaStream([track])); }
+  /* max = loudest moment (RMS dBFS), fed by the level meter */
+  const t = S.micTest = { state: 'rec', devId: S.dev.curAudioId, max: -99, rec, start: performance.now() };
+  rec.ondataavailable = e => { if (e.data?.size) chunks.push(e.data); };
+  rec.onstop = () => {
+    if (S.micTest !== t) return;
+    clearInterval(t.timer);
+    t.url = URL.createObjectURL(new Blob(chunks, { type: chunks[0]?.type || mime || 'audio/webm' }));
+    t.silent = S.analyser ? t.max < -50 : false;
+    t.state = 'heard';
+    drawMicTest();
+  };
+  rec.start();
+  drawMicTest();
+  t.timer = setInterval(() => {
+    const p = Math.min(1, (performance.now() - t.start) / (MIC_TEST_SECS * 1000));
+    const bar = document.getElementById('mic-prog');
+    if (bar) bar.style.width = (p * 100).toFixed(1) + '%';
+    if (p >= 1) { clearInterval(t.timer); if (rec.state !== 'inactive') rec.stop(); }
+  }, 100);
+}
+
+/* Throw away a test (and its recording) */
+function stopMicTest() {
+  const t = S.micTest;
+  if (!t) return;
+  clearInterval(t.timer);
+  if (t.rec && t.rec.state !== 'inactive') { t.rec.onstop = null; t.rec.stop(); }
+  if (t.url) URL.revokeObjectURL(t.url);
+  S.micTest = null;
+}
+
+function confirmMic() { if (S.micTest) { S.micTest.state = 'ok'; drawMicTest(); } }
+
+function pickAnotherMic() {
+  const s = document.getElementById('home-sel-audio');
+  if (!s) return;
+  s.focus();
+  try { s.showPicker(); } catch(e) {}
+}
+
 function renderHomeStep4(el) {
-  el.innerHTML = `
-  <div>
-    <div class="step-title">Step 3 — Camera Position &amp; Lighting</div>
-    <div class="step-sub">Fit yourself inside the silhouette. The coach watches your lighting live and tells you what to fix.</div>
-
-    <div class="light-grid">
-      <div>
-        <div class="vid-wrap">
-          <video id="step2-video" autoplay playsinline muted></video>
-          <div class="vid-overlay">
-            <img src="guideline.png" class="guide-img" alt="">
-          </div>
-          <div class="face-box" id="face-box" hidden></div>
-          <div class="cam-loading" id="cam-loading">
-            <div class="spinner"></div>
-            <span>Starting camera…</span>
-          </div>
-        </div>
-
+  el.innerHTML = homeFrameHtml('Step 3 — Camera Position &amp; Lighting',
+    'Fit yourself inside the silhouette. The coach watches your lighting live and tells you what to fix.',
+    'step2-video', `
+        ${coachHtml()}
+        <div class="card">${ringControlsHtml()}</div>`, `
         <div class="info-box light-tips">
           <strong>Set up for good light</strong>
           <ul>
@@ -2005,18 +2097,162 @@ function renderHomeStep4(el) {
             <li><strong>Face your main light.</strong> A window in front of you is great; one behind you isn't.</li>
             <li><strong>Ceiling light off</strong> if it shadows your eyes.</li>
           </ul>
-        </div>
-      </div>
-
-      <div class="light-side">
-        ${coachHtml()}
-        <div class="card">${ringControlsHtml()}</div>
-      </div>
-    </div>
-  </div>`;
+        </div>`, `
+          <div class="vid-overlay">
+            <img src="guideline.png" class="guide-img" alt="">
+          </div>
+          <div class="face-box" id="face-box" hidden></div>`);
 
   initStream();
   startCoach();
+}
+
+/* Home step 4 — how are you recording? Same frame; the camera stays on so
+   the ring light and preview don't change under you */
+const HOME_MODES = [
+  { id: 'descript', icon: 'clapperboard', name: 'Descript Room', tag: 'Recommended',
+    desc: 'Opens in its own window. This one stays on as your ring light.' },
+  { id: 'local',    icon: 'circle-dot',   name: 'Record here',
+    desc: 'Record in this app, with the script scrolling under your camera.' },
+  { id: 'virtual',  icon: 'video',        name: 'Zoom, Teams or another app',
+    desc: 'Riverside, Webex, Camtasia… This window stays on as your ring light.' },
+];
+
+function renderHomeMode(el) {
+  el.innerHTML = homeFrameHtml('Step 4 — How Are You Recording?',
+    'Pick where the recording happens. Your ring light stays on either way.',
+    'step2-video', `
+    <div class="card">
+      <div class="panel-title">Recording with</div>
+      <div class="mode-list">
+        ${HOME_MODES.map(m => `
+        <button type="button" class="mode-row${S.mode === m.id ? ' selected' : ''}" data-mode="${m.id}" onclick="setMode('${m.id}')">
+          <span class="mode-ico">${icon(m.icon)}</span>
+          <span class="mode-text">
+            <span class="mode-name">${m.name}${m.tag ? ` <span class="tag">${m.tag}</span>` : ''}</span>
+            <span class="mode-desc">${m.desc}</span>
+          </span>
+        </button>`).join('')}
+      </div>
+    </div>
+    <div id="mode-msg">${homeModeMsgHtml(S.mode)}</div>`);
+  initStream();
+}
+
+function homeModeMsgHtml(m) {
+  if (m === 'descript') return `
+    <div class="card">
+      <label class="field-label" for="descript-room-input">Descript Room link</label>
+      <input id="descript-room-input" class="input" type="url" value="${esc(S.descriptRoom || '')}"
+        placeholder="https://web.descript.com/room/..."
+        oninput="S.descriptRoom = this.value.trim(); this.style.borderColor = ''; updateNav();">
+      <div class="field-hint" id="descript-status">Descript opens in its own window, a little smaller than your screen. Keep it that way — the light shows around it.</div>
+    </div>`;
+  if (m === 'virtual') return `<div class="info-box">
+      <strong>Next:</strong> this window turns into your ring light. Open your call or recording app in front of it,
+      and keep that window a little smaller than your screen so the light shows around it.</div>`;
+  if (m === 'local') return `<div class="info-box">
+      <strong>Next:</strong> paste your script — it scrolls right over your camera preview, just under the lens — then hit Record.</div>`;
+  return '';
+}
+
+function roomUrlOk(raw) {
+  try { return new URL((raw || '').trim()).protocol === 'https:'; } catch(e) { return false; }
+}
+
+/* =============================================================
+   RING LIGHT WINDOW (home, Descript / other app) — this window stays
+   behind the other one and lights you. The whole window glows; the
+   other app's window covers the middle.
+   ============================================================= */
+let _roomWin = null;
+
+function isRingStage() {
+  return S.location === 'home' && S.step === lastStep() && (S.mode === 'descript' || S.mode === 'virtual');
+}
+
+/* Leaving the mode step for Descript / another app. Runs inside the click,
+   so the browser lets the room open in its own window. */
+function leaveForApp() {
+  if (S.mode === 'descript') {
+    if (!roomUrlOk(S.descriptRoom)) {
+      const inp = document.getElementById('descript-room-input');
+      const st  = document.getElementById('descript-status');
+      if (inp) { inp.style.borderColor = 'var(--danger)'; inp.focus(); }
+      if (st) st.innerHTML = '<span class="text-danger">' + icon('triangle-alert') + ' Paste the full Descript Room link — it starts with https://</span>';
+      return false;
+    }
+    openRoomWindow();
+  }
+  /* Hand the camera and mic to the other app */
+  stopAllMedia();
+  return true;
+}
+
+/* Descript in its own window, centred and smaller than the screen. The
+   size can't be changed from here once it's open (browser rule). */
+function openRoomWindow() {
+  const aw = screen.availWidth, ah = screen.availHeight;
+  const ax = screen.availLeft ?? 0, ay = screen.availTop ?? 0;
+  const w = Math.round(aw * 0.7), h = Math.round(ah * 0.72);
+  _roomWin = window.open(S.descriptRoom, 'selfservice-room',
+    `popup,width=${w},height=${h},left=${ax + Math.round((aw - w) / 2)},top=${ay + Math.round((ah - h) / 2)}`);
+  /* the room has no business steering this window */
+  try { if (_roomWin) _roomWin.opener = null; } catch(e) {}
+  S._roomBlocked = !_roomWin;
+  const st = document.getElementById('room-status');
+  if (st) st.innerHTML = roomStatusHtml();
+  return !!_roomWin;
+}
+
+function focusRoom() {
+  if (_roomWin && !_roomWin.closed) _roomWin.focus();
+  else openRoomWindow();
+}
+
+function roomStatusHtml() {
+  if (S._roomBlocked) return `<span class="text-danger">${icon('triangle-alert')} Your browser blocked the Descript window. Click <strong>Open the room</strong> to try again.</span>`;
+  if (!_roomWin) return 'Your Descript Room isn\'t open yet.';
+  return '';
+}
+
+function renderRingStage() {
+  const room = S.mode === 'descript';
+  const open = room && _roomWin && !_roomWin.closed;
+  return `
+  <div class="stage">
+    <div class="card stage-card" id="stage-card"${S.stageHidden ? ' hidden' : ''}>
+      <div class="stage-head">
+        <div>
+          <div class="stage-title">${icon('circle-dashed')}This window is your ring light</div>
+          <div class="stage-sub">${room
+            ? 'Descript is in its own window. Maximise <em>this</em> window, and keep Descript a little smaller than your screen so the light shows around it.'
+            : 'Open your call or recording app in front of this window. Maximise <em>this</em> window, and keep the other one a little smaller than your screen so the light shows around it.'}</div>
+        </div>
+        <button class="btn btn-ghost btn-xs btn-icon" onclick="toggleStagePanel()" title="Hide these controls">${icon('minimize')}</button>
+      </div>
+      ${room ? `
+      <div class="stage-actions">
+        ${open
+          ? `<button class="btn btn-primary btn-sm" onclick="focusRoom()">${icon('app-window')}Back to Descript</button>`
+          : `<button class="btn btn-primary btn-sm" onclick="openRoomWindow(); render()">${icon('app-window')}Open the room</button>`}
+      </div>
+      <div class="field-hint" id="room-status">${roomStatusHtml()}</div>` : ''}
+      ${ringControlsHtml()}
+      <div class="stage-foot">
+        <button class="btn btn-ghost btn-xs" onclick="nav(-1)">${icon('arrow-left')}Back to setup</button>
+        <button class="btn btn-ghost btn-xs" onclick="finish()">${icon('check')}Done — turn the light off</button>
+      </div>
+    </div>
+    <button class="btn btn-sm stage-pill" id="stage-pill" onclick="toggleStagePanel()"${S.stageHidden ? '' : ' hidden'}>${icon('circle-dashed')}Ring light controls</button>
+  </div>`;
+}
+
+/* Hide the panel so more of the window glows */
+function toggleStagePanel() {
+  S.stageHidden = !S.stageHidden;
+  document.getElementById('stage-card').hidden = S.stageHidden;
+  document.getElementById('stage-pill').hidden = !S.stageHidden;
 }
 
 /* =============================================================
@@ -2060,8 +2296,9 @@ function loadRing() {
 }
 function saveRing() { try { localStorage.setItem(RING_KEY, JSON.stringify(S.ring)); } catch(e) {} }
 
-/* Home lighting step + home record screen */
-function ringScreen() { return S.location === 'home' && (S.step === 3 || isRecScreen()); }
+/* Home: on from the equipment step through recording (a frame), and as the
+   whole window behind Descript / another app */
+function ringScreen() { return S.location === 'home' && ((S.step >= 2 && S.step <= 4) || isRecScreen()); }
 
 function ringKelvin() { return Math.round((2700 + S.ring.temp / 100 * 3800) / 50) * 50; }
 
@@ -2089,7 +2326,7 @@ function ringWidth() {
   return Math.round(s * 0.12);
 }
 /* dragged to another monitor */
-addEventListener('resize', () => { if (document.body.classList.contains('ringlight-on')) applyRing(); });
+addEventListener('resize', () => { if (S.ring && (ringScreen() || isRingStage())) applyRing(); });
 
 /* Colour of one cell (or the ring at full when i is omitted) */
 function ringCellColor(i) {
@@ -2116,8 +2353,10 @@ function ringGradient() {
 function applyRing() {
   const b = document.body;
   const show = ringScreen() && S.ring.on;
+  const lit  = isRingStage() && S.ring.on;
   b.classList.toggle('ringlight-on', show);
-  if (!show) { ['--ring-w', '--ring-c', '--ring-img'].forEach(v => b.style.removeProperty(v)); return; }
+  b.classList.toggle('ring-lit', lit);
+  if (!show && !lit) { ['--ring-w', '--ring-c', '--ring-img'].forEach(v => b.style.removeProperty(v)); return; }
   b.style.setProperty('--ring-w', ringWidth() + 'px');
   b.style.setProperty('--ring-c', ringCellColor());
   b.style.setProperty('--ring-img', ringGradient());
@@ -2965,7 +3204,9 @@ function finish() {
     <div class="completion">
       <div class="big-icon">${icon('circle-check')}</div>
       <h2>Great work!</h2>
-      <p>Your recording is complete. Download your file if you haven't already — then you're done.</p>
+      <p>${S.mode === 'local' || S.location !== 'home'
+        ? 'Your recording is complete. Download your file if you haven\'t already — then you\'re done.'
+        : 'That\'s a wrap — your ring light is off.'}</p>
       <div id="completion-dl" class="completion-dl"></div>
       <button class="btn btn-ghost" onclick="location.reload()">${icon('rotate-ccw')}Start Over</button>
     </div>`;
@@ -2973,7 +3214,7 @@ function finish() {
   document.querySelector('footer').style.display = 'none';
   document.body.classList.remove('rec-screen');
   document.body.classList.add('steps-done');
-  document.body.classList.remove('ringlight-on', 'wide-step');
+  document.body.classList.remove('ringlight-on', 'ring-lit', 'ring-stage', 'wide-step');
   /* A finished blob stays downloadable here; a recording that was still
      running is flushed by stopAllMedia and lands here via onRecStop. */
   showDownloadCard();
@@ -3007,7 +3248,9 @@ function finish() {
   S.location = pass.location;
   S.mode     = ['descript', 'local', 'virtual'].includes(pass.mode) ? pass.mode : null;
   S.descriptRoom = pass.descriptRoom || '';
-  S.step = (S.mode === 'local' || S.mode === 'descript') ? lastStep() : pickerStep();
+  /* Home Descript / other-app users land back on the ring light */
+  S.step = (S.mode === 'local' || S.mode === 'descript' || (S.mode === 'virtual' && S.location === 'home'))
+    ? lastStep() : pickerStep();
 })();
 S.script = loadScriptText();
 S.ring   = loadRing();
