@@ -7,8 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&display=swap">
-  <link rel="stylesheet" href="app.css?v=20261030c">
-  <script src="icons.js?v=20261030c"></script>
+  <link rel="stylesheet" href="app.css?v=20261030d">
+  <script src="icons.js?v=20261030d"></script>
   <!-- Save native getDisplayMedia before ANY script can monkey-patch it -->
   <script>if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) window._nativeGDM = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);</script>
 </head>
@@ -1486,6 +1486,7 @@ function renderStep5() {
             <div class="rec-dot"></div> REC <span id="rec-timer" class="tnum">${fmtTime(S.recSecs)}</span>
           </div>
           <div class="countdown" id="countdown" hidden></div>
+          <div class="perf-slot" id="perf-slot"></div>
           <div class="cam-loading" id="cam-loading">
             <div class="spinner"></div>
             <span>Starting camera…</span>
@@ -1790,7 +1791,7 @@ function startRec() {
   S.recorder.ondataavailable = e => { if (e.data?.size > 0) S.chunks.push(e.data); };
   S.recorder.onstop = onRecStop;
   S.recorder.start(100);
-  S.recActive = true; S.recSecs = 0;
+  S.recActive = true; S.recSecs = 0; S.recPerf = null;
 
   const badge = document.getElementById('rec-badge');
   if (badge) badge.style.display = 'flex';
@@ -1823,6 +1824,7 @@ function onRecStop() {
   if (S._blobUrl) URL.revokeObjectURL(S._blobUrl);
   S._blobUrl  = URL.createObjectURL(S.blob);
   S._blobSecs = S.recSecs;
+  S._blobPerf = S.recPerf;
   showDownloadCard();
 }
 
@@ -1841,10 +1843,15 @@ function showDownloadCard() {
       <div class="grow">
         <div class="dl-title">${icon('circle-check')}Recording complete — ${mb} MB</div>
         <div class="dl-meta">Duration: ${fmtTime(S._blobSecs || 0)}</div>
+        ${S._blobPerf ? `<div class="dl-perf">${icon('triangle-alert')}${S._blobPerf === 'busy'
+          ? 'Your computer was struggling during this take'
+          : 'Your camera slowed down during this take'} — watch it back for stutter before you send it.</div>` : ''}
       </div>
       <a href="${S._blobUrl}" download="recording-${ts}.${ext}" class="btn btn-success">${icon('download')}Download</a>
       ${inFlow ? '<button class="btn btn-ghost btn-sm" onclick="resetRec()">' + icon('rotate-ccw') + 'Record Again</button>' : ''}
     </div>`;
+  /* it lands under the video — bring it into view */
+  if (inFlow) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
 function resetRec() {
@@ -2014,16 +2021,42 @@ function renderHomeStep4(el) {
 
 /* =============================================================
    RING LIGHT (home only) — the screen itself lights your face. A glowing
-   frame around the window: brightness = thickness + intensity, temp =
-   2700 K (warm) → 6500 K (daylight), balance boosts one side to fill the
-   darker half of the face. Settings are a per-browser convenience.
+   frame around the window: brightness = how bright it glows, temp =
+   2700 K (warm) → 6500 K (daylight). The frame is 8 cells, each with its
+   own level, so the darker side — or the shadows under an overhead light —
+   can be filled in. Settings are a per-browser convenience.
+   The frame's thickness is fixed per monitor: brightness only changes the
+   light, and full screen just gives the app more room inside the frame.
    ============================================================= */
 const RING_KEY = 'selfservice.ringlight';
-const RING_DEFAULTS = { on: true, level: 85, temp: 75, balance: 0 };   /* 75 ≈ 5,550 K soft white */
+const RING_DEFAULTS = { on: true, level: 85, temp: 75, cells: [100, 100, 100, 100, 100, 100, 100, 100] };   /* 75 ≈ 5,550 K soft white */
+
+/* Clockwise from the top. Screen right is the person's right — they're facing it.
+   dx/dy point from the face toward the cell (+x right, +y up). */
+const RING_CELLS = [
+  { name: 'Top',          dx:  0,   dy:  1,   col: 2, row: 1 },
+  { name: 'Top right',    dx:  .71, dy:  .71, col: 3, row: 1 },
+  { name: 'Right',        dx:  1,   dy:  0,   col: 3, row: 2 },
+  { name: 'Bottom right', dx:  .71, dy: -.71, col: 3, row: 3 },
+  { name: 'Bottom',       dx:  0,   dy: -1,   col: 2, row: 3 },
+  { name: 'Bottom left',  dx: -.71, dy: -.71, col: 1, row: 3 },
+  { name: 'Left',         dx: -1,   dy:  0,   col: 1, row: 2 },
+  { name: 'Top left',     dx: -.71, dy:  .71, col: 1, row: 1 },
+];
 
 function loadRing() {
-  try { return Object.assign({}, RING_DEFAULTS, JSON.parse(localStorage.getItem(RING_KEY) || '{}')); }
-  catch(e) { return Object.assign({}, RING_DEFAULTS); }
+  let r;
+  try { r = Object.assign({}, RING_DEFAULTS, JSON.parse(localStorage.getItem(RING_KEY) || '{}')); }
+  catch(e) { r = Object.assign({}, RING_DEFAULTS); }
+  /* older saves had a single left/right balance */
+  if ('balance' in r) {
+    const b = r.balance / 100, gL = b > 0 ? 1 - b * 0.75 : 1, gR = b < 0 ? 1 + b * 0.75 : 1;
+    r.cells = RING_CELLS.map(c => Math.round((c.dx < 0 ? gL : c.dx > 0 ? gR : (gL + gR) / 2) * 20) * 5);
+    delete r.balance;
+  }
+  if (!Array.isArray(r.cells) || r.cells.length !== 8) r.cells = RING_DEFAULTS.cells.slice();
+  else r.cells = r.cells.slice();
+  return r;
 }
 function saveRing() { try { localStorage.setItem(RING_KEY, JSON.stringify(S.ring)); } catch(e) {} }
 
@@ -2049,29 +2082,67 @@ function kelvinRGB(k) {
   return [c(r), c(g), c(b)];
 }
 
-function ringSideGains() {
-  const bal = S.ring.balance / 100;            /* -1 = all left … +1 = all right */
-  return [bal > 0 ? 1 - bal * 0.75 : 1, bal < 0 ? 1 + bal * 0.75 : 1];
+/* 12% of the monitor's short side — screen size, not window size, so it
+   doesn't jump when the window goes full screen */
+function ringWidth() {
+  const s = Math.min(screen.width || innerWidth, screen.height || innerHeight);
+  return Math.round(s * 0.12);
+}
+/* dragged to another monitor */
+addEventListener('resize', () => { if (document.body.classList.contains('ringlight-on')) applyRing(); });
+
+/* Colour of one cell (or the ring at full when i is omitted) */
+function ringCellColor(i) {
+  const base = 0.1 + 0.9 * S.ring.level / 100;
+  const g = i === undefined ? 1 : S.ring.cells[i] / 100;
+  return 'rgb(' + kelvinRGB(ringKelvin()).map(v => Math.round(v * base * g)).join(',') + ')';
+}
+
+/* Hard-edged conic sectors centred on the window. Edges are cut at thirds of
+   each side, so the corner cells wrap the corners and the side cells sit mid-edge,
+   whatever the window's shape. */
+function ringGradient() {
+  const W = innerWidth, H = innerHeight;
+  const ang = (x, y) => (Math.atan2(x, -y) * 180 / Math.PI + 360) % 360;
+  const a = [ang(W/6, -H/2), ang(W/2, -H/6), ang(W/2, H/6), ang(W/6, H/2),
+             ang(-W/6, H/2), ang(-W/2, H/6), ang(-W/2, -H/6), ang(-W/6, -H/2)];
+  const d = 0.6, f = n => n.toFixed(2) + 'deg', c = RING_CELLS.map((_, i) => ringCellColor(i));
+  const parts = [`${c[0]} 0deg ${f(a[0] - d)}`];
+  for (let i = 1; i < 8; i++) parts.push(`${c[i]} ${f(a[i - 1] + d)} ${f(a[i] - d)}`);
+  parts.push(`${c[0]} ${f(a[7] + d)} 360deg`);
+  return `conic-gradient(${parts.join(', ')})`;
 }
 
 function applyRing() {
   const b = document.body;
   const show = ringScreen() && S.ring.on;
   b.classList.toggle('ringlight-on', show);
-  if (!show) { ['--ring-w', '--ring-l', '--ring-r'].forEach(v => b.style.removeProperty(v)); return; }
-  const lv = S.ring.level / 100;
-  const rgb = kelvinRGB(ringKelvin());
-  const base = 0.5 + 0.5 * lv;
-  const col = g => 'rgb(' + rgb.map(v => Math.round(v * base * g)).join(',') + ')';
-  const [gL, gR] = ringSideGains();
-  b.style.setProperty('--ring-w', (3 + 11 * lv).toFixed(2) + 'vmin');
-  b.style.setProperty('--ring-l', col(gL));
-  b.style.setProperty('--ring-r', col(gR));
+  if (!show) { ['--ring-w', '--ring-c', '--ring-img'].forEach(v => b.style.removeProperty(v)); return; }
+  b.style.setProperty('--ring-w', ringWidth() + 'px');
+  b.style.setProperty('--ring-c', ringCellColor());
+  b.style.setProperty('--ring-img', ringGradient());
 }
 
-function balanceLabel() {
-  const v = S.ring.balance;
-  return v === 0 ? 'Even' : (v < 0 ? 'Left' : 'Right') + ' +' + Math.abs(v) + '%';
+/* "even", "brighter on the bottom right", … — where the light leans */
+function cellsLabel() {
+  const c = S.ring.cells;
+  if (c.every(v => v === c[0])) return 'even';
+  let x = 0, y = 0, tot = 0;
+  RING_CELLS.forEach((k, i) => { x += k.dx * c[i]; y += k.dy * c[i]; tot += c[i]; });
+  x /= tot || 1; y /= tot || 1;
+  const h = x > 0.06 ? 'right' : x < -0.06 ? 'left' : '';
+  const v = y > 0.06 ? 'top' : y < -0.06 ? 'bottom' : '';
+  return h || v ? 'brighter on the ' + [v, h].filter(Boolean).join(' ') : 'custom';
+}
+
+function ringMapHtml() {
+  const sel = S.ringSel ?? 0;
+  return `<div class="ring-map" role="group" aria-label="Ring light cells">
+    ${RING_CELLS.map((k, i) => `<button type="button" class="ring-cell${i === sel ? ' sel' : ''}" data-cell="${i}"
+        style="grid-column:${k.col};grid-row:${k.row};background:${ringCellColor(i)}"
+        onclick="selectCell(${i})" title="${k.name}"><span class="tnum">${S.ring.cells[i]}</span></button>`).join('')}
+    <div class="ring-map-you">${icon('scan-face')}</div>
+  </div>`;
 }
 
 function ringControlsHtml() {
@@ -2092,9 +2163,21 @@ function ringControlsHtml() {
       <label class="ring-row"><span class="ring-lbl">Warmth</span>
         <input type="range" class="temp-range" min="0" max="100" value="${r.temp}" oninput="setRing('temp', +this.value)">
         <span class="ring-val tnum" data-ring="temp"><i class="ring-swatch" style="background:${swatch}"></i>${ringKelvin().toLocaleString()} K</span></label>
-      <label class="ring-row"><span class="ring-lbl">Left · Right</span>
-        <input type="range" min="-100" max="100" step="5" value="${r.balance}" oninput="setRing('balance', +this.value)" ondblclick="setRing('balance', 0); this.value = 0">
-        <span class="ring-val tnum" data-ring="balance">${balanceLabel()}</span></label>
+      <div class="ring-cells">
+        ${ringMapHtml()}
+        <div class="ring-cells-side">
+          <div class="ring-cell-head">
+            <span class="ring-lbl" data-ring="cellname">${RING_CELLS[S.ringSel ?? 0].name}</span>
+            <span class="ring-val tnum" data-ring="cellval">${r.cells[S.ringSel ?? 0]}%</span>
+          </div>
+          <input type="range" class="cell-range" min="0" max="100" step="5" value="${r.cells[S.ringSel ?? 0]}"
+            oninput="setCell(S.ringSel ?? 0, +this.value)" aria-label="Selected cell level">
+          <div class="ring-cell-foot">
+            <span class="ring-lean" data-ring="lean">${cellsLabel() === 'even' ? 'Pick a cell, then drag' : 'Light is ' + cellsLabel()}</span>
+            <button type="button" class="btn btn-ghost btn-xs" onclick="setCells(null)">Even</button>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="ring-actions">
       <button class="btn btn-ghost btn-xs fs-btn" onclick="toggleFullscreen()">${fsLabel()}</button>
@@ -2111,12 +2194,41 @@ function setRing(key, val) {
   document.querySelectorAll('[data-ring="level"]').forEach(e => e.textContent = S.ring.level + '%');
   document.querySelectorAll('[data-ring="temp"]').forEach(e =>
     e.innerHTML = `<i class="ring-swatch" style="background:rgb(${kelvinRGB(ringKelvin()).join(',')})"></i>${ringKelvin().toLocaleString()} K`);
-  document.querySelectorAll('[data-ring="balance"]').forEach(e => e.textContent = balanceLabel());
   /* keep every copy of the controls in step (sliders set from code) */
   if (key !== 'on') document.querySelectorAll(`.ring-ctl input[oninput*="'${key}'"]`).forEach(i => { if (+i.value !== val) i.value = val; });
   else document.querySelectorAll('.ring-ctl input[type=checkbox]').forEach(i => i.checked = val);
-  /* the video column depends on the frame thickness */
+  syncCells();
+  /* the video column depends on the frame (on/off) */
   if (isRecScreen()) requestAnimationFrame(() => { S.prompt.pos = Math.min(S.prompt.pos, promptMax()); applyPromptPos(); });
+}
+
+/* ── Cells ── */
+function selectCell(i) { S.ringSel = i; syncCells(); }
+
+function setCell(i, val) {
+  S.ring.cells[i] = val;
+  saveRing(); applyRing(); syncCells();
+}
+
+/* null = all even at 100% */
+function setCells(arr) {
+  S.ring.cells = arr ? arr.slice() : RING_DEFAULTS.cells.slice();
+  saveRing(); applyRing(); syncCells();
+}
+
+/* Cell map colours + the selected cell's slider, in every copy of the controls */
+function syncCells() {
+  const sel = S.ringSel ?? 0, lean = cellsLabel();
+  document.querySelectorAll('.ring-cell').forEach(b => {
+    const i = +b.dataset.cell;
+    b.style.background = ringCellColor(i);
+    b.classList.toggle('sel', i === sel);
+    b.firstElementChild.textContent = S.ring.cells[i];
+  });
+  document.querySelectorAll('[data-ring="cellname"]').forEach(e => e.textContent = RING_CELLS[sel].name);
+  document.querySelectorAll('[data-ring="cellval"]').forEach(e => e.textContent = S.ring.cells[sel] + '%');
+  document.querySelectorAll('[data-ring="lean"]').forEach(e => e.textContent = lean === 'even' ? 'Pick a cell, then drag' : 'Light is ' + lean);
+  document.querySelectorAll('.cell-range').forEach(i => { if (+i.value !== S.ring.cells[sel]) i.value = S.ring.cells[sel]; });
 }
 
 function toggleRingPanel() {
@@ -2126,7 +2238,7 @@ function toggleRingPanel() {
   document.getElementById('ring-btn')?.classList.toggle('on', S.ringPanel);
 }
 
-/* Full screen = a bigger, brighter ring */
+/* Full screen = no browser chrome, more room inside the same ring */
 function fsLabel() {
   return document.fullscreenElement ? icon('minimize') + 'Exit full screen' : icon('maximize') + 'Full screen';
 }
@@ -2267,7 +2379,7 @@ function coachVerdict(m) {
   if (Math.abs(m.tint) > 0.6) return { cls: 'warn', icon: 'lightbulb', title: 'Two colours of light on your face',
     sub: `Your ${m.tint > 0 ? 'left' : 'right'} side is lit by warmer light than your ${m.tint > 0 ? 'right' : 'left'}. Switch off the lamp on that side, or press <strong>Balance for me</strong> to match the ring light to it.` };
   if (m.top > 0.75) return { cls: 'warn', icon: 'lightbulb-off', title: 'Overhead light is shadowing your eyes',
-    sub: 'Switch off the ceiling light and let the screen light you from the front.' };
+    sub: 'Switch off the ceiling light and let the screen light you from the front. If you can\'t, <strong>Balance for me</strong> fills in from below with the ring light.' };
   if (m.p90 < 130) return { cls: 'warn-mild', icon: 'sun-dim', title: 'A little dim',
     sub: ringOff ? 'Turn on the ring light, or sit a little closer to the screen.'
                  : 'Ring light to full, screen brightness up, or sit a little closer.' };
@@ -2297,7 +2409,7 @@ function coachHtml() {
       ${gauge('g-bg',   'You · Background',  'You brighter', 'Background brighter', [0, 58])}
     </div>
     <button class="btn btn-primary btn-sm coach-auto" id="coach-auto" onclick="autoBalance()">${icon('wand-sparkles')}Balance for me</button>
-    <div class="field-hint" id="coach-note">Tunes the ring light's brightness, warmth and side balance to your face.</div>
+    <div class="field-hint" id="coach-note">Tunes the ring light's brightness, warmth and cells to your face.</div>
   </div>`;
 }
 
@@ -2403,8 +2515,19 @@ async function measureAvg(n) {
   return avg;
 }
 
+/* Cell levels that lean the light toward where the face is dark.
+   px + = more from the right, py + = more from the top. The darkest-facing
+   cell stays at 100%; the others dim with the angle away from it. */
+function cellsFor(px, py) {
+  const mag = Math.hypot(px, py);
+  if (mag > 0.8) { px *= 0.8 / mag; py *= 0.8 / mag; }
+  const dots = RING_CELLS.map(k => k.dx * px + k.dy * py);
+  const top = Math.max(...dots);
+  return dots.map(d => Math.round(Math.max(0.2, 1 - 0.45 * (top - d)) * 20) * 5);
+}
+
 /* Balance for me: full brightness, the warmth that leaves the face the most
-   even in colour, then boost the darker side */
+   even in colour, then fill the darker side and any overhead shadows */
 async function autoBalance() {
   const C = S.coach;
   if (!C || C.busy) return;
@@ -2418,7 +2541,7 @@ async function autoBalance() {
   try {
     say('Balancing your light…', 'Hold still and look at the camera for a few seconds.');
     if (!S.ring.on) setRing('on', true);
-    setRing('balance', 0);
+    setCells(null);
     setRing('level', 100);
     await wait(700);
     held = await holdCamera(true);
@@ -2441,16 +2564,149 @@ async function autoBalance() {
     let m = await measureAvg(3) || best.m;
     if (m.clip > 0.12) { setRing('level', 70); await wait(700); m = await measureAvg(3) || m; }
 
-    /* + side = left brighter → boost the right edge (positive balance) */
-    if (Math.abs(m.side) > 0.15) setRing('balance', Math.max(-80, Math.min(80, Math.round(m.side * 120 / 5) * 5)));
+    /* + side = left brighter → more from the right. Faces read 0.1–0.4 stops
+       brighter on the forehead under even light, so only correct past that. */
+    const px = Math.abs(m.side) > 0.15 ? m.side : 0;
+    const py = m.top > 0.5 ? -(m.top - 0.3) : m.top < -0.1 ? -m.top : 0;
+    if (px || py) setCells(cellsFor(px, py));
 
-    if (note) note.innerHTML = `Set to ${ringKelvin().toLocaleString()} K at ${S.ring.level}% — ${balanceLabel().toLowerCase()}. `
+    if (note) note.innerHTML = `Set to ${ringKelvin().toLocaleString()} K at ${S.ring.level}%, ${cellsLabel()}. `
       + (held ? '' : 'Your camera adjusts itself, so the readings are approximate. ')
       + 'Run it again any time your light changes.';
   } finally {
     if (held) await holdCamera(false);
     C.busy = false; C.key = null;
     if (btn) { btn.disabled = false; btn.innerHTML = icon('wand-sparkles') + 'Balance for me'; }
+  }
+}
+
+/* =============================================================
+   PERFORMANCE WATCH — a page can't see other tabs, but it can see their
+   effect: camera frames going missing, the page stuttering, and (Chrome /
+   Edge) the whole computer's CPU pressure. Warns only when it lasts, and
+   flags a take that was hit so it gets watched back before it's sent.
+   ============================================================= */
+const PERF = {
+  vid: null, frames: 0, raf: 0, late: 0, lastRaf: 0, warm: 0, hist: [],
+  pressure: null, bad: 0, good: 0, state: null, fps: 0, peers: new Map(), dismissed: '',
+};
+const RVFC = 'requestVideoFrameCallback' in HTMLVideoElement.prototype;
+const TAB_ID = Math.random().toString(36).slice(2);
+
+/* Count frames the preview actually shows */
+function perfHook(v) {
+  PERF.vid = v; PERF.frames = 0; PERF.hist = []; PERF.warm = 3;
+  if (!v || !RVFC) return;
+  const cb = () => { if (PERF.vid !== v) return; PERF.frames++; v.requestVideoFrameCallback(cb); };
+  v.requestVideoFrameCallback(cb);
+}
+
+/* Page stutter: frames more than 50 ms apart */
+function perfRaf(ts) {
+  if (PERF.lastRaf) { PERF.raf++; if (ts - PERF.lastRaf > 50) PERF.late++; }
+  PERF.lastRaf = ts;
+  requestAnimationFrame(perfRaf);
+}
+requestAnimationFrame(perfRaf);
+document.addEventListener('visibilitychange', () => { PERF.lastRaf = 0; PERF.raf = PERF.late = PERF.frames = 0; PERF.hist = []; PERF.warm = 2; });
+
+/* Whole-computer CPU pressure: nominal / fair / serious / critical (Chrome, Edge) */
+if ('PressureObserver' in window) {
+  try {
+    new PressureObserver(recs => { PERF.pressure = recs[recs.length - 1].state; })
+      .observe('cpu', { sampleInterval: 2000 }).catch(() => {});
+  } catch(e) {}
+}
+
+/* Other copies of this page: ask who's there every few seconds. Replies come
+   from message events, which background tabs still answer promptly. */
+let _tabs = null;
+try {
+  _tabs = new BroadcastChannel('selfservice.tabs');
+  _tabs.onmessage = e => {
+    const d = e.data || {};
+    if (d.id === TAB_ID) return;
+    if (d.t === 'bye') PERF.peers.delete(d.id);
+    else PERF.peers.set(d.id, Date.now());
+    if (d.t === 'hi') _tabs.postMessage({ t: 'here', id: TAB_ID });
+    perfShow();
+  };
+  _tabs.postMessage({ t: 'hi', id: TAB_ID });
+  addEventListener('pagehide', () => _tabs.postMessage({ t: 'bye', id: TAB_ID }));
+} catch(e) {}
+
+function perfTick() {
+  if (_tabs && !document.hidden) _tabs.postMessage({ t: 'hi', id: TAB_ID });
+  for (const [id, at] of PERF.peers) if (Date.now() - at > 12000) PERF.peers.delete(id);
+
+  const v = document.querySelector('#rec-video, #step2-video, #step3-video');
+  if (v !== PERF.vid || (v && !v.isConnected)) perfHook(v);
+  const t = v?.srcObject?.getVideoTracks?.()[0];
+  const sample = { f: PERF.frames, raf: PERF.raf, late: PERF.late };
+  PERF.frames = PERF.raf = PERF.late = 0;
+
+  let issue = null;
+  if (t && t.readyState === 'live' && v.readyState >= 2 && !document.hidden) {
+    if (PERF.warm > 0) PERF.warm--;
+    else {
+      PERF.hist.push(sample);
+      if (PERF.hist.length > 5) PERF.hist.shift();
+      const sum = k => PERF.hist.reduce((a, s) => a + s[k], 0);
+      const want = t.getSettings().frameRate || 30;
+      PERF.fps = sum('f') / PERF.hist.length;
+      const jank = PERF.jank = sum('late') / Math.max(1, sum('raf'));
+      /* Only warn when it shows: "serious" CPU load alone is common and harmless,
+         so it counts only when frames are dropping too — then it's the computer,
+         not the camera's low-light slowdown */
+      const slow = RVFC && PERF.hist.length >= 3 && PERF.fps < want * 0.8;
+      const busy = PERF.pressure === 'critical' || jank > 0.12 || (slow && PERF.pressure === 'serious');
+      issue = busy ? 'busy' : slow ? 'camera' : null;
+    }
+  } else PERF.hist = [];
+
+  /* Show after ~3 s of trouble, clear after ~5 s without */
+  if (issue) { PERF.good = 0; if (++PERF.bad >= 3) PERF.state = issue; }
+  else { PERF.bad = 0; if (++PERF.good >= 5) PERF.state = null; }
+  if (S.recActive && PERF.state && S.recPerf !== 'busy') S.recPerf = PERF.state;
+  perfShow();
+}
+setInterval(perfTick, 1000);
+
+function perfMsg() {
+  if (PERF.state === 'busy') return { cls: 'warn', icon: 'cpu', title: 'Your computer is working hard',
+    short: 'Computer is struggling',
+    sub: 'Close browser tabs and apps you don\'t need — especially video calls — for a smoother recording.' };
+  if (PERF.state === 'camera') return { cls: 'warn', icon: 'gauge', title: `Your camera is only managing ${Math.round(PERF.fps)} frames a second`,
+    short: `Camera at ${Math.round(PERF.fps)} fps`,
+    sub: 'Webcams slow down in dim light to let more in. Add light — or turn up the ring light and screen brightness.' };
+  if (PERF.peers.size) return { cls: 'info', icon: 'app-window', title: 'This page is open in another tab too',
+    short: 'Open in another tab',
+    sub: 'Close the other one — two copies share your camera and slow each other down.' };
+  return null;
+}
+
+/* Record screen: a chip on the video. Elsewhere: a corner notice. */
+function perfShow() {
+  const m = perfMsg();
+  const slot = document.getElementById('perf-slot');
+  let fl = document.getElementById('perf-float');
+  if (slot) {
+    const key = m ? m.short : '';
+    if (slot.dataset.k !== key) {
+      slot.dataset.k = key;
+      slot.innerHTML = m ? `<div class="perf-chip ${m.cls}" title="${esc(m.sub)}">${icon(m.icon)}${m.short}</div>` : '';
+    }
+    if (fl) fl.hidden = true;
+    return;
+  }
+  const key = m ? m.title : '';
+  if (!m || PERF.dismissed === key) { if (fl) fl.hidden = true; return; }
+  if (!fl) { fl = document.createElement('div'); fl.id = 'perf-float'; fl.className = 'perf-float'; document.body.appendChild(fl); }
+  fl.hidden = false;
+  if (fl.dataset.k !== key) {
+    fl.dataset.k = key;
+    fl.innerHTML = brightHtml(m.cls, m.icon, m.title, m.sub)
+      + `<button class="btn btn-ghost btn-xs btn-icon perf-x" title="Dismiss" onclick="PERF.dismissed = this.parentNode.dataset.k; perfShow()">${icon('x')}</button>`;
   }
 }
 

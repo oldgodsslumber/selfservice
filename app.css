@@ -763,11 +763,57 @@ footer {
 
 /* ── RING LIGHT ──
    The frame is the body's border, so the app shrinks inside it instead of
-   being covered; border-image lets the left and right edges differ. */
+   being covered; a conic border-image gives each of the 8 cells its own level. */
 body.ringlight-on {
-  border: var(--ring-w) solid var(--ring-l);
-  border-image: linear-gradient(90deg, var(--ring-l), var(--ring-r)) 1;
+  border: var(--ring-w) solid var(--ring-c);
+  border-image: var(--ring-img) 1;
 }
+/* Cell map: the 8 cells around a face, as you see the screen */
+.ring-cells { display: flex; gap: 14px; align-items: center; margin-top: 2px; }
+.ring-map {
+  display: grid; grid-template-columns: repeat(3, 30px); grid-template-rows: repeat(3, 30px);
+  gap: 3px; flex-shrink: 0;
+}
+.ring-cell {
+  border: 1px solid rgba(255,255,255,0.14); border-radius: 5px; cursor: pointer; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  font: 600 9.5px/1 var(--font); color: rgba(0,0,0,0.62);
+  transition: box-shadow .12s, transform .12s;
+}
+.ring-cell:hover { transform: scale(1.06); }
+.ring-cell.sel { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
+.ring-map-you {
+  grid-column: 2; grid-row: 2; display: flex; align-items: center; justify-content: center;
+  color: var(--faint); font-size: 18px;
+}
+.ring-cells-side { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.ring-cell-head, .ring-cell-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ring-cells-side .cell-range { width: 100%; accent-color: var(--accent); }
+.ring-lean { font-size: 11.5px; color: var(--faint); min-width: 0; }
+
+/* ── PERFORMANCE WATCH ── */
+.perf-slot { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); pointer-events: none; }
+.perf-chip {
+  display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
+  padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  background: rgba(12,14,20,0.82); border: 1px solid var(--warn-line); color: var(--warn);
+  box-shadow: var(--shadow-1); pointer-events: auto; cursor: help;
+}
+.perf-chip.info { border-color: var(--accent-line); color: var(--accent); }
+/* Sits in the footer's empty middle, between Back and Next */
+.perf-float {
+  position: fixed; z-index: 50; width: 440px;
+  left: 50%; transform: translateX(-50%); bottom: calc(var(--ring-w, 0px) + 6px);
+  background: var(--surf); border-radius: var(--radius-sm); box-shadow: var(--shadow-2);
+}
+@media (max-width: 860px) {
+  .perf-float { width: calc(100vw - 2 * var(--ring-w, 0px) - 24px); bottom: calc(var(--ring-w, 0px) + 74px); }
+}
+.perf-float[hidden] { display: none; }
+.perf-float .bright-result { padding-right: 38px; }
+.perf-x { position: absolute; top: 6px; right: 6px; }
+.dl-perf { font-size: 12px; color: var(--warn); margin-top: 5px; display: flex; gap: 6px; align-items: flex-start; line-height: 1.4; }
+.dl-perf .ico { margin-top: 2px; }
 .ring-ctl .ring-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .ring-title { display: inline-flex; align-items: center; gap: 8px; font-weight: 650; font-size: 14px; }
 .ring-title .ico { color: var(--warn); font-size: 16px; }
