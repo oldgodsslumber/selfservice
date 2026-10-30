@@ -467,10 +467,12 @@ footer {
   height: 26px; background: var(--surf3);
   border-radius: 999px; overflow: hidden; position: relative;
 }
+/* Full-width gradient, revealed by clip-path from JS, so the colour at any
+   point always means the same loudness (green → -18 dB → yellow → -6 dB → red) */
 .meter-fill {
-  height: 100%; width: 2%; border-radius: 999px;
-  background: linear-gradient(90deg, #2fb97c 0%, #3ccf8e 55%, #f2b03d 80%, #f26363 100%);
-  transition: width 0.04s linear;
+  height: 100%; width: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, #2fb97c 0%, #3ccf8e 68%, #f2b03d 74%, #f2b03d 88%, #f26363 93%);
+  clip-path: inset(0 98% 0 0 round 999px);
 }
 .meter-lbl {
   position: absolute; inset: 0;
@@ -632,9 +634,132 @@ footer {
 .rec-dot { width: 7px; height: 7px; background: #fff; border-radius: 50%; animation: blink 1s infinite; flex-shrink: 0; }
 .rec-dot.red { background: var(--danger); }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
-.rec-actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
 .rec-status  { margin-top: 14px; }
-.rec-live    { display: flex; align-items: center; gap: 8px; color: var(--danger); font-weight: 600; font-size: 14px; }
+.rec-status:empty { display: none; }
+
+/* ── RECORD SCREEN ──
+   body.rec-screen drops the step bar + footer and widens the page; the
+   video then grows as tall as the window allows with the controls still
+   on-screen (--rec-chrome is everything that isn't video). */
+.rec-screen .step-bar, .steps-done .step-bar { visibility: hidden; }
+.rec-screen footer { display: none; }
+.rec-screen main   { padding: 16px 20px 20px; }
+.rec-screen .content { max-width: 1500px; }
+.rec { --rec-chrome: 270px; }
+
+.rec-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.rec-title { font-size: 18px; font-weight: 700; letter-spacing: -0.015em; margin-right: auto; }
+.rec-resumed { font-size: 12.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.rec-resumed > .ico { color: var(--success); }
+
+.rec-body { display: flex; gap: 18px; justify-content: center; align-items: flex-start; }
+.rec-main {
+  flex: 0 1 auto; min-width: 0;
+  width: min(100%, calc((100vh - var(--rec-chrome) - 2 * var(--ring-w, 0px)) * 16 / 9));
+  width: min(100%, calc((100dvh - var(--rec-chrome) - 2 * var(--ring-w, 0px)) * 16 / 9));
+}
+.rec-vid { margin-bottom: 10px; }
+.rec-vid .rec-badge { top: auto; bottom: 12px; }
+
+.rec-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.pc { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-right: auto; }
+.pc .btn.on { background: var(--accent-tint); border-color: var(--accent-line); color: var(--accent); }
+.pc-speed { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--muted); margin: 0 4px; }
+.pc-speed input { width: 86px; accent-color: var(--accent); }
+.btn-icon { padding-left: 8px; padding-right: 8px; }
+.btn-rec { min-width: 172px; }
+
+.rec-devs { gap: 8px; }
+.dev-pick {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 0 4px 0 10px; height: 34px;
+  background: var(--surf); border: 1px solid var(--border); border-radius: var(--radius-xs);
+  color: var(--muted); min-width: 0; max-width: 300px;
+}
+.dev-pick select {
+  background: transparent; color: var(--text); border: 0; font: inherit; font-size: 12.5px;
+  min-width: 0; max-width: 250px; padding: 6px 4px; cursor: pointer;
+}
+.dev-pick select:focus { outline: none; }
+.dev-pick:focus-within { border-color: var(--accent); box-shadow: var(--ring); }
+.dev-pick select option { background: var(--surf2); }
+.dev-pick:has(select:disabled) { opacity: 0.5; }
+.level-tag:empty { display: none; }
+.level-tag:not(.ok):not(.warn):not(.bad) { color: var(--muted); background: var(--surf); border-color: var(--border); }
+
+/* Vertical level meter on the right edge of the video */
+.vu {
+  position: absolute; right: 12px; top: 14%; bottom: 14%; width: 10px;
+  border-radius: 6px; background: rgba(0,0,0,0.5);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.12); overflow: hidden;
+}
+.vu-fill {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, #2fb97c 0%, #3ccf8e 68%, #f2b03d 74%, #f2b03d 88%, #f26363 93%);
+  clip-path: inset(100% 0 0 0);
+}
+.vu-peak { position: absolute; left: 0; right: 0; height: 2px; bottom: 0; background: #fff; opacity: 0.85; }
+
+/* Teleprompter band over the top of the video — closest to the lens.
+   It's page overlay only; the recording is the raw camera stream. */
+.prompter { position: absolute; left: 0; right: 0; top: 0; height: 42%; pointer-events: none; }
+.prompter:not(.empty) {
+  background: linear-gradient(rgba(5,7,12,0.84), rgba(5,7,12,0.74) 78%, rgba(5,7,12,0));
+}
+.prompter-view {
+  position: absolute; inset: 0 30px 0 0; overflow: hidden;
+  pointer-events: auto; cursor: ns-resize;
+  -webkit-mask-image: linear-gradient(transparent, #000 12%, #000 70%, transparent);
+          mask-image: linear-gradient(transparent, #000 12%, #000 70%, transparent);
+}
+.prompter-text {
+  --pt: calc(var(--pt-size, 32px) * var(--pt-scale, 1));
+  font-size: var(--pt); line-height: 1.42; font-weight: 600;
+  color: #fff; text-align: center; text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+  max-width: 26em; margin: 0 auto;
+  padding: calc(var(--pt) * 0.9) 4% 0 calc(4% + 30px);
+  will-change: transform; user-select: none;
+}
+.prompter-text p + p { margin-top: 0.7em; }
+.prompter-add {
+  pointer-events: auto;
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+  display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+  max-width: calc(100% - 28px); overflow: hidden; text-overflow: ellipsis;
+  padding: 8px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(5,7,12,0.7); color: #fff; font: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; backdrop-filter: blur(6px);
+}
+.prompter-add:hover { background: rgba(5,7,12,0.85); border-color: var(--accent); }
+
+/* 3-2-1 */
+.countdown {
+  position: absolute; left: 50%; top: 58%;
+  width: 120px; height: 120px; margin: -60px 0 0 -60px;
+  border-radius: 50%; background: rgba(5,7,12,0.66); border: 2px solid rgba(255,255,255,0.25);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 64px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums;
+}
+.countdown[hidden] { display: none; }
+.countdown.tick { animation: count-pop 1s var(--ease); }
+@keyframes count-pop { 0% { transform: scale(1.35); opacity: 0; } 25% { transform: scale(1); opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0.25; } }
+
+/* Script editor — beside the video when there's room, below it otherwise */
+.script-panel { display: none; flex: 0 0 340px; flex-direction: column; }
+.script-open .script-panel { display: flex; }
+.script-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.script-head .field-label { margin: 0; }
+/* side panel stretches to the video column's height */
+.rec-body.script-open { align-items: stretch; }
+.script-panel .script-ta { flex: 1; height: auto; min-height: 220px; resize: none; }
+.pc #pc-script.on { background: var(--accent-tint); border-color: var(--accent-line); color: var(--accent); }
+
+@media (max-width: 1000px) {
+  .rec-body { flex-direction: column; align-items: stretch; }
+  .rec-main { width: 100%; }
+  .script-panel { flex: none; }
+  .script-panel .script-ta { flex: none; height: 220px; resize: vertical; }
+}
 
 /* ── COMPLETION ── */
 .completion { text-align: center; padding: 44px 20px; }

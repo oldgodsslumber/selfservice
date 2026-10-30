@@ -7,8 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&display=swap">
-  <link rel="stylesheet" href="app.css?v=20261028a">
-  <script src="icons.js?v=20261028a"></script>
+  <link rel="stylesheet" href="app.css?v=20261030a">
+  <script src="icons.js?v=20261030a"></script>
   <!-- Save native getDisplayMedia before ANY script can monkey-patch it -->
   <script>if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) window._nativeGDM = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);</script>
 </head>
@@ -97,8 +97,11 @@ const S = {
   recActive: false,
   recSecs:   0,
   recTimer:  null,
+  countdown: null,       /* interval id while the 3-2-1 runs */
 
-  prompter: null,
+  script:     '',        /* teleprompter text — loaded from localStorage at boot */
+  scriptOpen: false,     /* script editor panel open on the record screen */
+  prompt: { playing: false, speed: 4, size: 32, pos: 0 },
 };
 
 
@@ -241,6 +244,12 @@ function prepHintHtml(arr) {
    RENDER DISPATCH
    ============================================================= */
 function render() {
+  /* Leaving the record screen stops the teleprompter and any countdown */
+  if (!isRecScreen()) { setPromptPlaying(false); cancelCountdown(); }
+  /* The record screen drops the step bar + footer and widens the page */
+  document.body.classList.toggle('rec-screen', isRecScreen());
+  document.body.classList.remove('steps-done');
+
   renderBar();
   updateNav();
   const el = document.getElementById('content');
@@ -252,19 +261,20 @@ function render() {
     else if (S.step === 3) { renderStep3(el); }
     else if (S.step === 4) { renderStep2(el); }
     else if (S.step === 5) { el.innerHTML = renderStep4(); }
-    else if (S.step === 6) { el.innerHTML = renderStep5(); if (!S.recActive && S.blob) showDownloadCard(); ensureRecStream(); }
+    else if (S.step === 6) { el.innerHTML = renderStep5(); bindRecScreen(); }
   }
   else if (S.location === 'home') {
     if      (S.step === 1) { el.innerHTML = renderHomeStep2(); bindHomeChecks(el); }
     else if (S.step === 2) { renderHomeStep3(el); }
     else if (S.step === 3) { renderHomeStep4(el); }
     else if (S.step === 4) { el.innerHTML = renderStep4(); }
-    else if (S.step === 5) { el.innerHTML = renderStep5(); if (!S.recActive && S.blob) showDownloadCard(); ensureRecStream(); }
+    else if (S.step === 5) { el.innerHTML = renderStep5(); bindRecScreen(); }
   }
 
   if (pastSetup()) {
     savePass();
-    if (S._resumed) el.insertAdjacentHTML('afterbegin', resumeBannerHtml());
+    /* The record screen shows its own compact "setup done" note */
+    if (S._resumed && !isRecScreen()) el.insertAdjacentHTML('afterbegin', resumeBannerHtml());
   }
 }
 
@@ -372,6 +382,7 @@ async function resumeStream() {
     return;
   }
   attachStream('rec-video');
+  refreshRecDevices();  /* device list is only known now */
 }
 
 /* Refreshing while on the picker / record screen keeps the hour rolling */
@@ -890,21 +901,63 @@ function startAudioMon() {
     S.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const src = S.audioCtx.createMediaStreamSource(S.stream);
     S.analyser = S.audioCtx.createAnalyser();
-    S.analyser.fftSize = 512;
+    S.analyser.fftSize = 1024;
     src.connect(S.analyser);
     rafAudio();
   } catch(e) { console.warn('Audio monitor:', e); }
 }
 
+/* Level meter: RMS loudness in dBFS with fast-attack / slow-release
+   ballistics, a peak-hold tick, and a rolling verdict for the label.
+   -60 dB (room tone) is the bottom of the scale, 0 dB is clipping. */
+const METER = { level: -60, peak: -60, peakAt: 0, buckets: [], bucketAt: 0 };
+const dbPct = db => Math.max(0, Math.min(100, (db + 60) / 60 * 100));
+
 function rafAudio() {
   if (!S.analyser) { S.rafId = null; return; }
   S.rafId = requestAnimationFrame(rafAudio);
-  const buf = new Uint8Array(S.analyser.frequencyBinCount);
-  S.analyser.getByteFrequencyData(buf);
-  const avg = buf.reduce((a, b) => a + b, 0) / buf.length;
-  const pct = Math.min(100, Math.max(2, (avg / 72) * 100));
+  if (!S._meterBuf || S._meterBuf.length !== S.analyser.fftSize) S._meterBuf = new Float32Array(S.analyser.fftSize);
+  const buf = S._meterBuf;
+  S.analyser.getFloatTimeDomainData(buf);
+  let sum = 0, peak = 0;
+  for (let i = 0; i < buf.length; i++) {
+    const v = buf[i];
+    sum += v * v;
+    if (Math.abs(v) > peak) peak = Math.abs(v);
+  }
+  const rms = 20 * Math.log10(Math.sqrt(sum / buf.length) || 1e-6);
+  const pk  = 20 * Math.log10(peak || 1e-6);
+  const now = performance.now();
+
+  METER.level = rms > METER.level ? rms : Math.max(rms, METER.level - 0.8);
+  if (pk >= METER.peak || now - METER.peakAt > 1200) { METER.peak = pk; METER.peakAt = now; }
+
+  /* Loudest peak per 100 ms, over the last ~2.5 s */
+  if (now - METER.bucketAt > 100) { METER.buckets.push(pk); METER.bucketAt = now; if (METER.buckets.length > 25) METER.buckets.shift(); }
+  else METER.buckets[METER.buckets.length - 1] = Math.max(METER.buckets[METER.buckets.length - 1] ?? -99, pk);
+
+  const lvl = dbPct(METER.level), pkPct = dbPct(METER.peak);
   const bar = document.getElementById('audio-fill');
-  if (bar) bar.style.width = pct + '%';
+  if (bar) bar.style.clipPath = `inset(0 ${100 - Math.max(2, lvl)}% 0 0 round 999px)`;
+  const vu = document.getElementById('vu-fill');
+  if (vu) vu.style.clipPath = `inset(${100 - lvl}% 0 0 0)`;
+  const tick = document.getElementById('vu-peak');
+  if (tick) tick.style.bottom = pkPct + '%';
+
+  const tag = document.getElementById('level-tag');
+  if (tag) {
+    const win = Math.max(...METER.buckets);
+    const v = win > -1   ? 'bad|Too loud — move the mic back'
+            : win < -50  ? '|No sound — say something'
+            : win < -30  ? 'warn|A bit quiet'
+            :              'ok|Good level';
+    if (tag.dataset.v !== v) {     /* only touch the DOM when the verdict changes */
+      tag.dataset.v = v;
+      const [cls, text] = v.split('|');
+      tag.className = 'tag level-tag ' + cls;
+      tag.innerHTML = icon('mic') + text;
+    }
+  }
 }
 
 /* =============================================================
@@ -1039,7 +1092,7 @@ async function redetect() {
 async function switchToRecommended() {
   const vid = S.dev.nexigo?.deviceId || S.dev.curVideoId;
   const aud = S.dev.rode?.deviceId   || S.dev.curAudioId;
-  await applyDeviceSwitch(vid, aud);
+  if (await applyDeviceSwitch(vid, aud)) renderStep3(document.getElementById('content'), true);
 }
 
 /* Manual dropdown selection — called by onchange on the select elements */
@@ -1049,9 +1102,11 @@ async function manualDevice() {
   const vid = vs?.value || S.dev.nexigo?.deviceId;
   const aud = as?.value || S.dev.rode?.deviceId;
   if (!vid && !aud) return;
-  await applyDeviceSwitch(vid, aud);
+  if (await applyDeviceSwitch(vid, aud)) renderStep3(document.getElementById('content'), true);
 }
 
+/* Swap S.stream to the given camera / mic. Returns true on success; the
+   caller redraws whichever screen it's on. */
 async function applyDeviceSwitch(vid, aud) {
   const oldStream = S.stream;
   let newStream, usedExact = false;
@@ -1085,10 +1140,11 @@ async function applyDeviceSwitch(vid, aud) {
                  S.dev.rode   && S.dev.curAudioId === S.dev.rode.deviceId);
     if (S.audioCtx) { S.audioCtx.close(); S.audioCtx = null; S.analyser = null; }
     startAudioMon();
-    if (S.location !== 'home') renderStep3(document.getElementById('content'), true);
+    return true;
   } catch(e) {
     console.error(e);
     alert('Could not switch to that device.\n\n' + e.name + ': ' + e.message);
+    return false;
   }
 }
 
@@ -1341,7 +1397,7 @@ function modeMsgHtml(m) {
     </div>`;
   }
   return `<div class="info-box">
-    <strong>Next up:</strong> Paste your script into the teleprompter, drag the window close to the camera, then hit Record.
+    <strong>Next up:</strong> Paste your script — it scrolls right over your camera preview, just under the lens — then hit Record.
   </div>`;
 }
 
@@ -1384,129 +1440,327 @@ function openDescriptRoom() {
 }
 
 /* =============================================================
-   STEP 6 — RECORD + TELEPROMPTER
+   RECORD SCREEN — big preview with the teleprompter scrolling over the
+   top of it (right under the lens), a live mic meter, and camera / mic
+   switching. No step bar or footer here: Back and Finish live in the
+   screen's own top row.
    ============================================================= */
+const SCRIPT_KEY = 'selfservice.script';
+
+function isRecScreen() { return S.mode === 'local' && S.step === lastStep(); }
+
+function loadScriptText() {
+  try { return localStorage.getItem(SCRIPT_KEY) || ''; } catch(e) { return ''; }
+}
+
 function renderStep5() {
   /* Reflect an in-flight recording so navigating away and back doesn't
      desync the UI (button showing "Start" while actually recording). */
   const rec = S.recActive;
+  const home = S.location === 'home';
   return `
-  <div>
-    <div class="step-title">Step ${S.step} — Record Your Video</div>
-    <div class="step-sub">Load your script, open the teleprompter near the camera, then press record.</div>
+  <div class="rec">
+    <div class="rec-top">
+      <button class="btn btn-ghost btn-sm" id="rec-back" onclick="nav(-1)">${icon('arrow-left')}Back</button>
+      <div class="rec-title">Record your video</div>
+      ${S._resumed ? `<span class="rec-resumed">${icon('circle-check')}Setup done ·
+        <a class="link" href="javascript:rerunSetup()">Run setup again</a></span>` : ''}
+      <button class="btn btn-success btn-sm" onclick="nav(1)">Finish${icon('check')}</button>
+    </div>
 
-    <div class="vid-wrap">
-      <video id="rec-video" autoplay playsinline muted></video>
-      <div class="rec-badge" id="rec-badge" style="display:${rec ? 'flex' : 'none'}">
-        <div class="rec-dot"></div> REC
+    <div class="rec-body${S.scriptOpen ? ' script-open' : ''}" id="rec-body">
+      <div class="rec-main">
+        <div class="vid-wrap rec-vid">
+          <video id="rec-video" autoplay playsinline muted></video>
+          <div id="prompter-slot">${prompterHtml()}</div>
+          <div class="vu" title="Microphone level">
+            <div class="vu-fill" id="vu-fill"></div>
+            <div class="vu-peak" id="vu-peak"></div>
+          </div>
+          <div class="rec-badge" id="rec-badge" style="display:${rec ? 'flex' : 'none'}">
+            <div class="rec-dot"></div> REC <span id="rec-timer" class="tnum">${fmtTime(S.recSecs)}</span>
+          </div>
+          <div class="countdown" id="countdown" hidden></div>
+          <div class="cam-loading" id="cam-loading">
+            <div class="spinner"></div>
+            <span>Starting camera…</span>
+          </div>
+        </div>
+
+        <div class="rec-bar">
+          <div class="pc">
+            <button class="btn btn-ghost btn-sm" id="pc-play" onclick="togglePrompt()">${promptPlayLabel()}</button>
+            <label class="pc-speed">Speed
+              <input type="range" min="1" max="10" value="${S.prompt.speed}" oninput="setPromptSpeed(+this.value)">
+            </label>
+            <button class="btn btn-ghost btn-sm btn-icon" onclick="sizePrompt(-4)" title="Smaller text">${icon('a-arrow-down')}</button>
+            <button class="btn btn-ghost btn-sm btn-icon" onclick="sizePrompt(4)" title="Bigger text">${icon('a-arrow-up')}</button>
+            <button class="btn btn-ghost btn-sm btn-icon" onclick="resetPrompt()" title="Back to the top">${icon('rotate-ccw')}</button>
+            <button class="btn btn-ghost btn-sm" id="pc-script" onclick="toggleScriptPanel()">${icon('pencil')}Script</button>
+          </div>
+          <button class="btn ${rec ? 'btn-danger' : 'btn-primary'} btn-rec" id="btn-rec" onclick="toggleRec()">${recBtnLabel(rec)}</button>
+        </div>
+
+        <div class="rec-bar rec-devs">
+          <label class="dev-pick" title="Camera">${icon('video')}<select id="rec-sel-video" onchange="recDeviceSwitch()"></select></label>
+          <label class="dev-pick" title="Microphone">${icon('mic')}<select id="rec-sel-audio" onchange="recDeviceSwitch()"></select></label>
+          <span class="tag level-tag" id="level-tag"></span>
+        </div>
+
+        <div id="rec-status" class="rec-status"></div>
       </div>
-    </div>
 
-    <div class="sec-label">Your Script</div>
-    <textarea class="script-ta" id="script-ta"
-      placeholder="Paste or type your script here…&#10;The teleprompter window will scroll it for you at adjustable speed."></textarea>
-
-    <div class="rec-actions">
-      <button class="btn btn-ghost" onclick="openPrompter()">${icon('scroll-text')}Open Teleprompter</button>
-      <button class="btn ${rec ? 'btn-danger' : 'btn-primary'}" id="btn-rec" onclick="toggleRec()">${recBtnLabel(rec)}</button>
-    </div>
-
-    <div id="rec-status" class="rec-status">${rec ? recStatusRecordingHtml() : ''}</div>
-
-    <div class="info-box">
-      <strong>Tip:</strong> After opening the teleprompter, drag that window so it sits just below or beside your camera lens — this keeps your eyes close to the lens while you read your script.
+      <aside class="script-panel">
+        <div class="script-head">
+          <label class="field-label" for="script-ta">Your script</label>
+          <button class="btn btn-ghost btn-xs btn-icon" onclick="toggleScriptPanel(false)" title="Close">${icon('x')}</button>
+        </div>
+        <textarea class="script-ta" id="script-ta" oninput="setScript(this.value)"
+          placeholder="Paste or type your script here.&#10;&#10;It scrolls over your camera preview, right under the lens. Leave a blank line between paragraphs.">${esc(S.script)}</textarea>
+        <div class="field-hint">Saved in this browser, so a refresh won't lose it.</div>
+      </aside>
     </div>
   </div>`;
 }
 
-/* ── Teleprompter popup ── */
-function openPrompter() {
-  const script = document.getElementById('script-ta')?.value || '';
-  if (S.prompter && !S.prompter.closed) { S.prompter.focus(); return; }
-
-  const w = window.open('', 'Teleprompter',
-    'width=720,height=300,resizable=yes,toolbar=no,menubar=no,scrollbars=no,status=no');
-  if (!w) { alert('Popup blocked — please allow popups for this page and try again.'); return; }
-  S.prompter = w;
-
-  const safe = script
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/\n/g,'<br>');
-
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-<title>Teleprompter</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#000;color:#fff;font-family:Georgia,serif;
-  height:100vh;display:flex;flex-direction:column;overflow:hidden;user-select:none}
-#bar{padding:7px 14px;background:#111;display:flex;align-items:center;gap:10px;
-  border-bottom:1px solid #222;flex-shrink:0}
-#bar button{padding:5px 14px;border:none;border-radius:6px;font-size:13px;
-  font-weight:700;cursor:pointer;background:#2a2a2a;color:#fff;transition:background .15s}
-#bar button.go{background:#22c55e;color:#000}
-#bar button.sz{padding:4px 10px;font-size:15px;font-weight:900;line-height:1}
-#bar input[type=range]{width:72px;cursor:pointer;accent-color:#22c55e}
-#bar label{font-size:12px;color:#666}
-.hint{margin-left:auto;font-size:11px;color:#444}
-#scroll{flex:1;overflow-y:scroll;padding:18px 44px 220px;scrollbar-width:none}
-#scroll::-webkit-scrollbar{display:none}
-#txt{font-size:33px;line-height:1.8;text-align:center;color:#fff}
-#fade{position:fixed;bottom:0;left:0;right:0;height:72px;
-  background:linear-gradient(transparent,#000);pointer-events:none}
-#bar button{display:inline-flex;align-items:center;gap:6px}
-.ico{width:1em;height:1em;flex-shrink:0}.ico-fill{fill:currentColor;stroke:none}
-</style></head><body>
-<div id="bar">
-  <button id="pbtn" onclick="tog()">${icon('play', 'ico-fill')}Start</button>
-  <label>Speed</label>
-  <input type="range" id="spd" min="1" max="20" value="5" oninput="chSpd(+this.value)">
-  <label id="sv">5</label>
-  <button onclick="rst()" style="background:#1a1a1a">${icon('rotate-ccw')}Reset</button>
-  <label style="margin-left:6px">Size</label>
-  <button class="sz" onclick="chSz(-2)">A−</button>
-  <button class="sz" onclick="chSz(2)">A+</button>
-  <span class="hint">Space = play/pause &nbsp;·&nbsp; ↑↓ = scroll</span>
-</div>
-<div id="scroll">
-  <div id="txt">${safe||'<em style="color:#444">No script yet. Type in the main window, then reopen this.</em>'}</div>
-</div>
-<div id="fade"></div>
-<script>
-let going=false,spd=5,iv=null,sz=33;
-const PLAY='${icon('play', 'ico-fill')}Start', PAUSE='${icon('pause', 'ico-fill')}Pause';
-function chSz(d){sz=Math.min(72,Math.max(16,sz+d));document.getElementById('txt').style.fontSize=sz+'px';}
-function tog(){
-  going=!going;
-  const b=document.getElementById('pbtn');
-  b.innerHTML=going?PAUSE:PLAY;
-  b.className=going?'go':'';
-  clearInterval(iv);
-  if(going)iv=setInterval(()=>document.getElementById('scroll').scrollBy(0,spd*.4),30);
+/* Wire up the parts of the record screen that need more than markup */
+function bindRecScreen() {
+  /* Script text scales down with the video so phones still get a few words a line */
+  const vid = document.querySelector('.rec-vid');
+  if (vid && window.ResizeObserver) {
+    new ResizeObserver(([e]) => {
+      S.prompt.scale = Math.min(1, e.contentRect.width / 1000);
+      vid.style.setProperty('--pt-scale', S.prompt.scale.toFixed(3));
+    }).observe(vid);
+  }
+  refreshRecDevices();
+  bindPrompter();
+  lockRecControls(S.recActive);
+  if (!S.recActive && S.blob) showDownloadCard();
+  ensureRecStream();
 }
-function chSpd(v){
-  spd=v;document.getElementById('sv').textContent=v;
-  if(going){clearInterval(iv);iv=setInterval(()=>document.getElementById('scroll').scrollBy(0,spd*.4),30);}
+
+/* ── Camera / mic pickers ── */
+function devOptions(list, curId, preferred) {
+  if (!list.length) return '<option value="">None found</option>';
+  return list.map(d => {
+    const name = d.label || ('Device ' + d.deviceId.slice(0, 6));
+    const rec  = preferred && d.deviceId === preferred.deviceId && S.location === 'studio' ? ' (recommended)' : '';
+    return `<option value="${esc(d.deviceId)}"${d.deviceId === curId ? ' selected' : ''}>${esc(name + rec)}</option>`;
+  }).join('');
 }
-function rst(){document.getElementById('scroll').scrollTop=0;}
-document.addEventListener('keydown',e=>{
-  if(e.code==='Space'){e.preventDefault();tog();}
-  if(e.code==='ArrowUp')  document.getElementById('scroll').scrollBy(0,-60);
-  if(e.code==='ArrowDown')document.getElementById('scroll').scrollBy(0,60);
+
+function refreshRecDevices() {
+  const v = document.getElementById('rec-sel-video');
+  const a = document.getElementById('rec-sel-audio');
+  if (v) v.innerHTML = devOptions(S.dev.allVideo, S.dev.curVideoId, S.dev.nexigo);
+  if (a) a.innerHTML = devOptions(S.dev.allAudio, S.dev.curAudioId, S.dev.rode);
+}
+
+async function recDeviceSwitch() {
+  if (S.recActive || S.countdown) return;
+  const vid = document.getElementById('rec-sel-video')?.value || S.dev.curVideoId;
+  const aud = document.getElementById('rec-sel-audio')?.value || S.dev.curAudioId;
+  await applyDeviceSwitch(vid, aud);
+  attachStream('rec-video');
+  refreshRecDevices();
+  savePass();
+}
+
+/* No switching devices or leaving mid-take */
+function lockRecControls(on) {
+  ['rec-sel-video', 'rec-sel-audio', 'rec-back'].forEach(id => {
+    const e = document.getElementById(id);
+    if (e) e.disabled = on;
+  });
+}
+
+/* ── Teleprompter (on-camera) ── */
+function scriptHtml(text) {
+  return text.trim().split(/\n\s*\n/)
+    .map(p => '<p>' + esc(p.trim()).replace(/\n/g, '<br>') + '</p>').join('');
+}
+
+function prompterHtml() {
+  if (!S.script.trim()) {
+    return `<div class="prompter empty">
+      <button class="prompter-add" onclick="toggleScriptPanel(true)">${icon('scroll-text')}Add your script — it scrolls right here, under the camera</button>
+    </div>`;
+  }
+  return `<div class="prompter" style="--pt-size:${S.prompt.size}px">
+    <div class="prompter-view" id="prompter-view">
+      <div class="prompter-text" id="prompter-text">${scriptHtml(S.script)}</div>
+    </div>
+  </div>`;
+}
+
+function bindPrompter() {
+  const view = document.getElementById('prompter-view');
+  if (view) view.addEventListener('wheel', e => {
+    e.preventDefault();
+    nudgePrompt(e.deltaY * 0.6);
+  }, { passive: false });
+  S.prompt.pos = Math.min(S.prompt.pos, promptMax());
+  applyPromptPos();
+}
+
+function setScript(text) {
+  S.script = text;
+  try { localStorage.setItem(SCRIPT_KEY, text); } catch(e) {}
+  const slot = document.getElementById('prompter-slot');
+  if (!slot) return;
+  slot.innerHTML = prompterHtml();
+  if (!text.trim()) setPromptPlaying(false);
+  bindPrompter();
+}
+
+function toggleScriptPanel(open) {
+  S.scriptOpen = open === undefined ? !S.scriptOpen : open;
+  document.getElementById('rec-body')?.classList.toggle('script-open', S.scriptOpen);
+  document.getElementById('pc-script')?.classList.toggle('on', S.scriptOpen);
+  if (S.scriptOpen) document.getElementById('script-ta')?.focus();
+  /* The video resizes with the panel — keep the scroll position in range */
+  requestAnimationFrame(() => { S.prompt.pos = Math.min(S.prompt.pos, promptMax()); applyPromptPos(); });
+}
+
+/* Furthest scroll: the last line has reached the reading line at the top */
+function promptMax() {
+  const t = document.getElementById('prompter-text');
+  const v = document.getElementById('prompter-view');
+  return t && v ? Math.max(0, t.offsetHeight - v.clientHeight * 0.4) : 0;
+}
+
+function applyPromptPos() {
+  const t = document.getElementById('prompter-text');
+  if (t) t.style.transform = `translateY(${-S.prompt.pos}px)`;
+}
+
+function nudgePrompt(dy) {
+  S.prompt.pos = Math.max(0, Math.min(promptMax(), S.prompt.pos + dy));
+  applyPromptPos();
+}
+
+/* ~150 words a minute at speed 4 and the default text size */
+function promptPxPerSec() { return S.prompt.speed * 3.2 * S.prompt.size * (S.prompt.scale || 1) / 32; }
+
+function promptPlayLabel() {
+  return S.prompt.playing ? icon('pause', 'ico-fill') + 'Pause' : icon('play', 'ico-fill') + 'Scroll';
+}
+
+function setPromptPlaying(on) {
+  S.prompt.playing = !!on && !!S.script.trim();
+  const b = document.getElementById('pc-play');
+  if (b) { b.innerHTML = promptPlayLabel(); b.classList.toggle('on', S.prompt.playing); }
+  if (S.prompt.playing && !S._promptRaf) {
+    S._promptLast = 0;
+    S._promptRaf = requestAnimationFrame(promptTick);
+  }
+}
+
+function promptTick(ts) {
+  if (!S.prompt.playing || !document.getElementById('prompter-text')) {
+    S._promptRaf = null;
+    if (S.prompt.playing) setPromptPlaying(false);
+    return;
+  }
+  const dt = S._promptLast ? Math.min(0.1, (ts - S._promptLast) / 1000) : 0;
+  S._promptLast = ts;
+  const max = promptMax();
+  S.prompt.pos = Math.min(max, S.prompt.pos + promptPxPerSec() * dt);
+  applyPromptPos();
+  if (S.prompt.pos >= max) { S._promptRaf = null; setPromptPlaying(false); return; }
+  S._promptRaf = requestAnimationFrame(promptTick);
+}
+
+function togglePrompt() {
+  if (!S.script.trim()) { toggleScriptPanel(true); return; }
+  if (!S.prompt.playing && S.prompt.pos >= promptMax()) S.prompt.pos = 0;  /* at the end → start over */
+  setPromptPlaying(!S.prompt.playing);
+}
+
+function setPromptSpeed(v) { S.prompt.speed = v; }
+
+function sizePrompt(d) {
+  const old = S.prompt.size;
+  S.prompt.size = Math.max(18, Math.min(64, old + d));
+  const p = document.querySelector('.prompter');
+  if (p) p.style.setProperty('--pt-size', S.prompt.size + 'px');
+  /* Keep roughly the same place in the script */
+  S.prompt.pos = Math.min(promptMax(), S.prompt.pos * S.prompt.size / old);
+  applyPromptPos();
+}
+
+function resetPrompt() { S.prompt.pos = 0; applyPromptPos(); }
+
+/* Space = scroll / pause, arrows = nudge — record screen only, never while typing */
+document.addEventListener('keydown', e => {
+  if (!isRecScreen() || e.ctrlKey || e.metaKey || e.altKey) return;
+  const t = e.target;
+  if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (document.activeElement?.tagName === 'BUTTON') document.activeElement.blur();
+    togglePrompt();
+  } else if (e.code === 'ArrowDown') { e.preventDefault(); nudgePrompt(40); }
+  else if (e.code === 'ArrowUp')     { e.preventDefault(); nudgePrompt(-40); }
 });
-<\/script></body></html>`);
-  w.document.close();
-}
 
 /* ── Recording ── */
 function recBtnLabel(recording) {
   return recording ? icon('square', 'ico-fill') + 'Stop Recording' : icon('circle', 'ico-fill') + 'Start Recording';
 }
 
-function toggleRec() { S.recActive ? stopRec() : startRec(); }
+function setRecButton(state) {
+  const btn = document.getElementById('btn-rec');
+  if (!btn) return;
+  if (state === 'countdown') { btn.innerHTML = icon('x') + 'Cancel'; btn.className = 'btn btn-ghost btn-rec'; return; }
+  btn.innerHTML = recBtnLabel(state);
+  btn.className = 'btn btn-rec ' + (state ? 'btn-danger' : 'btn-primary');
+}
+
+function toggleRec() {
+  if (S.recActive) stopRec();
+  else if (S.countdown) cancelCountdown();
+  else startCountdown();
+}
+
+/* 3-2-1, then recording and the teleprompter start together */
+function startCountdown() {
+  if (!S.stream) { alert('No camera stream yet. Give it a second, or go back and allow camera access.'); return; }
+  let n = 3;
+  const show = () => {
+    const box = document.getElementById('countdown');
+    if (!box) return;
+    box.hidden = false;
+    box.textContent = n;
+    box.classList.remove('tick'); void box.offsetWidth; box.classList.add('tick');
+  };
+  show();
+  setRecButton('countdown');
+  lockRecControls(true);
+  S.countdown = setInterval(() => {
+    if (--n > 0) { show(); return; }
+    clearInterval(S.countdown); S.countdown = null;
+    const box = document.getElementById('countdown');
+    if (box) box.hidden = true;
+    startRec();
+    if (S.script.trim()) setPromptPlaying(true);
+  }, 1000);
+}
+
+function cancelCountdown() {
+  if (!S.countdown) return;
+  clearInterval(S.countdown); S.countdown = null;
+  const box = document.getElementById('countdown');
+  if (box) box.hidden = true;
+  setRecButton(false);
+  lockRecControls(false);
+}
 
 function startRec() {
   if (!S.stream) { alert('No camera stream. Go back to step 2 and allow camera access.'); return; }
   S.chunks = [];
+  resetRec();
 
   /* Prefer MP4 (H.264+AAC) — supported in Chrome 130+, Safari, and Edge.
      Falls back to WebM if the browser doesn't support MP4 recording. */
@@ -1531,27 +1785,18 @@ function startRec() {
   S.recorder.start(100);
   S.recActive = true; S.recSecs = 0;
 
-  document.getElementById('rec-badge').style.display = 'flex';
-  const btn = document.getElementById('btn-rec');
-  if (btn) { btn.innerHTML = recBtnLabel(true); btn.className = 'btn btn-danger'; }
+  const badge = document.getElementById('rec-badge');
+  if (badge) badge.style.display = 'flex';
+  const t = document.getElementById('rec-timer');
+  if (t) t.textContent = fmtTime(0);
+  setRecButton(true);
+  lockRecControls(true);
 
   S.recTimer = setInterval(() => {
     S.recSecs++;
     const t = document.getElementById('rec-timer');
     if (t) t.textContent = fmtTime(S.recSecs);
   }, 1000);
-
-  document.getElementById('rec-status').innerHTML = recStatusRecordingHtml();
-}
-
-function recStatusRecordingHtml() {
-  return `<div class="row">
-      <div class="rec-live">
-        <div class="rec-dot red"></div>
-        Recording — <span id="rec-timer" class="tnum">${fmtTime(S.recSecs)}</span>
-      </div>
-      <button class="btn btn-ghost btn-xs" onclick="openPrompter()">${icon('scroll-text')}Teleprompter</button>
-    </div>`;
 }
 
 function stopRec() {
@@ -1560,8 +1805,9 @@ function stopRec() {
   clearInterval(S.recTimer); S.recTimer = null;
   const badge = document.getElementById('rec-badge');
   if (badge) badge.style.display = 'none';
-  const btn = document.getElementById('btn-rec');
-  if (btn) { btn.innerHTML = recBtnLabel(false); btn.className = 'btn btn-primary'; }
+  setRecButton(false);
+  lockRecControls(false);
+  setPromptPlaying(false);
 }
 
 function onRecStop() {
@@ -1994,6 +2240,7 @@ async function setBgEffect(id) {
 /* Stop every live media resource: active recording, preview effect, camera/mic
    tracks, audio meter. Safe to call from any step. */
 function stopAllMedia() {
+  cancelCountdown();
   if (S.recActive) stopRec();               /* flushes MediaRecorder → onRecStop */
   if (S.recTimer)  { clearInterval(S.recTimer); S.recTimer = null; }
   if (_previewEffect) { try { _previewEffect.stopEffect(); } catch(e) {} _previewEffect = null; }
@@ -2015,7 +2262,8 @@ function finish() {
     </div>`;
 
   document.querySelector('footer').style.display = 'none';
-  renderBar();
+  document.body.classList.remove('rec-screen');
+  document.body.classList.add('steps-done');
   /* A finished blob stays downloadable here; a recording that was still
      running is flushed by stopAllMedia and lands here via onRecStop. */
   showDownloadCard();
@@ -2051,6 +2299,7 @@ function finish() {
   S.descriptRoom = pass.descriptRoom || '';
   S.step = (S.mode === 'local' || S.mode === 'descript') ? lastStep() : pickerStep();
 })();
+S.script = loadScriptText();
 render();
 </script>
 </body>

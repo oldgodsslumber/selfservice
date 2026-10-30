@@ -7,8 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&display=swap">
-  <link rel="stylesheet" href="app.css?v=20261028a">
-  <script src="icons.js?v=20261028a"></script>
+  <link rel="stylesheet" href="app.css?v=20261030a">
+  <script src="icons.js?v=20261030a"></script>
   <script>if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) window._nativeGDM = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);</script>
 </head>
 <body>
@@ -518,21 +518,28 @@ function startAudioMon() {
     S.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const src = S.audioCtx.createMediaStreamSource(S.stream);
     S.analyser = S.audioCtx.createAnalyser();
-    S.analyser.fftSize = 512;
+    S.analyser.fftSize = 1024;
     src.connect(S.analyser);
     rafAudio();
   } catch(e) { console.warn('Audio monitor:', e); }
 }
 
+/* RMS loudness in dBFS, -60 dB (room tone) → 0 dB (clipping), with a slow
+   release so the bar doesn't flicker. Same scale as the main app's meter. */
+let meterLevel = -60;
 function rafAudio() {
   if (!S.analyser) { S.rafId = null; return; }
   S.rafId = requestAnimationFrame(rafAudio);
-  const buf = new Uint8Array(S.analyser.frequencyBinCount);
-  S.analyser.getByteFrequencyData(buf);
-  const avg = buf.reduce((a, b) => a + b, 0) / buf.length;
-  const pct = Math.min(100, Math.max(2, (avg / 72) * 100));
+  if (!S._meterBuf || S._meterBuf.length !== S.analyser.fftSize) S._meterBuf = new Float32Array(S.analyser.fftSize);
+  const buf = S._meterBuf;
+  S.analyser.getFloatTimeDomainData(buf);
+  let sum = 0;
+  for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+  const rms = 20 * Math.log10(Math.sqrt(sum / buf.length) || 1e-6);
+  meterLevel = rms > meterLevel ? rms : Math.max(rms, meterLevel - 0.8);
+  const pct = Math.max(2, Math.min(100, (meterLevel + 60) / 60 * 100));
   const bar = document.getElementById('audio-fill');
-  if (bar) bar.style.width = pct + '%';
+  if (bar) bar.style.clipPath = `inset(0 ${100 - pct}% 0 0 round 999px)`;
 }
 
 /* =============================================================
