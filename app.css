@@ -807,6 +807,36 @@ body.ringlight-on {
 .switch input:checked + span::after { transform: translateX(16px); background: #fff; }
 .switch input:focus-visible + span { box-shadow: var(--ring); }
 
+/* ── LIGHTING COACH ── */
+.coach-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.coach-head .panel-title { margin: 0; }
+.coach-live { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 650; color: var(--success); letter-spacing: 0.04em; text-transform: uppercase; }
+.coach-live i { width: 7px; height: 7px; border-radius: 50%; background: var(--success); animation: blink 1.6s infinite; }
+#coach-msg .bright-result { align-items: flex-start; }
+#coach-msg .bright-icon { margin-top: 1px; }
+.gauges { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
+.gauge-top { font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+.gauge-track { position: relative; height: 6px; border-radius: 999px; background: var(--surf3); }
+.gauge-zone { position: absolute; top: 0; bottom: 0; border-radius: 999px; background: var(--success-line); }
+.gauge-dot {
+  position: absolute; top: 50%; left: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px;
+  border-radius: 50%; background: #fff; box-shadow: 0 0 0 3px rgba(0,0,0,0.35);
+  transition: left .35s var(--ease), opacity .2s;
+}
+.gauge.idle .gauge-dot { opacity: 0.25; }
+.gauge-ends { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--faint); margin-top: 4px; }
+.coach-auto { width: 100%; }
+.face-box {
+  position: absolute; pointer-events: none;
+  border: 2px solid var(--success); border-radius: 18px;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.35);
+  transition: left .3s var(--ease), top .3s var(--ease), width .3s var(--ease), height .3s var(--ease), border-color .2s;
+}
+.face-box[hidden] { display: none; }
+.face-box.warn, .face-box.warn-mild { border-color: var(--warn); }
+.face-box.error { border-color: var(--danger); }
+.face-box.info  { border-color: var(--accent); }
+
 /* Home lighting step: video left, coach + ring light right */
 .wide-step .content { max-width: 1120px; }
 .light-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
