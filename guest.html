@@ -4,293 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Guest Setup — Recording Session</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg:       #0f1117;
-      --surf:     #1c1f26;
-      --surf2:    #252930;
-      --accent:   #4f8ef7;
-      --accent2:  #6ba3ff;
-      --success:  #22c55e;
-      --warn:     #f59e0b;
-      --danger:   #ef4444;
-      --text:     #f1f5f9;
-      --muted:    #94a3b8;
-      --border:   #2d3748;
-      --radius:   12px;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg); color: var(--text);
-      height: 100vh; display: flex; flex-direction: column; overflow: hidden;
-    }
-
-    /* ── HEADER ── */
-    header {
-      background: var(--surf); border-bottom: 1px solid var(--border);
-      padding: 13px 24px; display: flex; align-items: center; gap: 20px; flex-shrink: 0;
-    }
-    header h1 { font-size: 16px; font-weight: 700; white-space: nowrap; letter-spacing: -0.01em; }
-
-    /* ── STEP BAR ── */
-    .step-bar { display: flex; align-items: center; flex: 1; overflow: hidden; }
-    .pip {
-      width: 28px; height: 28px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 700; flex-shrink: 0;
-      background: var(--surf2); border: 2px solid var(--border); color: var(--muted);
-      transition: all 0.25s;
-    }
-    .pip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-    .pip.done   { background: var(--success); border-color: var(--success); color: #fff; }
-    .connector  { flex: 1; height: 2px; background: var(--border); transition: background 0.25s; }
-    .connector.done { background: var(--success); }
-
-    /* ── MAIN / FOOTER ── */
-    main { flex: 1; overflow-y: auto; display: flex; justify-content: center; padding: 24px 20px; }
-    .content { width: 100%; max-width: 680px; }
-    footer {
-      border-top: 1px solid var(--border); background: var(--surf);
-      padding: 13px 24px; display: flex; justify-content: space-between;
-      align-items: center; flex-shrink: 0;
-    }
-
-    /* ── TYPE ── */
-    .step-title { font-size: 23px; font-weight: 700; line-height: 1.2; margin-bottom: 5px; }
-    .step-sub   { color: var(--muted); font-size: 14px; line-height: 1.6; margin-bottom: 22px; }
-    .sec-label  {
-      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
-      color: var(--muted); margin: 18px 0 8px;
-    }
-
-    /* ── CHECK ROWS ── */
-    .checklist { display: flex; flex-direction: column; gap: 9px; }
-    .check-row {
-      display: flex; align-items: flex-start; gap: 12px;
-      padding: 13px 15px; background: var(--surf);
-      border: 2px solid var(--border); border-radius: 10px;
-      cursor: pointer; transition: border-color 0.15s, background 0.15s; user-select: none;
-    }
-    .check-row:hover { border-color: var(--accent); }
-    .check-row.on { border-color: var(--success); background: rgba(34,197,94,0.07); }
-    .cbox {
-      width: 21px; height: 21px; border-radius: 5px;
-      border: 2px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; margin-top: 1px; font-size: 12px; font-weight: 700; transition: all 0.15s;
-    }
-    .check-row.on .cbox { background: var(--success); border-color: var(--success); color: #fff; }
-    .crow-title { font-weight: 600; font-size: 15px; line-height: 1.3; }
-    .crow-desc  { font-size: 13px; color: var(--muted); margin-top: 2px; }
-
-    /* ── PREP STAGE (scattered confirmation chips) ── */
-    .prep-stage {
-      position: relative;
-      min-height: clamp(420px, 56vh, 520px);
-      max-width: 100%;
-      margin: 14px auto 4px;
-    }
-    .prep-stage-hint {
-      position: absolute; top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      color: var(--muted); font-size: 14px;
-      text-align: center; pointer-events: none;
-      opacity: 0.65; max-width: 200px;
-      font-weight: 500;
-    }
-    .prep-chip {
-      position: absolute;
-      width: clamp(190px, 33%, 230px);
-      background: var(--surf);
-      border: 2px solid var(--border);
-      border-radius: 12px;
-      padding: 13px 14px;
-      cursor: pointer; user-select: none;
-      display: flex; align-items: center; gap: 12px;
-      transition: border-color 0.15s, background 0.15s;
-      z-index: 2;
-    }
-    .prep-chip:hover { border-color: var(--accent); }
-    .prep-chip.on    { border-color: var(--success); background: rgba(34,197,94,0.08); }
-    .prep-chip-icon {
-      font-size: 30px; line-height: 1;
-      flex-shrink: 0;
-      width: 36px; height: 36px;
-      display: flex; align-items: center; justify-content: center;
-      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
-    }
-    .prep-chip-body { flex: 1; min-width: 0; padding-right: 14px; }
-    .prep-chip .cbox {
-      position: absolute;
-      top: 7px; right: 7px;
-      width: 17px; height: 17px;
-      border-radius: 4px;
-      border: 2px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; margin-top: 0;
-      font-size: 10px; font-weight: 700;
-      transition: all 0.15s;
-    }
-    .prep-chip.on .cbox { background: var(--success); border-color: var(--success); color: #fff; }
-    .prep-chip-title { font-weight: 600; font-size: 13.5px; line-height: 1.3; }
-    .prep-chip-arrow { font-size: 11.5px; color: var(--muted); margin-top: 3px; line-height: 1.25; }
-    .prep-chip.on .prep-chip-arrow { color: var(--success); opacity: 0.8; }
-
-    .pp-top-left  { top: 0;    left: 0; }
-    .pp-top-right { top: 0;    right: 0; }
-    .pp-mid-left  { top: 50%;  left: 0;   transform: translateY(-50%); }
-    .pp-mid-right { top: 50%;  right: 0;  transform: translateY(-50%); }
-    .pp-bot-left  { bottom: 0; left: 0; }
-    .pp-bot-mid   { bottom: 0; left: 50%; transform: translateX(-50%); }
-    .pp-bot-right { bottom: 0; right: 0; }
-
-    /* On wide viewports, let the prep stage break out of .content's 680px cap
-       so chips spread across the screen instead of clustering in the middle. */
-    @media (min-width: 900px) {
-      .prep-stage {
-        width: min(96vw, 1000px);
-        margin-left: 50%;
-        transform: translateX(-50%);
-      }
-    }
-
-    @media (max-width: 620px) {
-      .prep-stage { min-height: 0; }
-      .prep-stage-hint { display: none; }
-      .prep-chip {
-        position: static; width: 100%;
-        margin-bottom: 10px;
-        transform: none !important;
-      }
-    }
-
-    /* ── BUTTONS ── */
-    .btn {
-      padding: 10px 20px; border-radius: 8px; border: none;
-      font-size: 14px; font-weight: 600; cursor: pointer;
-      display: inline-flex; align-items: center; gap: 7px;
-      transition: all 0.15s; text-decoration: none; white-space: nowrap;
-    }
-    .btn:disabled { opacity: 0.38; cursor: not-allowed; pointer-events: none; }
-    .btn-primary { background: var(--accent); color: #fff; }
-    .btn-primary:hover:not(:disabled) { background: var(--accent2); transform: translateY(-1px); }
-    .btn-success { background: var(--success); color: #fff; }
-    .btn-success:hover:not(:disabled) { background: #16a34a; transform: translateY(-1px); }
-    .btn-ghost   { background: var(--surf2); color: var(--text); border: 1px solid var(--border); }
-    .btn-ghost:hover:not(:disabled) { border-color: var(--accent); }
-
-    /* ── CARD / INFO ── */
-    .card { background: var(--surf); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
-    .info-box {
-      background: rgba(79,142,247,0.07); border: 1px solid rgba(79,142,247,0.24);
-      border-radius: 10px; padding: 12px 15px;
-      font-size: 14px; color: var(--muted); line-height: 1.55; margin-top: 12px;
-    }
-    .info-box strong { color: var(--text); }
-
-    /* ── VIDEO ── */
-    .vid-wrap {
-      position: relative; width: 100%; aspect-ratio: 16/9;
-      background: #000; border-radius: var(--radius); overflow: hidden; margin-bottom: 14px;
-    }
-    .vid-wrap video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; }
-    .vid-overlay {
-      position: absolute; inset: 0;
-      display: flex; align-items: center; justify-content: center; pointer-events: none;
-    }
-    .cam-loading {
-      position: absolute; inset: 0; background: #000;
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; gap: 11px; font-size: 14px; color: var(--muted);
-    }
-    .spinner {
-      width: 26px; height: 26px;
-      border: 3px solid var(--border); border-top-color: var(--accent);
-      border-radius: 50%; animation: spin 0.7s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── AUDIO METER ── */
-    .meter-track { height: 22px; background: var(--surf2); border-radius: 11px; overflow: hidden; position: relative; }
-    .meter-fill {
-      height: 100%; width: 2%; border-radius: 11px;
-      background: linear-gradient(90deg, #22c55e 0%, #86efac 55%, #f59e0b 80%, #ef4444 100%);
-      transition: width 0.04s linear;
-    }
-    .meter-lbl {
-      position: absolute; inset: 0; display: flex; align-items: center; padding: 0 12px;
-      font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.8);
-      text-shadow: 0 1px 3px rgba(0,0,0,0.6); pointer-events: none;
-    }
-
-    /* ── DEVICE ROWS ── */
-    .dev-row {
-      display: flex; align-items: center; gap: 10px;
-      padding: 11px 14px; background: var(--surf2); border-radius: 10px; margin-bottom: 8px;
-    }
-    .sdot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-    .sdot.green { background: var(--success); box-shadow: 0 0 7px var(--success); }
-    .dev-info { flex: 1; min-width: 0; }
-    .dev-name { font-size: 14px; font-weight: 600; }
-    .dev-sub  { font-size: 12px; color: var(--muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .dev-sel {
-      background: var(--surf); color: var(--text);
-      border: 1px solid var(--border); border-radius: 6px;
-      padding: 5px 8px; font-size: 12px; max-width: 200px; flex-shrink: 0;
-    }
-
-    /* ── BRIGHTNESS ── */
-    .bright-result { display: flex; align-items: center; gap: 10px; padding: 10px 13px; border-radius: 8px; font-size: 14px; }
-    .bright-result.good      { background: rgba(34,197,94,0.1);   border: 1px solid var(--success); }
-    .bright-result.error     { background: rgba(239,68,68,0.1);   border: 1px solid var(--danger);  }
-    .bright-result.warn      { background: rgba(245,158,11,0.12); border: 1px solid var(--warn);    }
-    .bright-result.warn-mild { background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.4); }
-    .bright-result.info      { background: rgba(79,142,247,0.07); border: 1px solid rgba(79,142,247,0.3); }
-    .bright-icon  { font-size: 20px; }
-    .bright-title { font-weight: 600; line-height: 1.2; }
-    .bright-sub   { font-size: 12px; color: var(--muted); }
-
-    /* ── BACKGROUND SELECTOR ── */
-    .bg-selector { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
-    .bg-opt {
-      width: 88px; height: 54px; border-radius: 8px; border: 2px solid var(--border);
-      background: var(--surf2); background-size: cover; background-position: center;
-      cursor: pointer; position: relative; overflow: hidden;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 3px; transition: border-color .15s, box-shadow .15s;
-      color: var(--text); padding: 0; flex-shrink: 0;
-    }
-    .bg-opt:hover     { border-color: var(--accent); }
-    .bg-opt.bg-active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(79,142,247,0.4); }
-    .bg-opt-lbl {
-      font-size: 10px; font-weight: 600;
-      background: rgba(0,0,0,0.65); padding: 2px 5px; border-radius: 3px;
-      white-space: nowrap; position: absolute; bottom: 4px;
-    }
-
-    /* ── COMPLETION ── */
-    .completion { text-align: center; padding: 44px 20px; }
-    .completion .big-icon { font-size: 70px; margin-bottom: 14px; }
-    .completion h2 { font-size: 26px; font-weight: 700; margin-bottom: 10px; }
-    .completion p  { color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 360px; margin: 0 auto; }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 560px) {
-      .step-title { font-size: 19px; }
-      .pip        { width: 22px; height: 22px; font-size: 10px; }
-    }
-  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&display=swap">
+  <link rel="stylesheet" href="app.css?v=20261028a">
+  <script src="icons.js?v=20261028a"></script>
   <script>if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) window._nativeGDM = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);</script>
 </head>
 <body>
 
 <header>
-  <h1>🎬 Guest Setup</h1>
+  <h1><span class="brand-mark"><span data-icon="clapperboard"></span></span><span class="brand-text">Guest Setup</span></h1>
   <div class="step-bar" id="step-bar"></div>
-  <span style="font-size:10px;color:#333;cursor:default;margin-left:auto;flex-shrink:0" onclick="S.step=3;render();">v2.1.4</span>
+  <span class="ver-tag" onclick="S.step=3;render();">v2.1.4</span>
 </header>
 
 <main>
@@ -298,8 +24,8 @@
 </main>
 
 <footer>
-  <button class="btn btn-ghost" id="btn-back" onclick="nav(-1)" style="visibility:hidden">← Back</button>
-  <button class="btn btn-primary" id="btn-next" onclick="nav(1)">Next →</button>
+  <button class="btn btn-ghost" id="btn-back" onclick="nav(-1)" style="visibility:hidden"><span data-icon="arrow-left"></span>Back</button>
+  <button class="btn btn-primary" id="btn-next" onclick="nav(1)">Next<span data-icon="arrow-right"></span></button>
 </footer>
 
 <script>
@@ -465,7 +191,7 @@ function renderBar() {
     }
     const p = document.createElement('div');
     p.className = 'pip' + (i === S.step ? ' active' : i < S.step ? ' done' : '');
-    p.textContent = i < S.step ? '✓' : String(i + 1);
+    p.innerHTML = i < S.step ? icon('check') : String(i + 1);
     bar.appendChild(p);
   }
 }
@@ -484,7 +210,7 @@ function updateNav() {
   const next = document.getElementById('btn-next');
   back.style.visibility = S.step === 0 ? 'hidden' : 'visible';
   next.className = S.step === 3 ? 'btn btn-success' : 'btn btn-primary';
-  next.textContent = S.step === 3 ? 'Open Room →' : 'Next →';
+  next.innerHTML = (S.step === 3 ? 'Open Room' : 'Next') + icon('arrow-right');
   if (S.step === 0) {
     next.disabled = !S.checks.every(Boolean);
   } else {
@@ -514,7 +240,6 @@ function bindChecks(root) {
       const i = +row.dataset.i;
       S.checks[i] = !S.checks[i];
       row.classList.toggle('on', S.checks[i]);
-      row.querySelector('.cbox').textContent = S.checks[i] ? '✓' : '';
       updateNav();
     });
   });
@@ -523,20 +248,20 @@ function bindChecks(root) {
 function crow(i, title, desc) {
   const on = S.checks[i] ?? false;
   return `<div class="check-row${on?' on':''}" data-i="${i}">
-    <div class="cbox">${on?'✓':''}</div>
+    <div class="cbox"></div>
     <div><div class="crow-title">${title}</div><div class="crow-desc">${desc}</div></div>
   </div>`;
 }
 
-function prepChip(i, icon, title, arrow, posClass) {
+function prepChip(i, ico, title, arrow, posClass) {
   const on = S.checks[i] ?? false;
   return `<div class="prep-chip ${posClass}${on?' on':''}" data-i="${i}">
-    <div class="prep-chip-icon">${icon}</div>
+    <div class="prep-chip-icon">${icon(ico)}</div>
     <div class="prep-chip-body">
       <div class="prep-chip-title">${title}</div>
       <div class="prep-chip-arrow">${arrow}</div>
     </div>
-    <div class="cbox">${on?'✓':''}</div>
+    <div class="cbox"></div>
   </div>`;
 }
 
@@ -548,12 +273,12 @@ function prepStageHtml() {
   return `
   <div class="prep-stage">
     <div class="prep-stage-hint">Let's prepare your space!</div>
-    ${prepChip(0, '📑',  'Close extra browser tabs', '↑ top of this window', 'pp-top-left')}
-    ${prepChip(1, '📧',  'Quit Outlook',             '↓ dock / taskbar',     'pp-bot-left')}
-    ${prepChip(2, '💬', 'Quit Webex',               '↓ dock / taskbar',     'pp-bot-mid')}
-    ${prepChip(3, '📱', 'Phone on Do Not Disturb',  'on your phone',        'pp-mid-right')}
-    ${prepChip(4, '🛡️', 'Disconnect from VPN',      vpnArrow,                vpnPos)}
-    ${prepChip(5, '🖱️', 'Attach a physical mouse',  'USB or Bluetooth',     'pp-mid-left')}
+    ${prepChip(0, 'app-window',  'Close extra browser tabs', '↑ top of this window', 'pp-top-left')}
+    ${prepChip(1, 'mail',  'Quit Outlook',             '↓ dock / taskbar',     'pp-bot-left')}
+    ${prepChip(2, 'message-circle', 'Quit Webex',               '↓ dock / taskbar',     'pp-bot-mid')}
+    ${prepChip(3, 'smartphone', 'Phone on Do Not Disturb',  'on your phone',        'pp-mid-right')}
+    ${prepChip(4, 'shield-off', 'Disconnect from VPN',      vpnArrow,                vpnPos)}
+    ${prepChip(5, 'mouse', 'Attach a physical mouse',  'USB or Bluetooth',     'pp-mid-left')}
   </div>`;
 }
 
@@ -571,8 +296,8 @@ function renderStep0() {
   const isSupported = (browser === 'Chrome' || browser === 'Firefox');
   const browserNote = isSupported
     ? ''
-    : '<div style="margin-top:14px;padding:10px 14px;background:rgba(245,158,11,0.1);border:1px solid var(--warn);border-radius:8px;font-size:13px;color:var(--warn)">'
-      + '⚠️ You appear to be using <strong>' + browser + '</strong>. If you run into issues with your camera or call, '
+    : '<div class="info-box warn">' + icon('triangle-alert')
+      + 'You appear to be using <strong>' + browser + '</strong>. If you run into issues with your camera or call, '
       + 'try switching to <strong>Chrome</strong> or <strong>Firefox</strong> — they work best with this app.'
       + '</div>';
 
@@ -582,7 +307,7 @@ function renderStep0() {
     <div class="step-sub">Take care of each one before we get started. Each tile points to where you'll find it on your ${_isMac ? 'Mac' : 'PC'}.</div>
     ${prepStageHtml()}
     ${browserNote}
-    <div class="info-box" style="margin-top:18px">
+    <div class="info-box">
       <strong>You've been invited to a Descript recording session.</strong><br>
       This quick setup takes about 2 minutes and ensures you look and sound great before you open your Descript Room.
     </div>
@@ -685,7 +410,7 @@ async function initStream(el) {
       msg  = 'Camera is in use by another app.';
       hint = 'Your webcam can only be used by one app at a time. '
            + '<strong>Close any of these that might be open:</strong>'
-           + '<ul style="margin:8px 0 0 16px;text-align:left;line-height:1.8">'
+           + '<ul>'
            + '<li>Webex / Zoom / Teams</li>'
            + '<li>OBS / Camtasia / Loom</li>'
            + '<li>Windows Camera app</li>'
@@ -694,12 +419,11 @@ async function initStream(el) {
            + 'After closing them, click Reload below.';
     }
     ld.innerHTML = `
-      <div style="text-align:center;padding:14px 20px">
-        <div style="font-size:28px;margin-bottom:8px">⚠️</div>
-        <div style="color:var(--danger);font-weight:600;margin-bottom:6px">${msg}</div>
-        <div style="color:var(--muted);font-size:13px;line-height:1.5">${hint}</div>
-        <button class="btn btn-ghost" onclick="location.reload()"
-                style="margin-top:14px;font-size:13px">↺ Reload page</button>
+      <div class="state">
+        <div class="state-icon danger">${icon('triangle-alert')}</div>
+        <div class="state-title danger">${msg}</div>
+        <div class="state-body">${hint}</div>
+        <button class="btn btn-ghost btn-sm" onclick="location.reload()">${icon('rotate-ccw')}Reload page</button>
       </div>`;
   }
 }
@@ -823,24 +547,24 @@ function renderStep2(el) {
     <div class="vid-wrap">
       <video id="guest-video" autoplay playsinline muted></video>
       <div class="vid-overlay">
-        <img src="guideline.png" style="width:100%;height:100%;object-fit:cover;mix-blend-mode:screen;opacity:0.85;" alt="">
+        <img src="guideline.png" class="guide-img" alt="">
       </div>
       <div class="cam-loading" id="cam-loading" style="display:none">
         <div class="spinner"></div><span>Starting camera…</span>
       </div>
     </div>
 
-    <div class="sec-label" style="margin-top:16px">Lighting Check</div>
+    <div class="sec-label">Lighting Check</div>
     <div class="card">
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">
-        <button class="btn btn-ghost" onclick="checkBrightness()" style="font-size:13px">☀️ Analyze Lighting</button>
-        <div id="bright-out" style="flex:1">
-          ${S.brightness ? brightHtml(S.brightness) : '<span style="font-size:13px;color:var(--muted)">Click to analyze your current lighting</span>'}
+      <div class="bright-row">
+        <button class="btn btn-ghost btn-sm" onclick="checkBrightness()">${icon('sun')}Analyze Lighting</button>
+        <div id="bright-out" class="bright-out">
+          ${S.brightness ? brightHtml(S.brightness) : '<span class="placeholder-text">Click to analyze your current lighting</span>'}
         </div>
       </div>
     </div>
 
-    <div class="info-box" style="margin-top:14px">
+    <div class="info-box">
       <strong>Tips for better home lighting:</strong><br>
       • <strong>Face a light source</strong> — sit facing a window or lamp, not with it behind you<br>
       • <strong>Too dark?</strong> Bring in a desk lamp or ring light and point it at your face<br>
@@ -859,7 +583,7 @@ function checkBrightness() {
   /* An un-started video paints black and reads as "too dark" — wait for frames */
   if (rawSrc.readyState < 2 || !rawSrc.videoWidth) {
     const out = document.getElementById('bright-out');
-    if (out) out.innerHTML = '<span style="font-size:13px;color:var(--muted)">Camera is still starting — give it a second and try again.</span>';
+    if (out) out.innerHTML = '<span class="placeholder-text">Camera is still starting — give it a second and try again.</span>';
     return;
   }
 
@@ -928,26 +652,26 @@ function checkBrightness() {
 
   let cls, icon, title, sub;
   if (Math.abs(rM) === 2) {
-    cls = 'error'; icon = rM < 0 ? '🌑' : '🌟';
+    cls = 'error'; icon = rM < 0 ? 'moon' : 'sun';
     if (rM < 0) { title = 'Your face is too dark'; sub = 'It\'s pretty hard to see you clearly from here. A light pointing at your face from the front — even a desk lamp — would make a big difference.'; }
     else { title = 'You\'re a bit washed out'; sub = 'The light hitting you is too intense. Try moving it back, turning it down, or angling it slightly off to the side so it\'s not aimed straight at your face.'; }
     if (spread > 55) sub += ' On top of that, the ' + maxBg.label + ' is ' + intensityWord(hotDelta) + ' than the rest — ' + hotHint(maxBg).charAt(0).toLowerCase() + hotHint(maxBg).slice(1);
   } else if (Math.abs(rM) === 1) {
-    cls = spread > 55 ? 'warn' : 'warn-mild'; icon = rM < 0 ? '🌒' : '🌤';
+    cls = spread > 55 ? 'warn' : 'warn-mild'; icon = rM < 0 ? 'sun-dim' : 'sun';
     if (rM < 0) { title = 'You\'re a little underlit'; sub = 'You look slightly dim — bumping up your light or moving it a bit closer should do it.'; }
     else { title = 'You\'re slightly overexposed'; sub = 'You look a touch bright. Pulling the light back just a little or reducing its intensity should fix it.'; }
     if (spread > 55) sub += ' Also, the ' + maxBg.label + ' is ' + intensityWord(hotDelta) + ' than the rest. ' + hotHint(maxBg);
   } else if (spread > 65) {
-    cls = 'warn-mild'; icon = '🌓';
+    cls = 'warn-mild'; icon = 'contrast';
     title = 'Your face looks good — but the background\'s a little uneven';
     sub = 'The ' + maxBg.label + ' is ' + intensityWord(hotDelta) + ' than the center of the frame. ' + hotHint(maxBg);
   } else if (spread > 35 && hotDelta > 25) {
-    cls = 'info'; icon = '💡';
+    cls = 'info'; icon = 'lightbulb';
     title = 'Looking good';
     const hint = hotHint(maxBg);
     sub = 'The ' + maxBg.label + ' is ' + intensityWord(hotDelta) + ' than the rest, but it\'s subtle. If you want it more even: ' + hint.charAt(0).toLowerCase() + hint.slice(1);
   } else {
-    cls = 'good'; icon = '✅';
+    cls = 'good'; icon = 'circle-check';
     title = 'Lighting looks great!';
     sub = 'Even and well-lit all the way across (left ' + Math.round(avg[1][0]) + ' · center ' + Math.round(M) + ' · right ' + Math.round(avg[1][2]) + ').';
   }
@@ -957,17 +681,17 @@ function checkBrightness() {
   if (out) out.innerHTML = brightHtml(cls, icon, title, sub);
 }
 
-function brightHtml(cls, icon, title, sub) {
+function brightHtml(cls, ico, title, sub) {
   if (arguments.length === 1) {
     const MAP = {
-      good:   ['good',  '✅', 'Lighting looks great!',    'Well-lit and not overexposed.'],
-      dark:   ['error', '🌑', 'Your face is too dark',    'Bring a light source closer and point it at your face.'],
-      bright: ['error', '🌟', 'Your face is overexposed', 'Reduce light intensity or move the source further back.'],
+      good:   ['good',  'circle-check', 'Lighting looks great!',    'Well-lit and not overexposed.'],
+      dark:   ['error', 'moon', 'Your face is too dark',    'Bring a light source closer and point it at your face.'],
+      bright: ['error', 'sun', 'Your face is overexposed', 'Reduce light intensity or move the source further back.'],
     };
-    [cls, icon, title, sub] = MAP[cls] || MAP.good;
+    [cls, ico, title, sub] = MAP[cls] || MAP.good;
   }
   return '<div class="bright-result ' + cls + '">'
-       + '<span class="bright-icon">' + icon + '</span>'
+       + '<span class="bright-icon">' + (ICON_PATHS[ico] ? icon(ico) : esc(ico)) + '</span>'
        + '<div><div class="bright-title">' + title + '</div>'
        + '<div class="bright-sub">' + sub + '</div></div></div>';
 }
@@ -988,7 +712,7 @@ function renderBgSelector(activeId) {
     + ' style="flex:1;accent-color:var(--accent)">'
     + '<span id="blur-val" style="font-size:12px;color:var(--muted);width:32px;text-align:right">' + S.blurRadius + 'px</span>'
     + '</div>';
-  return '<div class="sec-label" style="margin-top:14px">Virtual Background</div>'
+  return '<div class="sec-label">Virtual Background</div>'
        + '<div class="bg-selector">' + opts + '</div>' + slider;
 }
 
@@ -1046,19 +770,18 @@ function renderStep3() {
     <div class="step-title">Step 4 — Open Your Descript Room</div>
     <div class="step-sub">Paste the Descript Room link your host shared with you, then click Open Room.</div>
 
-    <div class="card" style="margin-bottom:14px">
-      <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px">Descript Room Link</label>
-      <input id="room-input" type="url"
+    <div class="card field-card">
+      <label class="field-label" for="room-input">Descript Room Link</label>
+      <input id="room-input" class="input" type="url"
         value="${esc(S.room)}"
         placeholder="https://web.descript.com/room/..."
-        style="width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:14px"
         oninput="S.room=this.value.trim()">
-      <div style="font-size:12px;color:var(--muted);margin-top:6px">
+      <div class="field-hint">
         The full URL to your Descript Room — usually starts with <code>https://web.descript.com/room/</code>
       </div>
     </div>
 
-    <div id="join-status" style="font-size:13px;color:var(--muted);margin-bottom:10px;min-height:18px"></div>
+    <div id="join-status" class="status-line"></div>
 
     <div class="info-box">
       <strong>What happens next:</strong> Clicking Open Room will release your camera and microphone
@@ -1087,14 +810,14 @@ function joinRoom() {
   try { parsed = new URL(raw); }
   catch(e) {
     const status = document.getElementById('join-status');
-    if (status) status.innerHTML = '<span style="color:var(--danger)">⚠ That doesn\'t look like a valid URL. Paste the full link your host sent you.</span>';
+    if (status) status.innerHTML = '<span class="text-danger">' + icon('triangle-alert') + ' That doesn\'t look like a valid URL. Paste the full link your host sent you.</span>';
     if (inp) inp.style.borderColor = 'var(--danger)';
     return;
   }
 
   if (parsed.protocol !== 'https:') {
     const status = document.getElementById('join-status');
-    if (status) status.innerHTML = '<span style="color:var(--danger)">⚠ Link must start with https://</span>';
+    if (status) status.innerHTML = '<span class="text-danger">' + icon('triangle-alert') + ' Link must start with https://</span>';
     if (inp) inp.style.borderColor = 'var(--danger)';
     return;
   }

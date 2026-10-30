@@ -4,428 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Recording Room Setup</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg:       #0f1117;
-      --surf:     #1c1f26;
-      --surf2:    #252930;
-      --accent:   #4f8ef7;
-      --accent2:  #6ba3ff;
-      --success:  #22c55e;
-      --warn:     #f59e0b;
-      --danger:   #ef4444;
-      --text:     #f1f5f9;
-      --muted:    #94a3b8;
-      --border:   #2d3748;
-      --radius:   12px;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    /* ── HEADER ── */
-    header {
-      background: var(--surf);
-      border-bottom: 1px solid var(--border);
-      padding: 13px 24px;
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      flex-shrink: 0;
-    }
-    header h1 {
-      font-size: 16px;
-      font-weight: 700;
-      white-space: nowrap;
-      letter-spacing: -0.01em;
-    }
-    /* ── STEP BAR ── */
-    .step-bar { display: flex; align-items: center; flex: 1; overflow: hidden; }
-    .pip {
-      width: 28px; height: 28px;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 700;
-      flex-shrink: 0;
-      background: var(--surf2);
-      border: 2px solid var(--border);
-      color: var(--muted);
-      transition: all 0.25s;
-    }
-    .pip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-    .pip.done   { background: var(--success); border-color: var(--success); color: #fff; }
-    .connector  { flex: 1; height: 2px; background: var(--border); transition: background 0.25s; }
-    .connector.done { background: var(--success); }
-
-    /* ── MAIN ── */
-    main { flex: 1; overflow-y: auto; display: flex; justify-content: center; padding: 24px 20px; }
-    .content { width: 100%; max-width: 680px; }
-
-    /* ── FOOTER ── */
-    footer {
-      border-top: 1px solid var(--border);
-      background: var(--surf);
-      padding: 13px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-shrink: 0;
-    }
-
-    /* ── TYPE ── */
-    .step-title { font-size: 23px; font-weight: 700; line-height: 1.2; margin-bottom: 5px; }
-    .step-sub   { color: var(--muted); font-size: 14px; line-height: 1.6; margin-bottom: 22px; }
-    .sec-label  {
-      font-size: 10px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.08em;
-      color: var(--muted); margin: 18px 0 8px;
-    }
-
-    /* ── CHECK ROWS ── */
-    .checklist { display: flex; flex-direction: column; gap: 9px; }
-    .check-row {
-      display: flex; align-items: flex-start; gap: 12px;
-      padding: 13px 15px;
-      background: var(--surf);
-      border: 2px solid var(--border);
-      border-radius: 10px;
-      cursor: pointer;
-      transition: border-color 0.15s, background 0.15s;
-      user-select: none;
-    }
-    .check-row:hover { border-color: var(--accent); }
-    .check-row.on { border-color: var(--success); background: rgba(34,197,94,0.07); }
-    .cbox {
-      width: 21px; height: 21px;
-      border-radius: 5px;
-      border: 2px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; margin-top: 1px;
-      font-size: 12px; font-weight: 700;
-      transition: all 0.15s;
-    }
-    .check-row.on .cbox { background: var(--success); border-color: var(--success); color: #fff; }
-    .crow-title { font-weight: 600; font-size: 15px; line-height: 1.3; }
-    .crow-desc  { font-size: 13px; color: var(--muted); margin-top: 2px; }
-
-    /* ── PREP STAGE (scattered confirmation chips) ── */
-    .prep-stage {
-      position: relative;
-      /* Shrinks with the viewport so chips stay on-screen; 430px floor keeps
-         the absolutely-positioned right-column chips from colliding. */
-      min-height: clamp(430px, calc(100vh - 320px), 660px);
-      min-height: clamp(430px, calc(100dvh - 320px), 660px);
-      max-width: 100%;
-      margin: 14px auto 4px;
-    }
-    .prep-stage-hint {
-      position: absolute; top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      color: var(--muted); font-size: 14px;
-      text-align: center; pointer-events: none;
-      opacity: 0.65; max-width: 200px;
-      font-weight: 500;
-    }
-    .prep-hint-count {
-      margin-top: 7px;
-      font-size: 12.5px;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-    }
-    .prep-hint-count.all-done { color: var(--success); }
-    .prep-chip {
-      position: absolute;
-      width: clamp(190px, 33%, 230px);
-      background: var(--surf);
-      border: 2px solid var(--border);
-      border-radius: 12px;
-      padding: 13px 14px;
-      cursor: pointer; user-select: none;
-      display: flex; align-items: center; gap: 12px;
-      transition: border-color 0.15s, background 0.15s;
-      z-index: 2;
-    }
-    .prep-chip:hover { border-color: var(--accent); }
-    .prep-chip.on    { border-color: var(--success); background: rgba(34,197,94,0.08); }
-    .prep-chip-icon {
-      font-size: 30px; line-height: 1;
-      flex-shrink: 0;
-      width: 36px; height: 36px;
-      display: flex; align-items: center; justify-content: center;
-      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
-    }
-    .prep-chip-body { flex: 1; min-width: 0; padding-right: 14px; }
-    .prep-chip .cbox {
-      position: absolute;
-      top: 7px; right: 7px;
-      width: 17px; height: 17px;
-      border-radius: 4px;
-      border: 2px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; margin-top: 0;
-      font-size: 10px; font-weight: 700;
-      transition: all 0.15s;
-    }
-    .prep-chip.on .cbox { background: var(--success); border-color: var(--success); color: #fff; }
-    .prep-chip-title { font-weight: 600; font-size: 13.5px; line-height: 1.3; }
-    .prep-chip-arrow { font-size: 11.5px; color: var(--muted); margin-top: 3px; line-height: 1.25; }
-    .prep-chip.on .prep-chip-arrow { color: var(--success); opacity: 0.8; }
-
-    .pp-top-left  { top: 0;    left: 0; }
-    .pp-top-right { top: 0;    right: 0; }
-    .pp-r-2       { top: 22%;  right: 0; }
-    .pp-mid-left  { top: 50%;  left: 0;   transform: translateY(-50%); }
-    .pp-mid-right { top: 50%;  right: 0;  transform: translateY(-50%); }
-    .pp-bot-left  { bottom: 0; left: 0; }
-    .pp-bot-mid   { bottom: 0; left: 50%; transform: translateX(-50%); }
-    .pp-bot-right { bottom: 0; right: 0; }
-
-    /* On wide viewports, let the prep stage break out of .content's 680px cap
-       so chips spread across the screen instead of clustering in the middle. */
-    @media (min-width: 900px) {
-      .prep-stage {
-        width: min(96vw, 1000px);
-        margin-left: 50%;
-        transform: translateX(-50%);
-      }
-    }
-
-    /* Stack the chips into a plain list whenever the scattered stage can't fit:
-       narrow screens, OR short viewports (zoomed browsers, small laptop windows). */
-    @media (max-width: 620px), (max-height: 640px) {
-      .prep-stage {
-        min-height: 0;
-        width: auto;
-        margin-left: 0;
-        transform: none;
-      }
-      .prep-stage-hint { display: none; }
-      .prep-chip {
-        position: static; width: 100%;
-        margin-bottom: 10px;
-        transform: none !important;
-      }
-    }
-
-    /* ── BUTTONS ── */
-    .btn {
-      padding: 10px 20px; border-radius: 8px;
-      border: none; font-size: 14px; font-weight: 600;
-      cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
-      transition: all 0.15s; text-decoration: none; white-space: nowrap;
-    }
-    .btn:disabled { opacity: 0.38; cursor: not-allowed; pointer-events: none; }
-    .btn-primary { background: var(--accent);   color: #fff; }
-    .btn-primary:hover:not(:disabled) { background: var(--accent2); transform: translateY(-1px); }
-    .btn-success { background: var(--success);  color: #fff; }
-    .btn-success:hover:not(:disabled) { background: #16a34a; transform: translateY(-1px); }
-    .btn-danger  { background: var(--danger);   color: #fff; }
-    .btn-danger:hover:not(:disabled)  { background: #dc2626; }
-    .btn-ghost   { background: var(--surf2); color: var(--text); border: 1px solid var(--border); }
-    .btn-ghost:hover:not(:disabled)   { border-color: var(--accent); }
-
-    /* ── CARDS ── */
-    .card { background: var(--surf); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
-
-    /* ── VIDEO ── */
-    .vid-wrap {
-      position: relative; width: 100%; aspect-ratio: 16/9;
-      background: #000; border-radius: var(--radius); overflow: hidden; margin-bottom: 14px;
-    }
-    .vid-wrap video {
-      width: 100%; height: 100%; object-fit: cover;
-      transform: scaleX(-1); display: block;
-    }
-    .vid-overlay {
-      position: absolute; inset: 0;
-      display: flex; align-items: center; justify-content: center;
-      pointer-events: none;
-    }
-    .cam-loading {
-      position: absolute; inset: 0;
-      background: #000;
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; gap: 11px;
-      font-size: 14px; color: var(--muted);
-    }
-    .spinner {
-      width: 26px; height: 26px;
-      border: 3px solid var(--border); border-top-color: var(--accent);
-      border-radius: 50%; animation: spin 0.7s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── AUDIO METER ── */
-    .meter-track {
-      height: 22px; background: var(--surf2);
-      border-radius: 11px; overflow: hidden; position: relative;
-    }
-    .meter-fill {
-      height: 100%; width: 2%; border-radius: 11px;
-      background: linear-gradient(90deg, #22c55e 0%, #86efac 55%, #f59e0b 80%, #ef4444 100%);
-      transition: width 0.04s linear;
-    }
-    .meter-lbl {
-      position: absolute; inset: 0;
-      display: flex; align-items: center; padding: 0 12px;
-      font-size: 12px; font-weight: 600;
-      color: rgba(255,255,255,0.8);
-      text-shadow: 0 1px 3px rgba(0,0,0,0.6);
-      pointer-events: none;
-    }
-
-    /* ── DEVICE STATUS ── */
-    .dev-row {
-      display: flex; align-items: center; gap: 10px;
-      padding: 11px 14px; background: var(--surf2);
-      border-radius: 10px; margin-bottom: 8px;
-    }
-    .sdot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-    .sdot.green  { background: var(--success); box-shadow: 0 0 7px var(--success); }
-    .sdot.red    { background: var(--danger);  box-shadow: 0 0 7px var(--danger);  }
-    .sdot.yellow { background: var(--warn);    box-shadow: 0 0 7px var(--warn);    }
-    .dev-info { flex: 1; min-width: 0; }
-    .dev-name { font-size: 14px; font-weight: 600; }
-    .dev-sub  { font-size: 12px; color: var(--muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .dev-sel {
-      background: var(--surf); color: var(--text);
-      border: 1px solid var(--border); border-radius: 6px;
-      padding: 5px 8px; font-size: 12px; max-width: 180px; flex-shrink: 0;
-    }
-
-    /* ── BRIGHTNESS ── */
-    .bright-result {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 13px; border-radius: 8px; font-size: 14px;
-    }
-    .bright-result.good      { background: rgba(34,197,94,0.1);   border: 1px solid var(--success); }
-    .bright-result.error     { background: rgba(239,68,68,0.1);   border: 1px solid var(--danger);  }
-    .bright-result.warn      { background: rgba(245,158,11,0.12); border: 1px solid var(--warn);    }
-    .bright-result.warn-mild { background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.4); }
-    .bright-result.info      { background: rgba(79,142,247,0.07); border: 1px solid rgba(79,142,247,0.3); }
-    /* keep old class names so any cached state still renders */
-    .bright-result.dark   { background: rgba(239,68,68,0.1);  border: 1px solid var(--danger);  }
-    .bright-result.bright { background: rgba(245,158,11,0.1); border: 1px solid var(--warn);    }
-
-    /* ── DOWNLOAD WARNING ── */
-    @keyframes pulse-warn {
-      0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,0); }
-      50%      { box-shadow: 0 0 0 6px rgba(245,158,11,0.35); }
-    }
-    #rec-download-row.warn-pending {
-      background: rgba(245,158,11,0.08) !important;
-      border-color: var(--warn) !important;
-      animation: pulse-warn 1.6s ease-in-out 3;
-    }
-    .dl-item { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:4px; }
-    .dl-badge {
-      font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px;
-      flex-shrink:0; transition: all .2s;
-    }
-    .dl-badge.pending  { background:rgba(245,158,11,0.15); color:var(--warn);    border:1px solid var(--warn); }
-    .dl-badge.done     { background:rgba(34,197,94,0.12);  color:var(--success); border:1px solid var(--success); }
-    .bright-icon { font-size: 20px; }
-    .bright-title { font-weight: 600; line-height: 1.2; }
-    .bright-sub   { font-size: 12px; color: var(--muted); }
-
-    /* ── CHOICE GRID (step 4) ── */
-    .choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .choice-card {
-      padding: 24px 14px; background: var(--surf);
-      border: 2px solid var(--border); border-radius: var(--radius);
-      cursor: pointer; text-align: center;
-      transition: all 0.15s;
-      display: flex; flex-direction: column; align-items: center; gap: 9px;
-    }
-    .choice-card:hover    { border-color: var(--accent); background: rgba(79,142,247,0.04); }
-    .choice-card.selected { border-color: var(--accent); background: rgba(79,142,247,0.09); }
-    .choice-icon  { font-size: 36px; }
-    .choice-title { font-size: 15px; font-weight: 700; }
-    .choice-desc  { font-size: 13px; color: var(--muted); line-height: 1.4; }
-
-    /* ── INFO BOX ── */
-    .info-box {
-      background: rgba(79,142,247,0.07);
-      border: 1px solid rgba(79,142,247,0.24);
-      border-radius: 10px; padding: 12px 15px;
-      font-size: 14px; color: var(--muted); line-height: 1.55; margin-top: 12px;
-    }
-    .info-box strong { color: var(--text); }
-
-    /* ── SCRIPT / TELEPROMPTER ── */
-    .script-ta {
-      width: 100%; min-height: 150px;
-      background: var(--surf2); border: 1px solid var(--border);
-      border-radius: 10px; padding: 13px; color: var(--text);
-      font-size: 15px; resize: vertical; line-height: 1.6; font-family: inherit;
-    }
-    .script-ta:focus { outline: none; border-color: var(--accent); }
-
-    /* ── RECORDING ── */
-    .rec-badge {
-      position: absolute; top: 10px; left: 10px;
-      background: var(--danger); color: #fff;
-      padding: 3px 11px; border-radius: 20px;
-      font-size: 12px; font-weight: 700;
-      display: flex; align-items: center; gap: 5px;
-    }
-    .rec-dot { width: 7px; height: 7px; background: #fff; border-radius: 50%; animation: blink 1s infinite; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
-
-    /* ── COMPLETION ── */
-    .completion { text-align: center; padding: 44px 20px; }
-    .completion .big-icon { font-size: 70px; margin-bottom: 14px; }
-    .completion h2  { font-size: 26px; font-weight: 700; margin-bottom: 10px; }
-    .completion p   { color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 360px; margin: 0 auto; }
-
-    /* ── HERO AREA (step 0) ── */
-    .hero-area { display: flex; justify-content: center; margin: 12px 0 26px; }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 560px) {
-      .choice-grid { grid-template-columns: 1fr; }
-      .step-title  { font-size: 19px; }
-      .pip         { width: 22px; height: 22px; font-size: 10px; }
-    }
-
-
-    /* ── BACKGROUND SELECTOR ── */
-    .bg-selector {
-      display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start;
-    }
-    .bg-opt {
-      width: 88px; height: 54px;
-      border-radius: 8px; border: 2px solid var(--border);
-      background: var(--surf2); background-size: cover; background-position: center;
-      cursor: pointer; position: relative; overflow: hidden;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 3px; transition: border-color .15s, box-shadow .15s;
-      color: var(--text); padding: 0; flex-shrink: 0;
-    }
-    .bg-opt:hover     { border-color: var(--accent); }
-    .bg-opt.bg-active { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(79,142,247,0.4); }
-    .bg-opt-lbl {
-      font-size: 10px; font-weight: 600;
-      background: rgba(0,0,0,0.65); padding: 2px 5px; border-radius: 3px;
-      white-space: nowrap; position: absolute; bottom: 4px;
-    }
-  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&display=swap">
+  <link rel="stylesheet" href="app.css?v=20261028a">
+  <script src="icons.js?v=20261028a"></script>
   <!-- Save native getDisplayMedia before ANY script can monkey-patch it -->
   <script>if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) window._nativeGDM = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);</script>
 </head>
 <body>
 
 <header>
-  <h1>📹 Recording Room Setup</h1>
+  <h1><span class="brand-mark"><span data-icon="video"></span></span><span class="brand-text">Recording Room Setup</span></h1>
   <div class="step-bar" id="step-bar"></div>
 </header>
 
@@ -435,10 +25,10 @@
 </main>
 
 <footer>
-  <button class="btn btn-ghost" id="btn-back" onclick="nav(-1)">← Back</button>
-  <div style="display:flex;align-items:center;gap:14px;min-width:0">
-    <span id="foot-status" style="font-size:13px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
-    <button class="btn btn-primary" id="btn-next" onclick="nav(1)">Next →</button>
+  <button class="btn btn-ghost" id="btn-back" onclick="nav(-1)"><span data-icon="arrow-left"></span>Back</button>
+  <div class="foot-right">
+    <span id="foot-status" class="foot-status"></span>
+    <button class="btn btn-primary" id="btn-next" onclick="nav(1)">Next<span data-icon="arrow-right"></span></button>
   </div>
 </footer>
 
@@ -528,7 +118,7 @@ function renderBar() {
     p.className = 'pip' + (i === S.step ? ' active' : i < S.step ? ' done' : '');
     /* Step titles are 1-based with the location screen as "step 0" — show a
        home glyph there instead of a literal 0 */
-    p.textContent = i < S.step ? '✓' : (i === 0 ? '⌂' : String(i));
+    p.innerHTML = i < S.step ? icon('check') : (i === 0 ? icon('house') : String(i));
     bar.appendChild(p);
   }
 }
@@ -570,7 +160,7 @@ function updateNav() {
      before last) is actually the camera step — treat it as a normal step. */
   if (S.step === modeStep() && S.mode !== 'descript') {
     next.style.visibility = (S.mode === 'local' || S.mode === 'descript') ? 'visible' : 'hidden';
-    next.textContent = 'Continue →';
+    next.innerHTML = 'Continue' + icon('arrow-right');
     next.className = 'btn btn-primary';
     next.disabled = false;
     return;
@@ -579,9 +169,9 @@ function updateNav() {
   next.style.visibility = 'visible';
   next.className = S.step === lastStep() ? 'btn btn-success' : 'btn btn-primary';
   if (S.step === lastStep()) {
-    next.textContent = S.mode === 'descript' ? 'Open Room →' : 'Finish ✓';
+    next.innerHTML = S.mode === 'descript' ? 'Open Room' + icon('arrow-right') : 'Finish' + icon('check');
   } else {
-    next.textContent = 'Next →';
+    next.innerHTML = 'Next' + icon('arrow-right');
   }
 
   if (S.step === 0) {
@@ -630,7 +220,7 @@ function updatePrepProgress() {
 
   const done = arr.filter(Boolean).length, total = arr.length;
   if (status) {
-    status.textContent = done === total ? 'All set ✓' : `${done} of ${total} confirmed`;
+    status.innerHTML = done === total ? icon('check') + ' All set' : `${done} of ${total} confirmed`;
     status.style.color = done === total ? 'var(--success)' : 'var(--muted)';
   }
   const hint = document.querySelector('.prep-hint-count');
@@ -662,16 +252,130 @@ function render() {
     else if (S.step === 3) { renderStep3(el); }
     else if (S.step === 4) { renderStep2(el); }
     else if (S.step === 5) { el.innerHTML = renderStep4(); }
-    else if (S.step === 6) { el.innerHTML = renderStep5(); if (!S.recActive && S.blob) showDownloadCard(); setTimeout(() => attachStream('rec-video'), 60); }
+    else if (S.step === 6) { el.innerHTML = renderStep5(); if (!S.recActive && S.blob) showDownloadCard(); ensureRecStream(); }
   }
   else if (S.location === 'home') {
     if      (S.step === 1) { el.innerHTML = renderHomeStep2(); bindHomeChecks(el); }
     else if (S.step === 2) { renderHomeStep3(el); }
     else if (S.step === 3) { renderHomeStep4(el); }
     else if (S.step === 4) { el.innerHTML = renderStep4(); }
-    else if (S.step === 5) { el.innerHTML = renderStep5(); if (!S.recActive && S.blob) showDownloadCard(); setTimeout(() => attachStream('rec-video'), 60); }
+    else if (S.step === 5) { el.innerHTML = renderStep5(); if (!S.recActive && S.blob) showDownloadCard(); ensureRecStream(); }
+  }
+
+  if (pastSetup()) {
+    savePass();
+    if (S._resumed) el.insertAdjacentHTML('afterbegin', resumeBannerHtml());
   }
 }
+
+/* =============================================================
+   SETUP PASS — once someone reaches the mode picker, remember it for an
+   hour so a refresh / Start Over skips the prep + equipment steps.
+   Every visit to the picker or record screen restarts the hour.
+   ============================================================= */
+const PASS_KEY = 'selfservice.setupPass';
+const PASS_TTL = 60 * 60 * 1000;
+
+/* The mode picker is step 5 in studio, 4 at home (descript mode included) */
+function pickerStep() { return S.location === 'home' ? 4 : 5; }
+function pastSetup() {
+  return (S.location === 'studio' || S.location === 'home') && S.step >= pickerStep();
+}
+
+function savePass() {
+  if (S._noPass) return;
+  const prev = S._pass || {};
+  S._pass = {
+    at:           Date.now(),
+    location:     S.location,
+    mode:         S.mode,
+    descriptRoom: S.descriptRoom || '',
+    /* Stream is released on finish / open-room — keep the last known devices */
+    videoId:      S.dev.curVideoId || prev.videoId || null,
+    audioId:      S.dev.curAudioId || prev.audioId || null,
+  };
+  try { localStorage.setItem(PASS_KEY, JSON.stringify(S._pass)); } catch(e) {}
+}
+
+function loadPass() {
+  try {
+    const p = JSON.parse(localStorage.getItem(PASS_KEY) || 'null');
+    if (p && (p.location === 'studio' || p.location === 'home') && Date.now() - p.at < PASS_TTL) return p;
+  } catch(e) {}
+  return null;
+}
+
+function clearPass() {
+  S._pass = null;
+  try { localStorage.removeItem(PASS_KEY); } catch(e) {}
+}
+
+function resumeBannerHtml() {
+  return `<div class="resume-banner">
+    <span><strong>${icon('circle-check')}Setup already done</strong> — we skipped you ahead.</span>
+    <button class="btn btn-ghost btn-xs" onclick="rerunSetup()">${icon('rotate-ccw')}Run setup again</button>
+  </div>`;
+}
+
+function rerunSetup() {
+  clearPass();
+  stopAllMedia();
+  S._resumed = false;
+  S.step = 0;
+  document.querySelector('footer').style.display = '';
+  render();
+}
+
+/* Record screen: reuse the live stream, or (after a skip-ahead) start one
+   on the devices picked during setup */
+function ensureRecStream() {
+  if (S.stream) { setTimeout(() => attachStream('rec-video'), 60); return; }
+  resumeStream();
+}
+
+async function resumeStream() {
+  if (S._resuming) return;
+  S._resuming = true;
+  const vid = S._pass?.videoId, aud = S._pass?.audioId;
+  try {
+    if (vid || aud) {
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({
+          video: vid ? { deviceId: { exact: vid }, width:{ideal:1920}, height:{ideal:1080}, frameRate:{ideal:30} } : true,
+          audio: aud ? { deviceId: { exact: aud } } : true,
+        });
+        S.stream = s;
+        readDevices(await navigator.mediaDevices.enumerateDevices());
+        /* Trust the requested IDs, same as applyDeviceSwitch (virtual cameras) */
+        S.dev.curVideoId = vid || s.getVideoTracks()[0]?.getSettings().deviceId;
+        S.dev.curAudioId = aud || s.getAudioTracks()[0]?.getSettings().deviceId;
+        startAudioMon();
+      } catch(e) {
+        console.warn('Saved devices unavailable, falling back to defaults:', e);
+      }
+    }
+    if (!S.stream) await initStream();
+  } finally {
+    S._resuming = false;
+  }
+
+  /* User bailed back to the location screen while the camera was starting */
+  if (S.step === 0) { stopAllMedia(); return; }
+
+  if (!S.stream) {
+    const st = document.getElementById('rec-status');
+    if (st) st.innerHTML = `<div class="info-box danger">
+      <strong>Couldn't start your camera or microphone.</strong>
+      Close any other app using it and reload, or
+      <a class="link" href="javascript:rerunSetup()">run setup again</a>.
+    </div>`;
+    return;
+  }
+  attachStream('rec-video');
+}
+
+/* Refreshing while on the picker / record screen keeps the hour rolling */
+window.addEventListener('pagehide', () => { if (pastSetup()) savePass(); });
 
 /* =============================================================
    CHECK ROW HELPERS
@@ -682,7 +386,6 @@ function bindChecks(root) {
       const s = row.dataset.s, i = +row.dataset.i;
       S.checks[s][i] = !S.checks[s][i];
       row.classList.toggle('on', S.checks[s][i]);
-      row.querySelector('.cbox').textContent = S.checks[s][i] ? '✓' : '';
       updateNav();
     });
   });
@@ -691,7 +394,7 @@ function bindChecks(root) {
 function crow(s, i, title, desc) {
   const on = S.checks[s]?.[i] ?? false;
   return `<div class="check-row${on?' on':''}" data-s="${s}" data-i="${i}">
-    <div class="cbox">${on?'✓':''}</div>
+    <div class="cbox"></div>
     <div>
       <div class="crow-title">${title}</div>
       ${desc ? `<div class="crow-desc">${desc}</div>` : ''}
@@ -705,7 +408,6 @@ function bindHomeChecks(root) {
       const s = row.dataset.hs, i = +row.dataset.i;
       S.homechecks[s][i] = !S.homechecks[s][i];
       row.classList.toggle('on', S.homechecks[s][i]);
-      row.querySelector('.cbox').textContent = S.homechecks[s][i] ? '✓' : '';
       updateNav();
     });
   });
@@ -714,7 +416,7 @@ function bindHomeChecks(root) {
 function hcrow(s, i, title, desc) {
   const on = S.homechecks[s]?.[i] ?? false;
   return `<div class="check-row${on?' on':''}" data-hs="${s}" data-i="${i}">
-    <div class="cbox">${on?'✓':''}</div>
+    <div class="cbox"></div>
     <div>
       <div class="crow-title">${title}</div>
       ${desc ? `<div class="crow-desc">${desc}</div>` : ''}
@@ -725,14 +427,14 @@ function hcrow(s, i, title, desc) {
 /* =============================================================
    PREP STAGE — scattered confirmation chips
    ============================================================= */
-function prepChip(attr, s, i, icon, title, arrow, posClass, on) {
+function prepChip(attr, s, i, ico, title, arrow, posClass, on) {
   return `<div class="prep-chip ${posClass}${on?' on':''}" ${attr}="${s}" data-i="${i}">
-    <div class="prep-chip-icon">${icon}</div>
+    <div class="prep-chip-icon">${icon(ico)}</div>
     <div class="prep-chip-body">
       <div class="prep-chip-title">${title}</div>
       <div class="prep-chip-arrow">${arrow}</div>
     </div>
-    <div class="cbox">${on?'✓':''}</div>
+    <div class="cbox"></div>
   </div>`;
 }
 
@@ -746,13 +448,13 @@ function studioPrepStageHtml() {
   return `
   <div class="prep-stage">
     ${prepHintHtml(arr)}
-    ${prepChip('data-s', 2, 0, '📑',  'Close extra browser tabs', '↑ top of this window', 'pp-top-left',  arr[0])}
-    ${prepChip('data-s', 2, 1, '📧',  'Quit Outlook',             '↓ dock / taskbar',     'pp-bot-left',  arr[1])}
-    ${prepChip('data-s', 2, 2, '💬',  'Quit Webex',               '↓ dock / taskbar',     'pp-bot-mid',   arr[2])}
-    ${prepChip('data-s', 2, 3, '📱',  'Phone on Do Not Disturb',  'on your phone',        'pp-mid-left',  arr[3])}
-    ${prepChip('data-s', 2, 4, '🛡️', 'Disconnect from VPN',      vpnArrow,               vpnPos,         arr[4])}
-    ${prepChip('data-s', 2, 5, '💡',  'Turn ON the ring light',   'on the desk',          'pp-r-2',       arr[5])}
-    ${prepChip('data-s', 2, 6, '🌑',  'Turn OFF overhead lights', 'wall switch',          'pp-mid-right', arr[6])}
+    ${prepChip('data-s', 2, 0, 'app-window',  'Close extra browser tabs', '↑ top of this window', 'pp-top-left',  arr[0])}
+    ${prepChip('data-s', 2, 1, 'mail',  'Quit Outlook',             '↓ dock / taskbar',     'pp-bot-left',  arr[1])}
+    ${prepChip('data-s', 2, 2, 'message-circle',  'Quit Webex',               '↓ dock / taskbar',     'pp-bot-mid',   arr[2])}
+    ${prepChip('data-s', 2, 3, 'smartphone',  'Phone on Do Not Disturb',  'on your phone',        'pp-mid-left',  arr[3])}
+    ${prepChip('data-s', 2, 4, 'shield-off', 'Disconnect from VPN',      vpnArrow,               vpnPos,         arr[4])}
+    ${prepChip('data-s', 2, 5, 'lightbulb',  'Turn ON the ring light',   'on the desk',          'pp-r-2',       arr[5])}
+    ${prepChip('data-s', 2, 6, 'lightbulb-off',  'Turn OFF overhead lights', 'wall switch',          'pp-mid-right', arr[6])}
   </div>`;
 }
 
@@ -766,11 +468,11 @@ function homePrepStageHtml() {
   return `
   <div class="prep-stage">
     ${prepHintHtml(arr)}
-    ${prepChip('data-hs', 1, 0, '📑',  'Close extra browser tabs', '↑ top of this window', 'pp-top-left',  arr[0])}
-    ${prepChip('data-hs', 1, 1, '📧',  'Quit Outlook',             '↓ dock / taskbar',     'pp-bot-left',  arr[1])}
-    ${prepChip('data-hs', 1, 2, '💬',  'Quit Webex',               '↓ dock / taskbar',     'pp-bot-mid',   arr[2])}
-    ${prepChip('data-hs', 1, 3, '📱',  'Phone on Do Not Disturb',  'on your phone',        'pp-mid-right', arr[3])}
-    ${prepChip('data-hs', 1, 4, '🛡️', 'Disconnect from VPN',      vpnArrow,               vpnPos,         arr[4])}
+    ${prepChip('data-hs', 1, 0, 'app-window',  'Close extra browser tabs', '↑ top of this window', 'pp-top-left',  arr[0])}
+    ${prepChip('data-hs', 1, 1, 'mail',  'Quit Outlook',             '↓ dock / taskbar',     'pp-bot-left',  arr[1])}
+    ${prepChip('data-hs', 1, 2, 'message-circle',  'Quit Webex',               '↓ dock / taskbar',     'pp-bot-mid',   arr[2])}
+    ${prepChip('data-hs', 1, 3, 'smartphone',  'Phone on Do Not Disturb',  'on your phone',        'pp-mid-right', arr[3])}
+    ${prepChip('data-hs', 1, 4, 'shield-off', 'Disconnect from VPN',      vpnArrow,               vpnPos,         arr[4])}
   </div>`;
 }
 
@@ -783,42 +485,41 @@ function renderLocation() {
     <div class="step-title">Where are you recording?</div>
     <div class="step-sub">Choose your recording location to get the right setup guide.</div>
 
-    <div class="choice-grid" style="margin-top:28px">
+    <div class="choice-grid spaced">
       <div class="choice-card${S.location==='studio'?' selected':''}" onclick="setLocation('studio')">
-        <div class="choice-icon">🏢</div>
+        <div class="choice-icon">${icon('building-2')}</div>
         <div class="choice-title">Self-Service Studio</div>
         <div class="choice-desc">Recording in the dedicated studio room with the Nexigo camera and Rode microphone.</div>
       </div>
       <div class="choice-card${S.location==='home'?' selected':''}" onclick="setLocation('home')">
-        <div class="choice-icon">🏠</div>
+        <div class="choice-icon">${icon('house')}</div>
         <div class="choice-title">Recording at Home</div>
         <div class="choice-desc">Using your own setup — webcam, headset, or home microphone.</div>
       </div>
       <div class="choice-card${S.location==='plan'?' selected':''}" onclick="toggleLinkPlanner()" id="planner-card">
-        <div class="choice-icon">📅</div>
+        <div class="choice-icon">${icon('calendar-plus')}</div>
         <div class="choice-title">Plan a Remote Call</div>
         <div class="choice-desc">Generate a guest link in advance without going through setup.</div>
       </div>
     </div>
 
-    <div id="link-planner" style="display:none;margin-top:20px;background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px">
-      <div style="font-weight:600;margin-bottom:12px;font-size:14px">Generate a guest link</div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <input id="plan-room-input" type="url" placeholder="https://web.descript.com/room/..."
-               style="flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px"
+    <div id="link-planner" class="panel" style="display:none">
+      <div class="panel-title">Generate a guest link</div>
+      <div class="row-tight">
+        <input id="plan-room-input" class="input input-sm grow" type="url" placeholder="https://web.descript.com/room/..."
                oninput="document.getElementById('plan-result').style.display='none'"
                value="${esc(S.descriptRoom || '')}"/>
-        <button class="btn btn-primary" onclick="generatePlanLink()" style="flex-shrink:0;font-size:13px;padding:7px 14px">Generate</button>
+        <button class="btn btn-primary btn-sm" onclick="generatePlanLink()">Generate</button>
       </div>
-      <div style="font-size:12px;color:var(--muted);margin-top:6px">Paste the Descript Room link your guest will join — they'll skip the URL-entry step.</div>
-      <div id="plan-result" style="display:none;margin-top:14px">
-        <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Share this link with your guest:</div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <code id="plan-link-display" style="flex:1;font-size:13px;word-break:break-all"></code>
-          <button class="btn btn-ghost" onclick="copyPlanLink(event)" style="font-size:12px;padding:5px 10px;flex-shrink:0">📋 Copy</button>
+      <div class="field-hint">Paste the Descript Room link your guest will join — they'll skip the URL-entry step.</div>
+      <div id="plan-result" class="plan-result" style="display:none">
+        <div class="plan-result-lbl">Share this link with your guest:</div>
+        <div class="row-tight">
+          <code id="plan-link-display" class="plan-link"></code>
+          <button class="btn btn-ghost btn-xs" onclick="copyPlanLink(event)">${icon('copy')}Copy</button>
         </div>
       </div>
-      <div id="plan-status" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
+      <div id="plan-status" class="field-hint"></div>
     </div>
   </div>`;
 }
@@ -873,11 +574,11 @@ async function generatePlanLink() {
 function copyPlanLink(e) {
   const link = document.getElementById('plan-link-display')?.textContent;
   if (!link) return;
+  const btn = e.currentTarget;
   navigator.clipboard.writeText(link).then(() => {
-    const btn = e.target;
-    const orig = btn.textContent;
-    btn.textContent = 'Copied!';
-    setTimeout(() => { btn.textContent = orig; }, 1800);
+    const orig = btn.innerHTML;
+    btn.innerHTML = icon('check') + 'Copied!';
+    setTimeout(() => { btn.innerHTML = orig; }, 1800);
   });
 }
 
@@ -915,27 +616,27 @@ function renderStep0() {
     <div class="step-sub">Before anything else, plug into the room's equipment.</div>
 
     <div class="hero-area">
-      <svg width="180" height="90" viewBox="0 0 180 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg class="dock-art" width="180" height="90" viewBox="0 0 180 90" fill="none" xmlns="http://www.w3.org/2000/svg">
         <!-- Laptop body -->
-        <rect x="4" y="18" width="58" height="40" rx="4" fill="#252930" stroke="#4f8ef7" stroke-width="1.5"/>
-        <rect x="8" y="22" width="50" height="30" rx="2" fill="#1c1f26"/>
-        <rect x="1"  y="58" width="64" height="7" rx="3.5" fill="#2d3748"/>
+        <rect x="4" y="18" width="58" height="40" rx="4" class="da-body" stroke-width="1.5"/>
+        <rect x="8" y="22" width="50" height="30" rx="2" class="da-screen"/>
+        <rect x="1"  y="58" width="64" height="7" rx="3.5" class="da-base"/>
         <!-- USB-C plug on laptop -->
-        <rect x="59" y="35" width="10" height="6" rx="3" fill="#4f8ef7"/>
+        <rect x="59" y="35" width="10" height="6" rx="3" class="da-plug"/>
         <!-- Cable -->
-        <path d="M69,38 Q90,38 90,38" stroke="#4f8ef7" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M69,38 Q90,38 90,38" class="da-cable" stroke-width="3.5" stroke-linecap="round"/>
         <!-- USB-C plug on dock -->
-        <rect x="88" y="35" width="10" height="6" rx="3" fill="#4f8ef7"/>
+        <rect x="88" y="35" width="10" height="6" rx="3" class="da-plug"/>
         <!-- Dock -->
-        <rect x="96" y="22" width="80" height="42" rx="6" fill="#252930" stroke="#4f8ef7" stroke-width="1.5"/>
+        <rect x="96" y="22" width="80" height="42" rx="6" class="da-body" stroke-width="1.5"/>
         <!-- Dock ports -->
-        <rect x="104" y="34" width="16" height="8" rx="4" fill="#2d3748" stroke="#4f8ef7" stroke-width="1"/>
-        <rect x="126" y="34" width="12" height="8" rx="4" fill="#2d3748" stroke="#3a4a60" stroke-width="1"/>
-        <rect x="144" y="34" width="12" height="8" rx="4" fill="#2d3748" stroke="#3a4a60" stroke-width="1"/>
+        <rect x="104" y="34" width="16" height="8" rx="4" class="da-port" stroke-width="1"/>
+        <rect x="126" y="34" width="12" height="8" rx="4" class="da-port-off" stroke-width="1"/>
+        <rect x="144" y="34" width="12" height="8" rx="4" class="da-port-off" stroke-width="1"/>
         <!-- LED -->
-        <circle cx="164" cy="38" r="4" fill="#22c55e" opacity="0.9"/>
+        <circle cx="164" cy="38" r="4" class="da-led" opacity="0.9"/>
         <!-- Arrow -->
-        <path d="M80 28 L90 38 L80 48" stroke="#22c55e" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M80 28 L90 38 L80 48" class="da-arrow" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
 
@@ -957,8 +658,8 @@ function renderStep1() {
   const isSupported = (browser === 'Chrome' || browser === 'Firefox');
   const browserNote = isSupported
     ? ''
-    : '<div style="margin-top:14px;padding:10px 14px;background:rgba(245,158,11,0.1);border:1px solid var(--warn);border-radius:8px;font-size:13px;color:var(--warn)">'
-      + '⚠️ You appear to be using <strong>' + browser + '</strong>. If you run into issues with your camera or call, '
+    : '<div class="info-box warn">' + icon('triangle-alert')
+      + 'You appear to be using <strong>' + browser + '</strong>. If you run into issues with your camera or call, '
       + 'try switching to <strong>Chrome</strong> or <strong>Firefox</strong> — they work best with this app.'
       + '</div>';
 
@@ -983,7 +684,7 @@ function renderStep2(el) {
     <div class="vid-wrap">
       <video id="step2-video" autoplay playsinline muted></video>
       <div class="vid-overlay">
-        <img src="guideline.png" style="width:100%;height:100%;object-fit:cover;mix-blend-mode:screen;opacity:0.85;" alt="">
+        <img src="guideline.png" class="guide-img" alt="">
       </div>
       <div class="cam-loading" id="cam-loading">
         <div class="spinner"></div>
@@ -991,7 +692,7 @@ function renderStep2(el) {
       </div>
     </div>
 
-    <div class="info-box" style="margin-top:14px">
+    <div class="info-box">
       <strong>Positioning:</strong> Adjust your chair and camera so your head fits inside the dashed outline, with your eyes on the blue line. Your shoulders should be clearly visible.
     </div>
   </div>`;
@@ -1082,12 +783,7 @@ async function initStream() {
     if (!videoStream && !audioStream) throw new Error('Could not access camera or microphone.');
 
     /* Enumerate devices — labels are available now that permission was granted */
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    S.dev.allAudio = devices.filter(d => d.kind === 'audioinput');
-    S.dev.allVideo = devices.filter(d => d.kind === 'videoinput');
-    S.dev.rode   = devices.find(d => d.kind === 'audioinput' && d.label.toLowerCase().includes('rode'));
-    S.dev.nexigo = devices.find(d => d.kind === 'videoinput' &&
-      (d.label.toLowerCase().includes('nexigo') || d.label.toLowerCase().includes('n970')));
+    readDevices(await navigator.mediaDevices.enumerateDevices());
 
     /* Combine into one stream */
     const tracks = [
@@ -1130,7 +826,7 @@ async function initStream() {
       msg  = 'Camera is in use by another app.';
       hint = 'Your webcam can only be used by one app at a time. ' +
              '<strong>Close any of these that might be open:</strong>' +
-             '<ul style="margin:8px 0 0 16px;text-align:left;line-height:1.8">' +
+             '<ul>' +
              '<li>Webex / Zoom / Teams</li>' +
              '<li>OBS / Camtasia / Loom</li>' +
              '<li>Windows Camera app</li>' +
@@ -1140,14 +836,22 @@ async function initStream() {
     }
 
     ld.innerHTML = `
-      <div style="text-align:center;padding:14px 20px">
-        <div style="font-size:28px;margin-bottom:8px">⚠️</div>
-        <div style="color:var(--danger);font-weight:600;margin-bottom:6px">${msg}</div>
-        <div style="color:var(--muted);font-size:13px;line-height:1.5">${hint}</div>
-        <button class="btn btn-ghost" onclick="location.reload()"
-                style="margin-top:14px;font-size:13px">↺ Reload page</button>
+      <div class="state">
+        <div class="state-icon danger">${icon('triangle-alert')}</div>
+        <div class="state-title danger">${msg}</div>
+        <div class="state-body">${hint}</div>
+        <button class="btn btn-ghost btn-sm" onclick="location.reload()">${icon('rotate-ccw')}Reload page</button>
       </div>`;
   }
+}
+
+/* Device lists + the studio's preferred Nexigo / Rode */
+function readDevices(devices) {
+  S.dev.allAudio = devices.filter(d => d.kind === 'audioinput');
+  S.dev.allVideo = devices.filter(d => d.kind === 'videoinput');
+  S.dev.rode   = devices.find(d => d.kind === 'audioinput' && d.label.toLowerCase().includes('rode'));
+  S.dev.nexigo = devices.find(d => d.kind === 'videoinput' &&
+    (d.label.toLowerCase().includes('nexigo') || d.label.toLowerCase().includes('n970')));
 }
 
 function attachStream(id) {
@@ -1229,7 +933,7 @@ function renderStep3(el, devicesReady = false) {
       <div class="dev-row">
         <div class="sdot green"></div>
         <div class="dev-info">
-          <div class="dev-name">${title} &nbsp;<span style="color:var(--success)">✓ Active</span></div>
+          <div class="dev-name">${title} <span class="tag ok">${icon('check')}Active</span></div>
           <div class="dev-sub">${foundLabel}</div>
         </div>
       </div>`;
@@ -1237,17 +941,16 @@ function renderStep3(el, devicesReady = false) {
       <div class="dev-row">
         <div class="sdot yellow"></div>
         <div class="dev-info">
-          <div class="dev-name">${title} &nbsp;<span style="color:var(--warn)">⚠ Not active</span></div>
+          <div class="dev-name">${title} <span class="tag warn">Not active</span></div>
           <div class="dev-sub">Active: ${activeLabel} &nbsp;·&nbsp; ${foundLabel} available</div>
         </div>
-        <button class="btn btn-ghost" onclick="switchToRecommended()"
-                style="font-size:12px;padding:5px 10px;flex-shrink:0">Switch ↺</button>
+        <button class="btn btn-ghost btn-xs" onclick="switchToRecommended()">${icon('rotate-ccw')}Switch</button>
       </div>`;
     return `
       <div class="dev-row">
         <div class="sdot red"></div>
         <div class="dev-info">
-          <div class="dev-name">${title} &nbsp;<span style="color:var(--danger)">⚠ Not detected</span></div>
+          <div class="dev-name">${title} <span class="tag bad">Not detected</span></div>
           <div class="dev-sub">Active: ${activeLabel}</div>
         </div>
         <select class="dev-sel" id="${selId}" onchange="manualDevice()">
@@ -1272,24 +975,24 @@ function renderStep3(el, devicesReady = false) {
     ${devRow('Microphone — Rode', rodeActive, rodeFound, curAudLabel,
              S.dev.rode?.label   || '', 'sel-audio', S.dev.allAudio)}
 
-    ${!allOk ? `<div class="info-box" style="border-color:rgba(239,68,68,0.35);background:rgba(239,68,68,0.07);margin-bottom:4px">
+    ${!allOk ? `<div class="info-box danger">
       ${(nexigoFound || rodeFound) && !(nexigoActive && rodeActive)
-        ? `<strong style="color:var(--warn)">Preferred devices found but not active.</strong>
-           Click <strong>Switch ↺</strong> to activate them, or
-           <a href="javascript:redetect()" style="color:var(--accent);text-decoration:underline">re-scan</a> if they just appeared.`
-        : `<strong style="color:var(--danger)">Devices not detected.</strong>
+        ? `<strong class="warn-text">Preferred devices found but not active.</strong>
+           Click <strong>Switch</strong> to activate them, or
+           <a class="link" href="javascript:redetect()">re-scan</a> if they just appeared.`
+        : `<strong>Devices not detected.</strong>
            Make sure the USB-C dock is plugged in, then
-           <a href="javascript:redetect()" style="color:var(--accent);text-decoration:underline">re-scan devices</a>.`}
+           <a class="link" href="javascript:redetect()">re-scan devices</a>.`}
     </div>` : ''}
 
     <!-- AUDIO TEST -->
-    <div class="sec-label" style="margin-top:${allOk?'18':'10'}px">Microphone Test — Speak Now</div>
+    <div class="sec-label">Microphone Test — Speak Now</div>
     <div class="card">
       <div class="meter-track">
         <div class="meter-fill" id="audio-fill"></div>
-        <div class="meter-lbl">🎙 Say something to test your mic…</div>
+        <div class="meter-lbl">${icon('mic')}Say something to test your mic…</div>
       </div>
-      <div style="font-size:12px;color:var(--muted);margin-top:7px">
+      <div class="field-hint">
         The bar should react when you speak. Green = good level &nbsp;·&nbsp; Red = too loud.
       </div>
     </div>
@@ -1297,13 +1000,13 @@ function renderStep3(el, devicesReady = false) {
     <!-- LIGHTING -->
     <div class="sec-label">Lighting Check</div>
     <div class="card">
-      <div class="vid-wrap" style="margin-bottom:12px">
+      <div class="vid-wrap">
         <video id="step3-video" autoplay playsinline muted></video>
       </div>
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <button class="btn btn-ghost" onclick="checkBrightness()" style="font-size:13px">☀️ Analyze Lighting</button>
-        <div id="bright-out" style="flex:1">
-          ${S.brightness ? brightHtml(S.brightness) : '<span style="font-size:13px;color:var(--muted)">Click to analyze your current lighting</span>'}
+      <div class="bright-row">
+        <button class="btn btn-ghost btn-sm" onclick="checkBrightness()">${icon('sun')}Analyze Lighting</button>
+        <div id="bright-out" class="bright-out">
+          ${S.brightness ? brightHtml(S.brightness) : '<span class="placeholder-text">Click to analyze your current lighting</span>'}
         </div>
       </div>
     </div>
@@ -1399,7 +1102,7 @@ function checkBrightness() {
   /* An un-started video paints black and reads as "too dark" — wait for frames */
   if (rawSrc.readyState < 2 || !rawSrc.videoWidth) {
     const out = document.getElementById('bright-out');
-    if (out) out.innerHTML = '<span style="font-size:13px;color:var(--muted)">Camera is still starting — give it a second and try again.</span>';
+    if (out) out.innerHTML = '<span class="placeholder-text">Camera is still starting — give it a second and try again.</span>';
     return;
   }
 
@@ -1484,7 +1187,7 @@ function checkBrightness() {
 
   if (Math.abs(rM) === 2) {
     cls  = 'error';
-    icon = rM < 0 ? '🌑' : '🌟';
+    icon = rM < 0 ? 'moon' : 'sun';
     if (rM < 0) {
       title = 'Your face is too dark';
       sub   = 'It\'s pretty hard to see you clearly from here. A light pointing at your face from the front — even a desk lamp — would make a big difference.';
@@ -1496,7 +1199,7 @@ function checkBrightness() {
 
   } else if (Math.abs(rM) === 1) {
     cls  = spread > 55 ? 'warn' : 'warn-mild';
-    icon = rM < 0 ? '🌒' : '🌤';
+    icon = rM < 0 ? 'sun-dim' : 'sun';
     if (rM < 0) {
       title = 'You\'re a little underlit';
       sub   = 'You look slightly dim — bumping up your light or moving it a bit closer should do it. You don\'t need much more.';
@@ -1508,13 +1211,13 @@ function checkBrightness() {
 
   } else if (spread > 65) {
     cls  = 'warn-mild';
-    icon = '🌓';
+    icon = 'contrast';
     title = 'Your face looks good — but the background\'s a little uneven';
     sub   = 'The ' + maxBg.label + ' is ' + intensityWord(hotDelta) + ' than the center of the frame. ' + hotHint(maxBg);
 
   } else if (spread > 35 && hotDelta > 25) {
     cls  = 'info';
-    icon = '💡';
+    icon = 'lightbulb';
     title = 'Looking good';
     const hint = hotHint(maxBg);
     sub   = 'The ' + maxBg.label + ' is ' + intensityWord(hotDelta) + ' than the rest, but it\'s subtle and won\'t hurt your recording. '
@@ -1522,7 +1225,7 @@ function checkBrightness() {
 
   } else {
     cls  = 'good';
-    icon = '✅';
+    icon = 'circle-check';
     title = 'Lighting looks great!';
     sub   = 'Even and well-lit all the way across (left ' + Math.round(avg[1][0])
           + ' · center ' + Math.round(M) + ' · right ' + Math.round(avg[1][2]) + ').';
@@ -1538,23 +1241,23 @@ function checkBrightness() {
   updateNav();
 }
 
-function brightHtml(cls, icon, title, sub) {
+function brightHtml(cls, ico, title, sub) {
   /* Single-arg calls: re-render from saved S.brightness (object form),
      or legacy string states from older cached sessions */
   if (arguments.length === 1) {
     if (cls && typeof cls === 'object') {
-      ({ cls, icon, title, sub } = cls);
+      ({ cls, icon: ico, title, sub } = cls);
     } else {
       const MAP = {
-        good:   ['good',  '✅', 'Lighting looks great!',    'Well-lit and not overexposed.'],
-        dark:   ['error', '🌑', 'Your face is too dark',    'Bring a light source closer and point it at your face.'],
-        bright: ['error', '🌟', 'Your face is overexposed', 'Reduce light intensity or move the source further back.'],
+        good:   ['good',  'circle-check', 'Lighting looks great!',    'Well-lit and not overexposed.'],
+        dark:   ['error', 'moon', 'Your face is too dark',    'Bring a light source closer and point it at your face.'],
+        bright: ['error', 'sun', 'Your face is overexposed', 'Reduce light intensity or move the source further back.'],
       };
-      [cls, icon, title, sub] = MAP[cls] || MAP.good;
+      [cls, ico, title, sub] = MAP[cls] || MAP.good;
     }
   }
   return '<div class="bright-result ' + cls + '">'
-       + '<span class="bright-icon">' + icon + '</span>'
+       + '<span class="bright-icon">' + (ICON_PATHS[ico] ? icon(ico) : esc(ico)) + '</span>'
        + '<div><div class="bright-title">' + title + '</div>'
        + '<div class="bright-sub">' + sub + '</div></div></div>';
 }
@@ -1570,23 +1273,23 @@ function renderStep4() {
 
     <div class="choice-grid">
       <div class="choice-card${S.mode==='descript'?' selected':''}" onclick="setMode('descript')">
-        <div class="choice-icon">🎬</div>
+        <div class="choice-icon">${icon('clapperboard')}</div>
         <div class="choice-title">Descript Room</div>
         <div class="choice-desc">Recommended.<br>Open your Descript Room from this app.</div>
       </div>
       <div class="choice-card${S.mode==='local'?' selected':''}" onclick="setMode('local')">
-        <div class="choice-icon">⏺</div>
+        <div class="choice-icon">${icon('circle-dot')}</div>
         <div class="choice-title">Record Here</div>
         <div class="choice-desc">Use this app with a built-in teleprompter.</div>
       </div>
       <div class="choice-card${S.mode==='virtual'?' selected':''}" onclick="setMode('virtual')">
-        <div class="choice-icon">🎥</div>
+        <div class="choice-icon">${icon('video')}</div>
         <div class="choice-title">Virtual Call or Other App</div>
         <div class="choice-desc">Riverside, Zoom, Webex, Camtasia, etc.<br>I'll record somewhere else.</div>
       </div>
     </div>
 
-    <div id="mode-msg" style="margin-top:18px">${S.mode ? modeMsgHtml(S.mode) : ''}</div>
+    <div id="mode-msg" class="mode-msg">${S.mode ? modeMsgHtml(S.mode) : ''}</div>
   </div>`;
 }
 
@@ -1606,30 +1309,29 @@ function modeMsgHtml(m) {
   if (m === 'virtual') {
     const vidLabel = S.dev.allVideo.find(d => d.deviceId === S.dev.curVideoId)?.label || 'your camera';
     const audLabel = S.dev.allAudio.find(d => d.deviceId === S.dev.curAudioId)?.label || 'your microphone';
-    return `<div style="text-align:center;padding:26px 16px;background:var(--surf);border:1px solid var(--success);border-radius:var(--radius)">
-      <div style="font-size:54px;margin-bottom:10px">🎉</div>
-      <div style="font-size:21px;font-weight:700;margin-bottom:8px">You're all set!</div>
-      <div style="color:var(--muted);line-height:1.7;font-size:14px">
-        Your camera is <strong style="color:var(--text)">${vidLabel}</strong> and
-        your microphone is <strong style="color:var(--text)">${audLabel}</strong>.<br>
+    return `<div class="state state-card">
+      <div class="state-icon success">${icon('party-popper')}</div>
+      <div class="state-title">You're all set!</div>
+      <div class="state-body">
+        Your camera is <strong>${esc(vidLabel)}</strong> and
+        your microphone is <strong>${esc(audLabel)}</strong>.<br>
         Close this app and open your recording software. Good luck!
       </div>
     </div>`;
   }
   if (m === 'descript') {
     return `
-    <div class="card" style="margin-bottom:14px">
-      <label style="display:block;font-size:13px;font-weight:600;margin-bottom:8px">Descript Room Link</label>
-      <input id="descript-room-input" type="url"
+    <div class="card field-card">
+      <label class="field-label" for="descript-room-input">Descript Room Link</label>
+      <input id="descript-room-input" class="input" type="url"
         value="${esc(S.descriptRoom || '')}"
         placeholder="https://web.descript.com/room/..."
-        style="width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:14px"
         oninput="S.descriptRoom=this.value.trim();updateNav();">
-      <div style="font-size:12px;color:var(--muted);margin-top:6px">
+      <div class="field-hint">
         The full URL to your Descript Room — usually starts with <code>https://web.descript.com/room/</code>
       </div>
     </div>
-    <div id="descript-status" style="font-size:13px;color:var(--muted);margin-bottom:10px;min-height:18px"></div>
+    <div id="descript-status" class="status-line"></div>
     <div class="info-box">
       <strong>What happens next:</strong> Clicking Open Room will release your camera and microphone
       and redirect you to the Descript Room in this tab. Descript will then ask for permission to
@@ -1655,12 +1357,12 @@ function openDescriptRoom() {
   let parsed;
   try { parsed = new URL(raw); }
   catch(e) {
-    if (status) status.innerHTML = '<span style="color:var(--danger)">⚠ That doesn\'t look like a valid URL. Paste the full Descript Room link.</span>';
+    if (status) status.innerHTML = '<span class="text-danger">' + icon('triangle-alert') + ' That doesn\'t look like a valid URL. Paste the full Descript Room link.</span>';
     if (inp) inp.style.borderColor = 'var(--danger)';
     return;
   }
   if (parsed.protocol !== 'https:') {
-    if (status) status.innerHTML = '<span style="color:var(--danger)">⚠ Link must start with https://</span>';
+    if (status) status.innerHTML = '<span class="text-danger">' + icon('triangle-alert') + ' Link must start with https://</span>';
     if (inp) inp.style.borderColor = 'var(--danger)';
     return;
   }
@@ -1704,14 +1406,14 @@ function renderStep5() {
     <textarea class="script-ta" id="script-ta"
       placeholder="Paste or type your script here…&#10;The teleprompter window will scroll it for you at adjustable speed."></textarea>
 
-    <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center">
-      <button class="btn btn-ghost" onclick="openPrompter()">📺 Open Teleprompter</button>
-      <button class="btn ${rec ? 'btn-danger' : 'btn-primary'}" id="btn-rec" onclick="toggleRec()">${rec ? '⏹ Stop Recording' : '⏺ Start Recording'}</button>
+    <div class="rec-actions">
+      <button class="btn btn-ghost" onclick="openPrompter()">${icon('scroll-text')}Open Teleprompter</button>
+      <button class="btn ${rec ? 'btn-danger' : 'btn-primary'}" id="btn-rec" onclick="toggleRec()">${recBtnLabel(rec)}</button>
     </div>
 
-    <div id="rec-status" style="margin-top:13px">${rec ? recStatusRecordingHtml() : ''}</div>
+    <div id="rec-status" class="rec-status">${rec ? recStatusRecordingHtml() : ''}</div>
 
-    <div class="info-box" style="margin-top:6px">
+    <div class="info-box">
       <strong>Tip:</strong> After opening the teleprompter, drag that window so it sits just below or beside your camera lens — this keeps your eyes close to the lens while you read your script.
     </div>
   </div>`;
@@ -1751,13 +1453,15 @@ body{background:#000;color:#fff;font-family:Georgia,serif;
 #txt{font-size:33px;line-height:1.8;text-align:center;color:#fff}
 #fade{position:fixed;bottom:0;left:0;right:0;height:72px;
   background:linear-gradient(transparent,#000);pointer-events:none}
+#bar button{display:inline-flex;align-items:center;gap:6px}
+.ico{width:1em;height:1em;flex-shrink:0}.ico-fill{fill:currentColor;stroke:none}
 </style></head><body>
 <div id="bar">
-  <button id="pbtn" onclick="tog()">▶ Start</button>
+  <button id="pbtn" onclick="tog()">${icon('play', 'ico-fill')}Start</button>
   <label>Speed</label>
   <input type="range" id="spd" min="1" max="20" value="5" oninput="chSpd(+this.value)">
   <label id="sv">5</label>
-  <button onclick="rst()" style="background:#1a1a1a">↺ Reset</button>
+  <button onclick="rst()" style="background:#1a1a1a">${icon('rotate-ccw')}Reset</button>
   <label style="margin-left:6px">Size</label>
   <button class="sz" onclick="chSz(-2)">A−</button>
   <button class="sz" onclick="chSz(2)">A+</button>
@@ -1769,11 +1473,12 @@ body{background:#000;color:#fff;font-family:Georgia,serif;
 <div id="fade"></div>
 <script>
 let going=false,spd=5,iv=null,sz=33;
+const PLAY='${icon('play', 'ico-fill')}Start', PAUSE='${icon('pause', 'ico-fill')}Pause';
 function chSz(d){sz=Math.min(72,Math.max(16,sz+d));document.getElementById('txt').style.fontSize=sz+'px';}
 function tog(){
   going=!going;
   const b=document.getElementById('pbtn');
-  b.textContent=going?'⏸ Pause':'▶ Start';
+  b.innerHTML=going?PAUSE:PLAY;
   b.className=going?'go':'';
   clearInterval(iv);
   if(going)iv=setInterval(()=>document.getElementById('scroll').scrollBy(0,spd*.4),30);
@@ -1793,6 +1498,10 @@ document.addEventListener('keydown',e=>{
 }
 
 /* ── Recording ── */
+function recBtnLabel(recording) {
+  return recording ? icon('square', 'ico-fill') + 'Stop Recording' : icon('circle', 'ico-fill') + 'Start Recording';
+}
+
 function toggleRec() { S.recActive ? stopRec() : startRec(); }
 
 function startRec() {
@@ -1824,7 +1533,7 @@ function startRec() {
 
   document.getElementById('rec-badge').style.display = 'flex';
   const btn = document.getElementById('btn-rec');
-  if (btn) { btn.textContent = '⏹ Stop Recording'; btn.className = 'btn btn-danger'; }
+  if (btn) { btn.innerHTML = recBtnLabel(true); btn.className = 'btn btn-danger'; }
 
   S.recTimer = setInterval(() => {
     S.recSecs++;
@@ -1836,12 +1545,12 @@ function startRec() {
 }
 
 function recStatusRecordingHtml() {
-  return `<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:8px;color:var(--danger);font-weight:600;font-size:14px">
-        <div class="rec-dot" style="background:var(--danger)"></div>
-        Recording — <span id="rec-timer">${fmtTime(S.recSecs)}</span>
+  return `<div class="row">
+      <div class="rec-live">
+        <div class="rec-dot red"></div>
+        Recording — <span id="rec-timer" class="tnum">${fmtTime(S.recSecs)}</span>
       </div>
-      <button class="btn btn-ghost" style="font-size:12px;padding:4px 10px" onclick="openPrompter()">📺 Teleprompter</button>
+      <button class="btn btn-ghost btn-xs" onclick="openPrompter()">${icon('scroll-text')}Teleprompter</button>
     </div>`;
 }
 
@@ -1852,7 +1561,7 @@ function stopRec() {
   const badge = document.getElementById('rec-badge');
   if (badge) badge.style.display = 'none';
   const btn = document.getElementById('btn-rec');
-  if (btn) { btn.textContent = '⏺ Start Recording'; btn.className = 'btn btn-primary'; }
+  if (btn) { btn.innerHTML = recBtnLabel(false); btn.className = 'btn btn-primary'; }
 }
 
 function onRecStop() {
@@ -1875,15 +1584,13 @@ function showDownloadCard() {
   const ext = (S.blob.type || '').includes('mp4') ? 'mp4' : 'webm';
 
   el.innerHTML = `
-    <div style="background:var(--surf);border:1px solid var(--success);
-                border-radius:10px;padding:14px 16px;
-                display:flex;align-items:center;gap:12px;flex-wrap:wrap;text-align:left">
-      <div style="flex:1">
-        <div style="font-weight:700;color:var(--success)">✅ Recording complete — ${mb} MB</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">Duration: ${fmtTime(S._blobSecs || 0)}</div>
+    <div class="dl-card">
+      <div class="grow">
+        <div class="dl-title">${icon('circle-check')}Recording complete — ${mb} MB</div>
+        <div class="dl-meta">Duration: ${fmtTime(S._blobSecs || 0)}</div>
       </div>
-      <a href="${S._blobUrl}" download="recording-${ts}.${ext}" class="btn btn-success">⬇ Download</a>
-      ${inFlow ? '<button class="btn btn-ghost" onclick="resetRec()" style="font-size:13px">⏺ Record Again</button>' : ''}
+      <a href="${S._blobUrl}" download="recording-${ts}.${ext}" class="btn btn-success">${icon('download')}Download</a>
+      ${inFlow ? '<button class="btn btn-ghost btn-sm" onclick="resetRec()">' + icon('rotate-ccw') + 'Record Again</button>' : ''}
     </div>`;
 }
 
@@ -1915,8 +1622,8 @@ function renderHomeStep2() {
   const isSupported = (browser === 'Chrome' || browser === 'Firefox');
   const browserNote = isSupported
     ? ''
-    : '<div style="margin-top:14px;padding:10px 14px;background:rgba(245,158,11,0.1);border:1px solid var(--warn);border-radius:8px;font-size:13px;color:var(--warn)">'
-      + '⚠️ You appear to be using <strong>' + browser + '</strong>. If you run into issues with your camera or call, '
+    : '<div class="info-box warn">' + icon('triangle-alert')
+      + 'You appear to be using <strong>' + browser + '</strong>. If you run into issues with your camera or call, '
       + 'try switching to <strong>Chrome</strong> or <strong>Firefox</strong> — they work best with this app.'
       + '</div>';
 
@@ -1940,45 +1647,45 @@ function renderHomeStep3(el, devicesReady = false) {
 
     <!-- DEVICE PICKERS -->
     <div class="sec-label">Camera</div>
-    <div class="card" style="padding:12px 14px">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <span style="font-size:13px;color:var(--muted);flex-shrink:0">Active:</span>
-        <span style="font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${curVidLabel}</span>
+    <div class="card card-tight">
+      <div class="row">
+        <span class="dev-active-lbl">Active:</span>
+        <span class="dev-value">${curVidLabel}</span>
         ${S.dev.allVideo.length > 0 ? `
-        <select class="dev-sel" id="home-sel-video" onchange="homeDeviceSwitch()" style="max-width:200px">
+        <select class="dev-sel" id="home-sel-video" onchange="homeDeviceSwitch()">
           ${S.dev.allVideo.map(d => `<option value="${d.deviceId}"${d.deviceId===S.dev.curVideoId?' selected':''}>${d.label||d.deviceId.slice(0,12)}</option>`).join('')}
         </select>` : ''}
       </div>
     </div>
 
-    <div class="sec-label" style="margin-top:14px">Microphone</div>
-    <div class="card" style="padding:12px 14px">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <span style="font-size:13px;color:var(--muted);flex-shrink:0">Active:</span>
-        <span style="font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${curAudLabel}</span>
+    <div class="sec-label">Microphone</div>
+    <div class="card card-tight">
+      <div class="row">
+        <span class="dev-active-lbl">Active:</span>
+        <span class="dev-value">${curAudLabel}</span>
         ${S.dev.allAudio.length > 0 ? `
-        <select class="dev-sel" id="home-sel-audio" onchange="homeDeviceSwitch()" style="max-width:200px">
+        <select class="dev-sel" id="home-sel-audio" onchange="homeDeviceSwitch()">
           ${S.dev.allAudio.map(d => `<option value="${d.deviceId}"${d.deviceId===S.dev.curAudioId?' selected':''}>${d.label||d.deviceId.slice(0,12)}</option>`).join('')}
         </select>` : ''}
       </div>
     </div>
 
     <!-- AUDIO TEST -->
-    <div class="sec-label" style="margin-top:18px">Microphone Test — Speak Now</div>
+    <div class="sec-label">Microphone Test — Speak Now</div>
     <div class="card">
       <div class="meter-track">
         <div class="meter-fill" id="audio-fill"></div>
-        <div class="meter-lbl">🎙 Say something to test your mic…</div>
+        <div class="meter-lbl">${icon('mic')}Say something to test your mic…</div>
       </div>
-      <div style="font-size:12px;color:var(--muted);margin-top:7px">
+      <div class="field-hint">
         The bar should react when you speak.
       </div>
     </div>
 
     <!-- CAMERA PREVIEW -->
-    <div class="sec-label" style="margin-top:18px">Camera Preview</div>
+    <div class="sec-label">Camera Preview</div>
     <div class="card">
-      <div class="vid-wrap" style="margin-bottom:8px">
+      <div class="vid-wrap">
         <video id="step3-video" autoplay playsinline muted></video>
         <div class="cam-loading" id="cam-loading">
           <div class="spinner"></div>
@@ -2018,7 +1725,7 @@ function renderHomeStep4(el) {
     <div class="vid-wrap">
       <video id="step2-video" autoplay playsinline muted></video>
       <div class="vid-overlay">
-        <img src="guideline.png" style="width:100%;height:100%;object-fit:cover;mix-blend-mode:screen;opacity:0.85;" alt="">
+        <img src="guideline.png" class="guide-img" alt="">
       </div>
       <div class="cam-loading" id="cam-loading">
         <div class="spinner"></div>
@@ -2027,17 +1734,17 @@ function renderHomeStep4(el) {
     </div>
 
     <!-- LIGHTING -->
-    <div class="sec-label" style="margin-top:16px">Lighting Check</div>
+    <div class="sec-label">Lighting Check</div>
     <div class="card">
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">
-        <button class="btn btn-ghost" onclick="checkBrightness()" style="font-size:13px">☀️ Analyze Lighting</button>
-        <div id="bright-out" style="flex:1">
-          ${S.brightness ? brightHtml(S.brightness) : '<span style="font-size:13px;color:var(--muted)">Click to analyze your current lighting</span>'}
+      <div class="bright-row">
+        <button class="btn btn-ghost btn-sm" onclick="checkBrightness()">${icon('sun')}Analyze Lighting</button>
+        <div id="bright-out" class="bright-out">
+          ${S.brightness ? brightHtml(S.brightness) : '<span class="placeholder-text">Click to analyze your current lighting</span>'}
         </div>
       </div>
     </div>
 
-    <div class="info-box" style="margin-top:14px">
+    <div class="info-box">
       <strong>Tips for better home lighting:</strong><br>
       • <strong>Face a light source</strong> — sit facing a window or lamp, not with it behind you<br>
       • <strong>Too dark?</strong> Bring in a desk lamp or ring light and point it at your face<br>
@@ -2214,7 +1921,7 @@ class VirtualBgEffect {
 let _previewEffect = null;
 
 function renderBgSelector(activeId, compact) {
-  const header = compact ? '' : '<div class="sec-label" style="margin-top:14px">Virtual Background</div>';
+  const header = compact ? '' : '<div class="sec-label">Virtual Background</div>';
   const opts = BG_OPTIONS.map(o => {
     const active   = o.id === activeId ? ' bg-active' : '';
     const bgStyle  = o.src ? ' style="background-image:url(\'' + o.src + '\')"' : '';
@@ -2300,11 +2007,11 @@ function finish() {
 
   document.getElementById('content').innerHTML = `
     <div class="completion">
-      <div class="big-icon">🎬</div>
+      <div class="big-icon">${icon('circle-check')}</div>
       <h2>Great work!</h2>
       <p>Your recording is complete. Download your file if you haven't already — then you're done.</p>
-      <div id="completion-dl" style="max-width:480px;margin:20px auto 0"></div>
-      <button class="btn btn-ghost" onclick="location.reload()" style="margin-top:24px">Start Over</button>
+      <div id="completion-dl" class="completion-dl"></div>
+      <button class="btn btn-ghost" onclick="location.reload()">${icon('rotate-ccw')}Start Over</button>
     </div>`;
 
   document.querySelector('footer').style.display = 'none';
@@ -2329,7 +2036,20 @@ function finish() {
     S.mode = 'descript';
     if (url) S.descriptRoom = url;
     S.step = lastStep();  /* mode-picker step is the last step in descript mode */
+    S._noPass = true;     /* skipped setup, so don't grant a pass for it */
+    return;
   }
+
+  /* Finished setup within the last hour → straight to the record screen
+     (local), the room-link screen (Descript), or the mode picker */
+  const pass = loadPass();
+  if (!pass) return;
+  S._pass    = pass;
+  S._resumed = true;
+  S.location = pass.location;
+  S.mode     = ['descript', 'local', 'virtual'].includes(pass.mode) ? pass.mode : null;
+  S.descriptRoom = pass.descriptRoom || '';
+  S.step = (S.mode === 'local' || S.mode === 'descript') ? lastStep() : pickerStep();
 })();
 render();
 </script>
